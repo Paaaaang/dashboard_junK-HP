@@ -1,0 +1,63 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: dashboard_khp_postgres
+    environment:
+      POSTGRES_DB: dashboard_khp_db
+      POSTGRES_USER: dashboard_user
+      POSTGRES_PASSWORD: dashboard_password_secure
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dashboard_user']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dashboard_network
+
+  # Redis (for Bull job queue)
+  redis:
+    image: redis:7-alpine
+    container_name: dashboard_khp_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dashboard_network
+
+  # pgAdmin (Database Management UI - optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dashboard_khp_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dashboard.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '5050:80'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dashboard_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  dashboard_network:
+    driver: bridge

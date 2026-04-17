@@ -1,0 +1,35 @@
+{
+  "name": "automation-dashboard",
+  "version": "1.0.0",
+  "description": "Comprehensive automation dashboard with workflow management & data processing",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "backend:dev": "npm --workspace=backend run dev",
+    "backend:build": "npm --workspace=backend run build",
+    "frontend:dev": "npm --workspace=frontend run dev",
+    "frontend:build": "npm --workspace=frontend run build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": [
+    "automation",
+    "dashboard",
+    "workflow-management",
+    "data-processing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "vite": "^8.0.8"
+  }
+}
