@@ -1,0 +1,118 @@
+/* Top Rail Header */
+.top-rail {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.top-rail-dashboard {
+  justify-content: flex-end;
+  gap: 14px;
+  min-height: 70px;
+  padding: 20px 24px;
+}
+
+.top-rail-dashboard .icon-sm {
+  width: 15px;
+  height: 15px;
+}
+
+.dashboard-alert-button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: #10b981;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease-out,
+    background-color 0.16s ease-out;
+}
+
+.dashboard-alert-button .icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
+.dashboard-alert-button:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.dashboard-alert-button:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+.top-rail-left h1 {
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.top-rail-left p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.top-rail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-field {
+  width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  transition: border-color 0.15s ease-out;
+}
+
+.search-field:focus-within {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.search-field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.search-field input::placeholder {
+  color: #64748b56;
+}

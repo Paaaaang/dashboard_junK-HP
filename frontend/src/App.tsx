@@ -1,44 +1,47 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css';
+import { useState } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import './styles/index.css';
+
+import { Sidebar, TopRail, PlaceholderPage, DebugMode } from './components';
+import {
+  Dashboard,
+  CompanyManagementPage,
+  ParticipantsPage,
+  TemplateEditorPage,
+} from './pages';
 
 function App() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   return (
     <Router>
-      <div className="app">
-        <header>
-          <h1>🤖 Automation Dashboard</h1>
-          <p>Workflow Management & Data Processing</p>
-        </header>
-        <main>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-          </Routes>
-        </main>
+      <div className={`app-shell ${sidebarCollapsed ? 'app-shell-sidebar-collapsed' : ''}`}>
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={() => setSidebarCollapsed((prev) => !prev)}
+        />
+        <div className="workspace">
+          <TopRail />
+          <main className="workspace-main">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/companies" element={<CompanyManagementPage />} />
+              <Route path="/participants" element={<ParticipantsPage />} />
+              <Route path="/templates" element={<TemplateEditorPage />} />
+              <Route
+                path="/forms"
+                element={<PlaceholderPage title="신청 폼 자동화" />}
+              />
+              <Route
+                path="/posters"
+                element={<PlaceholderPage title="포스터 자동화" />}
+              />
+            </Routes>
+          </main>
+        </div>
+        <DebugMode />
       </div>
     </Router>
-  );
-}
-
-function Dashboard() {
-  return (
-    <div className="dashboard">
-      <h2>Welcome to Automation Dashboard</h2>
-      <p>This is your comprehensive automation & workflow management platform.</p>
-      <div className="features">
-        <div className="feature-card">
-          <h3>📅 Workflow Management</h3>
-          <p>Create and manage automation workflows</p>
-        </div>
-        <div className="feature-card">
-          <h3>📊 Data Processing</h3>
-          <p>Process and transform data automatically</p>
-        </div>
-        <div className="feature-card">
-          <h3>📈 Monitoring</h3>
-          <p>Real-time workflow status monitoring</p>
-        </div>
-      </div>
-    </div>
   );
 }
 

@@ -1,0 +1,83 @@
+/* Buttons and Controls */
+.btn {
+  border: 0;
+  border-radius: 10px;
+  height: 40px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--color-cta);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--color-cta-hover);
+}
+
+.btn-primary:active {
+  background: var(--color-cta-active);
+}
+
+.btn-primary:disabled {
+  background: var(--color-primary-disabled);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-surface-subtle);
+  color: #374151;
+  border: 1px solid var(--color-border-strong);
+}
+
+.btn-secondary:hover {
+  background: #e8ecef;
+}
+
+.btn-secondary:active {
+  background: #d9dfe5;
+}
+
+.icon-btn {
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.icon-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-subtle);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-ghost:hover {
+  background: var(--color-surface-subtle);
+}

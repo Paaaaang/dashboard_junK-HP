@@ -1,0 +1,289 @@
+/* Responsive Design */
+@media (max-width: 1320px) {
+  .dashboard-figma-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-card-grid,
+  .education-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .template-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .workspace-main {
+    padding: 16px;
+  }
+
+  .page-header-row h2 {
+    font-size: 30px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-field {
+    width: 240px;
+  }
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .top-rail {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .top-rail.top-rail-dashboard {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .top-rail-left {
+    width: 100%;
+  }
+
+  .top-rail-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .search-field {
+    width: 100%;
+  }
+
+  .participation-row,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header-row-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .template-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .template-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .workspace-main {
+    padding: 12px;
+  }
+
+  .dashboard-page.dashboard-figma {
+    gap: 14px;
+  }
+
+  .page-header-row h2 {
+    font-size: 28px;
+  }
+
+  .dashboard-figma-kpi-grid {
+    gap: 12px;
+  }
+
+  .dashboard-figma-kpi-card {
+    min-height: 120px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .chart-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .education-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .top-rail-actions {
+    flex-direction: column;
+  }
+
+  .search-field {
+    width: 100%;
+  }
+
+  .modal-panel {
+    width: 100%;
+  }
+
+  .debug-mode {
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-main {
+    padding: 8px;
+  }
+
+  .page-header-row h2 {
+    font-size: 26px;
+  }
+
+  .dashboard-figma-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-figma-kpi-value {
+    font-size: 28px;
+  }
+
+  .top-rail.top-rail-dashboard {
+    padding: 20px 12px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  .chart-card {
+    padding: 10px;
+  }
+
+  .chart-canvas {
+    height: 180px;
+  }
+
+  .education-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-row {
+    flex-direction: column;
+  }
+
+  .select-field {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .data-table {
+    font-size: 12px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px;
+  }
+
+  .participation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .template-list {
+    max-height: none;
+    margin-bottom: 12px;
+  }
+
+  .template-layout {
+    gap: 12px;
+  }
+
+  .debug-toggle {
+    width: 48px;
+    height: 48px;
+  }
+
+  .debug-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .debug-tooltip {
+    max-width: 240px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspace-main {
+    padding: 6px;
+  }
+
+  .top-rail.top-rail-dashboard {
+    padding: 20px 10px;
+    gap: 10px;
+  }
+
+  .dashboard-alert-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .top-rail {
+    padding: 12px;
+  }
+
+  .top-rail-left h1 {
+    font-size: 20px;
+  }
+
+  .kpi-value {
+    font-size: 20px;
+  }
+
+  .chart-canvas {
+    height: 150px;
+  }
+
+  .btn {
+    height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .sidebar-link,
+  .sidebar-group-link,
+  .sidebar-sublink {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}

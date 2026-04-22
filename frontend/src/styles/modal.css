@@ -1,0 +1,617 @@
+/* Modals and Forms */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 58, 56, 0.48);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+  padding: 20px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal-panel {
+  width: min(980px, 100%);
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  animation: slideUp 0.2s ease-out;
+}
+
+.modal-header,
+.modal-footer {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 0;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-content {
+  overflow-y: auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.form-grid.single-column {
+  grid-template-columns: 1fr;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.field label {
+  display: block;
+}
+
+.field input,
+.field textarea,
+.program-input {
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  transition: all 0.15s ease-out;
+}
+
+.field input:focus,
+.field textarea:focus,
+.program-input:focus {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.checkbox-field {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.checkbox-field input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.checkbox-field.inline {
+  min-width: 160px;
+}
+
+.participation-box {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: var(--color-surface-subtle);
+}
+
+.participation-box h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.participation-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 120px;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Small panel variant ─────────────────────────────── */
+.modal-panel-sm {
+  width: min(480px, 100%);
+}
+
+/* ── Choice modal ────────────────────────────────────── */
+.choice-modal-body {
+  display: grid;
+  gap: 10px;
+  padding: 20px 16px;
+}
+
+.choice-btn {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "icon label arrow"
+    "icon desc  arrow";
+  column-gap: 14px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease-out;
+}
+
+.choice-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-subtle);
+}
+
+.choice-icon {
+  grid-area: icon;
+  width: 32px;
+  height: 32px;
+  color: var(--color-primary);
+}
+
+.choice-label {
+  grid-area: label;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.choice-desc {
+  grid-area: desc;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.choice-arrow {
+  grid-area: arrow;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Upload modal ────────────────────────────────────── */
+.upload-modal-body {
+  display: grid;
+  gap: 14px;
+}
+
+.upload-dropzone {
+  border: 2px dashed var(--color-border-strong);
+  border-radius: 12px;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+  background: var(--color-surface-subtle);
+}
+
+.upload-dropzone:hover {
+  border-color: var(--color-primary);
+  background: var(--color-success-bg);
+}
+
+.upload-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.upload-hint-main {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.upload-hint-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.upload-filename {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.upload-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.upload-guide {
+  padding: 10px 12px;
+  background: var(--color-surface-subtle);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.upload-guide-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.upload-guide-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.upload-preview-info {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.upload-preview-table {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.upload-reset {
+  justify-self: start;
+}
+
+/* ── Form sections ───────────────────────────────────── */
+.form-section {
+  display: grid;
+  gap: 10px;
+}
+
+.form-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Participation redesign ──────────────────────────── */
+.participation-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+}
+
+.participation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.participation-course-label {
+  font-weight: 600;
+}
+
+/* ── Chip field ──────────────────────────────────────── */
+.chip-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-height: 38px;
+  background: #ffffff;
+  cursor: text;
+  transition: border-color 0.15s ease-out;
+  position: relative;
+}
+
+.chip-field:focus-within {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.chip-field-disabled {
+  background: var(--color-surface-subtle);
+  cursor: not-allowed;
+  border-color: var(--color-border);
+}
+
+.program-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 6px 3px 10px;
+  border-radius: 20px;
+  line-height: 1;
+}
+
+.chip-remove {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  transition: color 0.1s;
+}
+
+.chip-remove:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.chip-remove:disabled {
+  cursor: not-allowed;
+}
+
+.chip-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+}
+
+.chip-search-input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+  width: 100%;
+  color: var(--color-text-primary);
+  padding: 2px 0;
+}
+
+.chip-search-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.chip-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-floating);
+  z-index: 400;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.chip-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.chip-option:hover {
+  background: var(--color-surface-subtle);
+}
+
+.chip-option-create {
+  color: var(--color-primary);
+  font-weight: 600;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip-option-selected {
+  color: var(--color-primary);
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip-option-selected:hover {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.chip-option-remove-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.chip-create-icon {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.chip-empty {
+  margin: 0;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.chip-disabled-hint {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding: 2px 4px;
+}
+
+/* ── Side Drawer ─────────────────────────────────────── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.3);
+  z-index: 200;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(560px, 100%);
+  background: #ffffff;
+  border-left: 1px solid var(--color-border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  z-index: 201;
+  animation: slideInRight 0.25s ease-out;
+}
+
+.drawer-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.drawer-content {
+  overflow-y: auto;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.drawer-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Fixed tooltip (bypasses overflow clipping) ──────── */
+.fixed-tooltip {
+  position: fixed;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 12px;
+  line-height: 1.6;
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: 260px;
+  z-index: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  white-space: normal;
+  text-align: left;
+}
+
+/* ── Chip section header ─────────────────────────────── */
+.chip-section-header {
+  padding: 6px 14px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--color-surface-subtle);
+  user-select: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

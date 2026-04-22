@@ -1,0 +1,355 @@
+/* Data Tables */
+.filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.select-field {
+  height: 40px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  padding: 0 12px;
+  min-width: 180px;
+  background: #ffffff;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.select-field:hover {
+  border-color: var(--color-border);
+}
+
+.select-field:focus {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.select-field.small {
+  min-width: 110px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--color-surface);
+}
+
+.data-table thead {
+  background: #f9fafb;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 12px 10px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.data-table th {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-table tbody tr {
+  transition: background-color 0.15s ease-out;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.data-table tbody tr:hover {
+  background: var(--color-surface-subtle);
+}
+
+.data-table tbody tr:last-child {
+  border-bottom: 1px solid #eef2f7;
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+.row-clickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+/* ── Company Management ─────────────────────────────── */
+.company-filter-row {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.course-filter-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.course-filter-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.course-pill {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease-out;
+}
+
+.course-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.course-pill.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.company-search {
+  width: 30%;
+  height: 36px;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.company-table th,
+.company-table td {
+  text-align: center;
+}
+
+.company-name-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.company-name-text {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.company-reg-no {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tooltip ─────────────────────────────────────────── */
+.tooltip-wrap {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+}
+
+.tooltip-box {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 12px;
+  line-height: 1.6;
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: max-content;
+  max-width: 260px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  z-index: 300;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  text-align: left;
+  white-space: normal;
+}
+
+.tooltip-box::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1e293b;
+}
+
+.tooltip-box-left {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.tooltip-box-left::after {
+  left: auto;
+  right: 12px;
+  transform: none;
+}
+
+.tooltip-wrap:hover .tooltip-box {
+  opacity: 1;
+}
+
+.tooltip-course-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0;
+}
+
+.tooltip-course-row + .tooltip-course-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.tooltip-course-type {
+  font-weight: 600;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.tooltip-course-names {
+  font-size: 12px;
+  color: #e2e8f0;
+}
+
+/* ── Custom course filter pills ──────────────────────── */
+.course-pill-custom {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface);
+  overflow: hidden;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: border-color 0.15s ease-out;
+}
+
+.course-pill-custom.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.course-pill-custom-label {
+  padding: 0 6px 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease-out;
+}
+
+.course-pill-custom:hover:not(.active) {
+  border-color: var(--color-primary);
+}
+
+.course-pill-custom:hover:not(.active) .course-pill-custom-label {
+  color: var(--color-primary);
+}
+
+.course-pill-custom.active .course-pill-custom-label {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.course-pill-remove {
+  padding: 0 10px 0 2px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  transition: color 0.1s;
+}
+
+.course-pill-custom.active .course-pill-remove {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.course-pill-remove:hover {
+  color: var(--color-error);
+}
+
+.course-pill-custom.active .course-pill-remove:hover {
+  color: #ffffff;
+}
+
+.course-pill-add {
+  border-style: dashed;
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+.course-pill-add:hover {
+  border-color: var(--color-primary);
+  border-style: solid;
+  color: var(--color-primary);
+}
+
+.course-pill-input {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-primary);
+  font-size: 13px;
+  outline: none;
+  background: var(--color-surface);
+  min-width: 90px;
+  max-width: 140px;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+/* ── Location ellipsis ───────────────────────────────── */
+.location-text {
+  display: block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  margin: 0 auto;
+}
