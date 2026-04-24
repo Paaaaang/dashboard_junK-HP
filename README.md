@@ -11,25 +11,25 @@
 
 ### 1단계: 의존성 설치
 
-\`\`\`bash
+```bash
 npm install
-\`\`\`
+```
 
 ### 2단계: 환경 설정
 
-\`\`\`bash
+```bash
 # 백엔드
 cp backend/.env.example backend/.env
 
 # 프론트엔드
 cp frontend/.env.example frontend/.env
-\`\`\`
+```
 
 ### 3단계: 데이터베이스 시작
 
-\`\`\`bash
+```bash
 npm run docker:up
-\`\`\`
+```
 
 이 명령어는 다음을 실행합니다:
 - **PostgreSQL** (포트 5432)
@@ -46,18 +46,18 @@ npm run docker:up
 두 개의 터미널을 열고 각각 실행하세요:
 
 **터미널 1 - 백엔드:**
-\`\`\`bash
+```bash
 npm run backend:dev
 # 또는
 npm --workspace=backend run dev
-\`\`\`
+```
 
 **터미널 2 - 프론트엔드:**
-\`\`\`bash
+```bash
 npm run frontend:dev
 # 또는
 npm --workspace=frontend run dev
-\`\`\`
+```
 
 그 후 자동으로 브라우저가 열립니다:
 - **프론트엔드**: http://localhost:3000
@@ -67,7 +67,7 @@ npm --workspace=frontend run dev
 
 ## 📁 프로젝트 구조
 
-\`\`\`
+```
 dashboard_khp/
 ├── backend/                    # Express.js + TypeScript 백엔드
 │   ├── src/
@@ -103,38 +103,38 @@ dashboard_khp/
 ├── package.json              # 루트 워크스페이스 설정
 ├── .gitignore
 └── README.md
-\`\`\`
+```
 
 ---
 
 ## 🛠 유용한 명령어
 
 ### 개발
-\`\`\`bash
+```bash
 npm run dev              # 백엔드 + 프론트엔드 동시 실행
 npm run backend:dev      # 백엔드만
 npm run frontend:dev     # 프론트엔드만
-\`\`\`
+```
 
 ### 빌드
-\`\`\`bash
+```bash
 npm run build            # 백엔드 + 프론트엔드 빌드
 npm run backend:build    # 백엔드만 빌드
 npm run frontend:build   # 프론트엔드만 빌드
-\`\`\`
+```
 
 ### 린팅
-\`\`\`bash
+```bash
 npm run lint             # 코드 스타일 체크
 npm run lint:fix         # 자동으로 스타일 수정
-\`\`\`
+```
 
 ### 데이터베이스
-\`\`\`bash
+```bash
 npm run docker:up        # 모든 서비스 시작
 npm run docker:down      # 모든 서비스 중지
 npm run docker:logs      # 로그 확인 (실시간)
-\`\`\`
+```
 
 ---
 
@@ -161,7 +161,7 @@ npm run docker:logs      # 로그 확인 (실시간)
 ## 📝 환경 변수
 
 ### 백엔드 (.env)
-\`\`\`
+```
 PORT=3001
 NODE_ENV=development
 DB_HOST=localhost
@@ -172,13 +172,13 @@ DB_PASSWORD=dashboard_password_secure
 REDIS_HOST=localhost
 REDIS_PORT=6379
 FRONTEND_URL=http://localhost:3000
-\`\`\`
+```
 
 ### 프론트엔드 (.env)
-\`\`\`
+```
 VITE_API_URL=http://localhost:3001/api
 VITE_APP_NAME=Automation Dashboard
-\`\`\`
+```
 
 ---
 
@@ -187,21 +187,21 @@ VITE_APP_NAME=Automation Dashboard
 개발 환경이 제대로 설정되었는지 확인하세요:
 
 1. **PostgreSQL 연결 확인**
-   \`\`\`bash
+   ```bash
    # pgAdmin에서 확인:  http://localhost:5050
-   \`\`\`
+   ```
 
 2. **Redis 연결 확인**
-   \`\`\`bash
+   ```bash
    docker exec dashboard_khp_redis redis-cli ping
    # 응답: PONG
-   \`\`\`
+   ```
 
 3. **백엔드 상태 확인**
-   \`\`\`bash
+   ```bash
    curl http://localhost:3001/api/health
    # 응답: {"status":"OK","timestamp":"...","version":"1.0.0"}
-   \`\`\`
+   ```
 
 4. **프론트엔드 로드 확인**
    - 브라우저에서 http://localhost:3000 방문
@@ -212,7 +212,7 @@ VITE_APP_NAME=Automation Dashboard
 ## 🚨 문제 해결
 
 ### 포트가 이미 사용 중인 경우
-\`\`\`bash
+```bash
 # Windows
 netstat -ano | findstr :3000
 # 프로세스 종료
@@ -221,22 +221,22 @@ taskkill /PID <PID> /F
 # macOS/Linux
 lsof -i :3000
 kill -9 <PID>
-\`\`\`
+```
 
 ### Docker 컨테이너 재설정
-\`\`\`bash
+```bash
 npm run docker:down
 docker system prune -a
 npm run docker:up
-\`\`\`
+```
 
 ### 의존성 캐시 초기화
-\`\`\`bash
+```bash
 npm run docker:down
 rm -rf node_modules backend/node_modules frontend/node_modules
 npm install
 npm run docker:up
-\`\`\`
+```
 
 ---
 
