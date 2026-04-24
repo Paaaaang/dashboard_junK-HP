@@ -5,102 +5,139 @@ import {
   LayoutDashboard,
   Megaphone,
   UserCheck,
-} from 'lucide-react';
-import type { CourseType, EmailTemplate, NavigationItem, KpiCardItem, CompanyRecord, ParticipantRecord, HeatPoint } from '../types/models';
+} from "lucide-react";
+import type {
+  CourseType,
+  EmailTemplate,
+  NavigationItem,
+  KpiCardItem,
+  CompanyRecord,
+  ParticipantRecord,
+  HeatPoint,
+} from "../types/models";
 
 // Premium Dark Green Palette - Professional
 export const palette = {
-  primary: '#064e3b', // Dark Forest Green
-  primarySoft: '#ecfdf5', // soft 배경
-  secondary: '#047857', // Hover state
-  warning: '#f59e0b', // Amber
-  error: '#ef4444', // Red
-  info: '#0284c7', // Blue
-  success: '#10b981', // Emerald
-  cta: '#10b981', // CTA Button - Emerald
+  primary: "#064e3b", // Dark Forest Green
+  primarySoft: "#ecfdf5", // soft 배경
+  secondary: "#047857", // Hover state
+  warning: "#f59e0b", // Amber
+  error: "#ef4444", // Red
+  info: "#0284c7", // Blue
+  success: "#10b981", // Emerald
+  cta: "#10b981", // CTA Button - Emerald
 } as const;
 
-export const courseCatalog: CourseType[] = ['훈련비과정', '지원비과정', '공유개방 세미나'];
+export const courseCatalog: CourseType[] = [
+  "훈련비과정",
+  "지원비과정",
+  "공유개방 세미나",
+];
 
-export const trainingTypeCatalog: string[] = ['집체훈련', '원격훈련', '현장훈련', '혼합훈련'];
+export const trainingTypeCatalog: string[] = [
+  "집체훈련",
+  "원격훈련",
+  "현장훈련",
+  "혼합훈련",
+];
 
 export const programCatalog: Record<CourseType, string[]> = {
-  '훈련비과정': ['스마트팩토리 실무', '고급 CAD 실습', 'IoT 기초', '빅데이터 분석 실무', 'CNC 가공 실무', '전기·전자 기초'],
-  '지원비과정': ['품질관리 고도화', '생산성 향상', '원가절감 전략', 'ERP 활용', 'ISO 인증 지원', '공정 개선 실무'],
-  '공유개방 세미나': ['AI 현장 적용 세미나', '스마트제조 트렌드', '디지털 전환 전략', 'ESG 경영 세미나', '탄소중립 실무'],
+  훈련비과정: [
+    "스마트팩토리 실무",
+    "고급 CAD 실습",
+    "IoT 기초",
+    "빅데이터 분석 실무",
+    "CNC 가공 실무",
+    "전기·전자 기초",
+  ],
+  지원비과정: [
+    "품질관리 고도화",
+    "생산성 향상",
+    "원가절감 전략",
+    "ERP 활용",
+    "ISO 인증 지원",
+    "공정 개선 실무",
+  ],
+  "공유개방 세미나": [
+    "AI 현장 적용 세미나",
+    "스마트제조 트렌드",
+    "디지털 전환 전략",
+    "ESG 경영 세미나",
+    "탄소중립 실무",
+  ],
 };
 
 // 네비게이션
 export const mainNavigation: NavigationItem[] = [
-  { to: '/', label: '대시보드', icon: LayoutDashboard },
-  { to: '/forms', label: '신청 폼 자동화', icon: FileText },
-  { to: '/posters', label: '포스터 자동화', icon: Megaphone },
+  { to: "/", label: "대시보드", icon: LayoutDashboard },
+  { to: "/forms", label: "신청 폼 자동화", icon: FileText },
+  { to: "/posters", label: "포스터 자동화", icon: Megaphone },
 ];
 
-type EducationSubNavigationItem = Omit<NavigationItem, 'icon'>;
+type EducationSubNavigationItem = Omit<NavigationItem, "icon">;
 
 export const educationSubNavigation: EducationSubNavigationItem[] = [
-  { to: '/companies', label: '기업 관리' },
-  { to: '/participants', label: '참여자 및 수료' },
-  { to: '/templates', label: '이메일 템플릿' },
+  { to: "/companies", label: "기업 관리" },
+  { to: "/participants", label: "참여자 및 수료" },
+  { to: "/templates", label: "이메일 템플릿" },
 ];
 
 // KPI 카드 데이터
 export const kpiCards: KpiCardItem[] = [
   {
-    label: '과정별 참여 기업 수',
-    value: '48',
-    delta: '+6 (지난달 대비)',
-    status: 'success',
+    label: "과정별 참여 기업 수",
+    value: "48",
+    delta: "+6 (지난달 대비)",
+    status: "success",
     icon: Building2,
   },
   {
-    label: '전체 참여자 수',
-    value: '312',
-    delta: '+18 (이번 주)',
-    status: 'info',
+    label: "전체 참여자 수",
+    value: "312",
+    delta: "+18 (이번 주)",
+    status: "info",
     icon: UserCheck,
   },
   {
-    label: '전체 달성률',
-    value: '82%',
-    delta: '+4.2%p',
-    status: 'success',
+    label: "전체 달성률",
+    value: "82%",
+    delta: "+4.2%p",
+    status: "success",
     icon: GraduationCap,
   },
   {
-    label: '대기 상태 신청',
-    value: '21',
-    delta: '승인 필요',
-    status: 'warning',
+    label: "대기 상태 신청",
+    value: "21",
+    delta: "승인 필요",
+    status: "warning",
     icon: Building2,
   },
 ];
 
 // 차트 데이터
 export const lineTrendData = [
-  { week: '1주차', company: 28, participant: 64 },
-  { week: '2주차', company: 32, participant: 78 },
-  { week: '3주차', company: 35, participant: 92 },
-  { week: '4주차', company: 40, participant: 106 },
-  { week: '5주차', company: 48, participant: 118 },
+  { week: "1주차", company: 28, participant: 64 },
+  { week: "2주차", company: 32, participant: 78 },
+  { week: "3주차", company: 35, participant: 92 },
+  { week: "4주차", company: 40, participant: 106 },
+  { week: "5주차", company: 48, participant: 118 },
 ];
 
 export const courseBarData = [
-  { course: '훈련비과정', companies: 22, participants: 128 },
-  { course: '지원비과정', companies: 15, participants: 102 },
-  { course: '공유개방 세미나', companies: 11, participants: 82 },
+  { course: "훈련비과정", companies: 22, participants: 128 },
+  { course: "지원비과정", companies: 15, participants: 102 },
+  { course: "공유개방 세미나", companies: 11, participants: 82 },
 ];
 
 export const insurancePieData = [
-  { name: '고용보험 가입', value: 68 },
-  { name: '고용보험 미가입', value: 12 },
-  { name: '확인중', value: 20 },
+  { name: "고용보험 가입", value: 68 },
+  { name: "고용보험 미가입", value: 12 },
+  { name: "확인중", value: 20 },
 ];
 
 // 히트맵 데이터
-export const dayLabels = ['월', '화', '수', '목', '금'];
-export const timeLabels = ['09시', '11시', '13시', '15시', '17시'];
+export const dayLabels = ["월", "화", "수", "목", "금"];
+export const timeLabels = ["09시", "11시", "13시", "15시", "17시"];
 export const heatMatrix = [
   [8, 5, 4, 2, 1],
   [7, 9, 5, 3, 2],
@@ -122,75 +159,109 @@ export const heatmapData: HeatPoint[] = dayLabels.flatMap((day, dayIndex) =>
 // 파이프라인 행 데이터
 export const pipelineRows = [
   {
-    company: '한빛테크',
-    course: '훈련비과정' as CourseType,
-    program: '스마트팩토리 실무',
-    insurance: '가입자',
-    status: '신청서 발송',
-    statusType: 'info' as const,
-    updatedAt: '2026-04-16 15:10',
+    company: "한빛테크",
+    course: "훈련비과정" as CourseType,
+    program: "스마트팩토리 실무",
+    insurance: "가입자",
+    status: "신청서 발송",
+    statusType: "info" as const,
+    updatedAt: "2026-04-16 15:10",
   },
   {
-    company: '미래정밀',
-    course: '지원비과정' as CourseType,
-    program: '품질관리 고도화',
-    insurance: '확인중',
-    status: '대기',
-    statusType: 'warning' as const,
-    updatedAt: '2026-04-17 09:20',
+    company: "미래정밀",
+    course: "지원비과정" as CourseType,
+    program: "품질관리 고도화",
+    insurance: "확인중",
+    status: "대기",
+    statusType: "warning" as const,
+    updatedAt: "2026-04-17 09:20",
   },
   {
-    company: '에코솔루션',
-    course: '공유개방 세미나' as CourseType,
-    program: 'AI 현장 적용 세미나',
-    insurance: '비대상',
-    status: '승인',
-    statusType: 'success' as const,
-    updatedAt: '2026-04-17 10:35',
+    company: "에코솔루션",
+    course: "공유개방 세미나" as CourseType,
+    program: "AI 현장 적용 세미나",
+    insurance: "비대상",
+    status: "승인",
+    statusType: "success" as const,
+    updatedAt: "2026-04-17 10:35",
   },
   {
-    company: '동남기술',
-    course: '훈련비과정' as CourseType,
-    program: '고급 CAD 실습',
-    insurance: '미가입',
-    status: '반려',
-    statusType: 'error' as const,
-    updatedAt: '2026-04-17 11:02',
+    company: "동남기술",
+    course: "훈련비과정" as CourseType,
+    program: "고급 CAD 실습",
+    insurance: "미가입",
+    status: "반려",
+    statusType: "error" as const,
+    updatedAt: "2026-04-17 11:02",
   },
 ];
 
 // 초기 기업 데이터
 export const initialCompanies: CompanyRecord[] = [
   {
-    id: 'company-1',
-    companyName: '한빛테크',
-    businessRegNo: '123-45-67890',
-    location: '광주 북구 첨단과기로 123',
-    representative: '김도현',
-    manager: '박소영',
-    phone: '010-1234-5678',
-    email: 'hr@hanbit-tech.co.kr',
+    id: "company-1",
+    companyName: "한빛테크",
+    businessRegNo: "123-45-67890",
+    location: "광주 북구 첨단과기로 123",
+    representative: "김도현",
+    manager: "박소영",
+    phone: "010-1234-5678",
+    email: "hr@hanbit-tech.co.kr",
     mouSigned: true,
+    mouSignedDate: "2026-01-15",
+    createdAt: "2026-01-10",
     participations: [
-      { courseType: '훈련비과정', enabled: true, programNames: ['스마트팩토리 실무'], status: '참여중' },
-      { courseType: '지원비과정', enabled: false, programNames: [], status: '미참여' },
-      { courseType: '공유개방 세미나', enabled: true, programNames: ['AI 현장 적용 세미나'], status: '대기' },
+      {
+        courseType: "훈련비과정",
+        enabled: true,
+        programNames: ["스마트팩토리 실무"],
+        status: "참여중",
+      },
+      {
+        courseType: "지원비과정",
+        enabled: false,
+        programNames: [],
+        status: "미참여",
+      },
+      {
+        courseType: "공유개방 세미나",
+        enabled: true,
+        programNames: ["AI 현장 적용 세미나"],
+        status: "대기",
+      },
     ],
   },
   {
-    id: 'company-2',
-    companyName: '미래정밀',
-    businessRegNo: '987-65-43210',
-    location: '전남 나주시 산학로 88',
-    representative: '이정민',
-    manager: '최수진',
-    phone: '010-9876-2468',
-    email: 'edu@mirae-precision.com',
+    id: "company-2",
+    companyName: "미래정밀",
+    businessRegNo: "987-65-43210",
+    location: "전남 나주시 산학로 88",
+    representative: "이정민",
+    manager: "최수진",
+    phone: "010-9876-2468",
+    email: "edu@mirae-precision.com",
     mouSigned: false,
+    mouSignedDate: "",
+    createdAt: "2026-01-22",
     participations: [
-      { courseType: '훈련비과정', enabled: false, programNames: [], status: '미참여' },
-      { courseType: '지원비과정', enabled: true, programNames: ['품질관리 고도화'], status: '대기' },
-      { courseType: '공유개방 세미나', enabled: false, programNames: [], status: '미참여' },
+      {
+        courseType: "훈련비과정",
+        enabled: false,
+        programNames: [],
+        status: "미참여",
+      },
+      {
+        courseType: "지원비과정",
+        enabled: true,
+        programNames: ["품질관리 고도화"],
+        status: "대기",
+      },
+      {
+        courseType: "공유개방 세미나",
+        enabled: false,
+        programNames: [],
+        status: "미참여",
+      },
     ],
   },
 ];
@@ -198,64 +269,200 @@ export const initialCompanies: CompanyRecord[] = [
 // 초기 참여자 데이터
 export const initialParticipants: ParticipantRecord[] = [
   {
-    id: 'pt-1',
-    companyName: '한빛테크',
-    courseType: '훈련비과정',
-    name: '박진우',
-    birthDate: '1989-03-21',
-    certificateNo: 'JNU-TR-2026-0012',
-    completionDate: '2026-03-28',
+    id: "pt-1",
+    name: "박진우",
+    companyId: "company-1",
+    companyName: "한빛테크",
+    companyLocation: "광주 북구",
+    companyRepresentative: "김도현",
+    companyManager: "박소영",
+    companyPhone: "062-123-4567",
+    companyEmail: "hr@hanbit-tech.co.kr",
+    mouSigned: true,
+    position: "선임연구원",
+    phone: "010-2345-6789",
+    email: "jw.park@hanbit-tech.co.kr",
+    employmentInsurance: "가입",
+    workExperience: "5~10년차",
+    documentSkill: "일부 작성 경험 있음",
+    enrollments: [
+      {
+        id: "enr-1-1",
+        courseType: "훈련비과정",
+        subCourseName: "스마트팩토리 실무",
+        startDate: "2026-03-10",
+        endDate: "2026-03-12",
+        totalHours: 16,
+        status: "수료",
+        completionDate: "2026-03-12",
+        certificateNo: "CRT-2026-0011",
+        applicationDate: "2026-02-28",
+      },
+      {
+        id: "enr-1-2",
+        courseType: "훈련비과정",
+        subCourseName: "의료기기 품질관리 기초 및 실무",
+        startDate: "2026-05-12",
+        endDate: "2026-05-14",
+        totalHours: 24,
+        status: "미수료",
+        applicationDate: "2026-04-09",
+      },
+    ],
   },
   {
-    id: 'pt-2',
-    companyName: '에코솔루션',
-    courseType: '지원비과정',
-    name: '정하늘',
-    birthDate: '1992-11-07',
-    certificateNo: 'JNU-SP-2026-0008',
-    completionDate: '2026-04-02',
+    id: "pt-2",
+    name: "김민지",
+    companyId: "company-1",
+    companyName: "한빛테크",
+    companyLocation: "광주 북구",
+    companyRepresentative: "김도현",
+    companyManager: "박소영",
+    companyPhone: "062-123-4567",
+    companyEmail: "hr@hanbit-tech.co.kr",
+    mouSigned: true,
+    position: "대리",
+    phone: "010-3456-7890",
+    email: "mj.kim@hanbit-tech.co.kr",
+    employmentInsurance: "가입",
+    workExperience: "3~5년차",
+    documentSkill: "기초 수준",
+    enrollments: [
+      {
+        id: "enr-2-1",
+        courseType: "공유개방 세미나",
+        subCourseName: "AI 현장 적용 세미나",
+        startDate: "2026-04-05",
+        endDate: "2026-04-05",
+        totalHours: 8,
+        status: "수료",
+        completionDate: "2026-04-05",
+        certificateNo: "CRT-2026-0018",
+        applicationDate: "2026-03-20",
+      },
+    ],
+  },
+  {
+    id: "pt-3",
+    name: "이태호",
+    companyId: "company-2",
+    companyName: "미래정밀",
+    companyLocation: "전남 나주시",
+    companyRepresentative: "이정민",
+    companyManager: "최수진",
+    companyPhone: "061-987-6543",
+    companyEmail: "edu@mirae-precision.com",
+    mouSigned: false,
+    position: "과장",
+    phone: "010-4567-8901",
+    email: "th.lee@mirae-precision.com",
+    employmentInsurance: "가입",
+    workExperience: "5~10년차",
+    documentSkill: "능숙",
+    enrollments: [
+      {
+        id: "enr-3-1",
+        courseType: "지원비과정",
+        subCourseName: "품질관리 고도화",
+        startDate: "2026-02-17",
+        endDate: "2026-02-19",
+        totalHours: 20,
+        status: "수료",
+        completionDate: "2026-02-19",
+        certificateNo: "CRT-2026-0005",
+        applicationDate: "2026-02-01",
+      },
+      {
+        id: "enr-3-2",
+        courseType: "훈련비과정",
+        subCourseName: "스마트팩토리 실무",
+        startDate: "2026-04-14",
+        endDate: "2026-04-16",
+        totalHours: 16,
+        status: "미수료",
+        applicationDate: "2026-03-30",
+      },
+    ],
+  },
+  {
+    id: "pt-4",
+    name: "최수진",
+    companyId: "company-3",
+    companyName: "에코솔루션",
+    companyLocation: "광주 광산구",
+    companyRepresentative: "박재원",
+    companyManager: "이하은",
+    companyPhone: "062-234-5678",
+    companyEmail: "contact@eco-solution.kr",
+    mouSigned: true,
+    position: "연구원",
+    phone: "010-5678-9012",
+    email: "sj.choi@eco-solution.kr",
+    employmentInsurance: "미가입",
+    workExperience: "3년차 이하",
+    documentSkill: "없음",
+    enrollments: [
+      {
+        id: "enr-4-1",
+        courseType: "지원비과정",
+        subCourseName: "생산성 향상",
+        startDate: "2026-03-24",
+        endDate: "2026-03-25",
+        totalHours: 12,
+        status: "수료",
+        completionDate: "2026-03-25",
+        certificateNo: "CRT-2026-0009",
+        applicationDate: "2026-03-10",
+      },
+    ],
   },
 ];
 
 // 초기 이메일 템플릿 데이터
 export const initialTemplates: EmailTemplate[] = [
   {
-    id: 'tpl-1',
-    name: '신청서 발송(고용보험 가입자)',
-    audience: 'INSURED',
-    subject: '[전남대학교] {{courseName}} 신청서 안내',
-    body:
-      '안녕하세요 {{companyName}} 담당자님.\n\n{{courseName}} 참여를 위한 신청서 양식을 첨부드립니다.\n제출기한: {{deadline}}\n\n문의: {{contactPhone}}',
+    id: "tpl-1",
+    name: "신청서 발송(고용보험 가입자)",
+    audience: "INSURED",
+    subject: "[전남대학교] {{courseName}} 신청서 안내",
+    body: "안녕하세요 {{companyName}} 담당자님.\n\n{{courseName}} 참여를 위한 신청서 양식을 첨부드립니다.\n제출기한: {{deadline}}\n\n문의: {{contactPhone}}",
   },
   {
-    id: 'tpl-2',
-    name: '신청 불가 안내(고용보험 미가입)',
-    audience: 'UNINSURED',
-    subject: '[전남대학교] {{courseName}} 수강 대상 안내',
-    body:
-      '안녕하세요 {{companyName}} 담당자님.\n\n해당 과정은 고용보험 가입자만 참여 가능합니다.\n추후 대상 확대 시 재안내드리겠습니다.\n\n문의: {{contactPhone}}',
+    id: "tpl-2",
+    name: "신청 불가 안내(고용보험 미가입)",
+    audience: "UNINSURED",
+    subject: "[전남대학교] {{courseName}} 수강 대상 안내",
+    body: "안녕하세요 {{companyName}} 담당자님.\n\n해당 과정은 고용보험 가입자만 참여 가능합니다.\n추후 대상 확대 시 재안내드리겠습니다.\n\n문의: {{contactPhone}}",
   },
 ];
 
-export const templateVariables = ['{{companyName}}', '{{courseName}}', '{{deadline}}', '{{contactPhone}}', '{{managerName}}'];
+export const templateVariables = [
+  "{{companyName}}",
+  "{{courseName}}",
+  "{{deadline}}",
+  "{{contactPhone}}",
+  "{{managerName}}",
+];
 
 // 유틸리티 함수
 export function createEmptyCompany(): CompanyRecord {
   return {
     id: `company-${Date.now()}`,
-    companyName: '',
-    businessRegNo: '',
-    location: '',
-    representative: '',
-    manager: '',
-    phone: '',
-    email: '',
+    companyName: "",
+    businessRegNo: "",
+    location: "",
+    representative: "",
+    manager: "",
+    phone: "",
+    email: "",
     mouSigned: false,
+    mouSignedDate: "",
+    createdAt: new Date().toISOString().slice(0, 10),
     participations: courseCatalog.map((courseType) => ({
       courseType,
       enabled: false,
       programNames: [],
-      status: '미참여',
+      status: "미참여",
     })),
   };
 }
@@ -263,6 +470,8 @@ export function createEmptyCompany(): CompanyRecord {
 export function cloneCompany(company: CompanyRecord): CompanyRecord {
   return {
     ...company,
-    participations: company.participations.map((participation) => ({ ...participation })),
+    participations: company.participations.map((participation) => ({
+      ...participation,
+    })),
   };
 }
