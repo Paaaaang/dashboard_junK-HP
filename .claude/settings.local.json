@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"admin dashboard SaaS professional dark green enterprise management\" --design-system -p \"KHP Dashboard\")",
+      "Bash(py .claude/skills/ui-ux-pro-max/scripts/search.py \"admin dashboard SaaS professional dark green enterprise management\" --design-system -p \"KHP Dashboard\")",
+      "Read(//usr/**)",
+      "Bash(ls /c/Python*/python.exe)",
+      "Read(//c/Users/user/AppData/Local/Programs/**)",
+      "Bash(/c/Users/user/AppData/Local/Microsoft/WindowsApps/python3 --version)",
+      "Bash(npm run *)"
+    ]
+  }
+}

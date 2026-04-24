@@ -1394,8 +1394,14 @@
 }
 
 @keyframes slideOutRight {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(100%); opacity: 0; }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }
 
 .drawer-panel.closing {
@@ -1413,10 +1419,12 @@
     transition: none;
   }
 }
-%);
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
   }
   to {
     transform: translateX(0);
   }
 }
-
