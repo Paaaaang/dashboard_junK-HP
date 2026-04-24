@@ -2,7 +2,7 @@
 .top-rail {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: var(--z-topbar);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   padding: 20px 24px;

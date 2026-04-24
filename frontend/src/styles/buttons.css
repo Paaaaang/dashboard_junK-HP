@@ -18,6 +18,11 @@
   outline-offset: 2px;
 }
 
+button[role="switch"]:focus-visible {
+  outline: 2px solid var(--color-cta);
+  outline-offset: 2px;
+}
+
 .btn-primary {
   background: var(--color-cta);
   color: #ffffff;
@@ -80,4 +85,21 @@
 
 .btn-ghost:hover {
   background: var(--color-surface-subtle);
+}
+
+.btn-danger-soft {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border: 1px solid #fecaca;
+}
+
+.btn-danger-soft:hover:enabled {
+  background: #fee2e2;
+}
+
+.btn-danger-soft:disabled {
+  color: #9ca3af;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
 }

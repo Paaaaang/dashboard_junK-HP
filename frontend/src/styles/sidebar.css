@@ -196,7 +196,7 @@
   left: calc(100% + 16px);
   top: 50%;
   transform: translateY(-50%);
-  background: #ffffff;
+  background: var(--color-surface);
   color: #1f2937;
   border-radius: 13px;
   box-shadow: 0 16px 28px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(15, 23, 42, 0.08);
@@ -220,7 +220,7 @@
   transform: translateY(-50%) rotate(45deg);
   width: 14px;
   height: 14px;
-  background: #ffffff;
+  background: var(--color-surface);
   opacity: 0;
   pointer-events: none;
   z-index: 79;
@@ -313,7 +313,7 @@
   left: calc(100% + 18px);
   top: -2px;
   width: 252px;
-  background: #ffffff;
+  background: var(--color-surface);
   border: 1px solid #d8dde4;
   border-radius: 18px;
   padding: 9px;
@@ -328,7 +328,7 @@
   top: 34px;
   width: 18px;
   height: 18px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-left: 1px solid #d8dde4;
   border-bottom: 1px solid #d8dde4;
   transform: rotate(45deg);

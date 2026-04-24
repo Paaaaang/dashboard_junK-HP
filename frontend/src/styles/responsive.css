@@ -16,9 +16,25 @@
   .template-layout {
     grid-template-columns: 1fr;
   }
+
+  .course-manager-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1279px) {
+  .participants-email-col {
+    display: none;
+  }
 }
 
 @media (max-width: 1024px) {
+  .drawer-panel {
+    width: 100%;
+    height: 100dvh;
+    max-width: 100%;
+  }
+
   .workspace-main {
     padding: 16px;
   }
@@ -90,6 +106,11 @@
   .template-list {
     max-height: 300px;
   }
+
+  .drawer-info-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -143,6 +164,21 @@
     width: 100%;
   }
 
+  .floating-action-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .floating-action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .floating-action-buttons .btn {
+    width: 100%;
+  }
+
   .debug-mode {
     bottom: 16px;
     right: 16px;
@@ -150,6 +186,25 @@
 }
 
 @media (max-width: 640px) {
+  .company-table .col-location,
+  .company-table .col-representative {
+    display: none;
+  }
+
+  .participants-table .col-phone,
+  .participants-table .col-email {
+    display: none;
+  }
+
+  .drawer-panel {
+    width: 100%;
+  }
+
+  .floating-action-bar {
+    width: calc(100% - 16px);
+    bottom: 12px;
+  }
+
   .workspace-main {
     padding: 8px;
   }
@@ -200,6 +255,25 @@
     flex-direction: column;
   }
 
+  .company-filter-row {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .course-filter-shell {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .course-edit-button {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .company-search {
+    width: 100%;
+  }
+
   .select-field {
     width: 100%;
     min-width: auto;
@@ -240,6 +314,10 @@
   .debug-tooltip {
     max-width: 240px;
     font-size: 11px;
+  }
+
+  .course-target-grid {
+    grid-template-columns: 1fr;
   }
 }
 
