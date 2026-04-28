@@ -1,7 +1,7 @@
 # KHP Dashboard 상세 수정 계획
 
 > 기준: Phase 1, Phase 2 설계서 + ui-ux-pro-max 디자인 가이드라인  
-> 분석 기준일: 2026-04-24
+> 분석 기준일: 2026-04-24 / 최근 점검일: 2026-04-28
 
 ---
 
@@ -16,19 +16,35 @@
 
 ---
 
+## [NEW] 대대적인 디자인 및 UX 개편 (P0-0)
+
+**현재 상태**: 기존 UI 및 컬러 시스템 일관성에 대한 불만족. `pro-group-header`, `icon-btn-close` 등 CSS 누락으로 인한 기본 스타일(`rgb(240,240,240)`) 표출 문제 확인.
+**작업 목표**:
+1. UX 관점의 디자인 시스템(컬러, 레이아웃 등) 전면 재설계.
+2. 서브 에이전트/전문가 가이드를 통한 피드백 기반 디자인 개편.
+3. [x] 누락된 컴포넌트 CSS 확인 및 스타일 적용 (`pro-group-header`, `icon-btn-close` Tailwind 적용 완료).
+4. [x] 작업에 필요한 UI 라이브러리 및 패키지 자율 설치 (TailwindCSS 설치 완료).
+5. [x] 레이아웃 구조 개편 완료 (Collapsible Sidebar, TopRail, App Shell 등 Tailwind 기반의 Modern & Soft, Emerald 테마 적용 완료).
+6. [x] 테이블 및 리스트 UI 개편 완료 (기업 목록, 참여자 목록 테이블에 Tailwind 및 Emerald 테마 적용).
+7. [x] 모달 및 드로어 개편 완료 (모든 모달과 드로어에 Modern & Soft 디자인 및 애니메이션 적용).
+8. [x] 대시보드 및 공통 UI 컴포넌트(배지, 토글, 빈 상태 등) 개편 완료.
+**진행 방식**: 사용자 선호도 조사 후 구체적인 디자인 시스템 수립, 이후 각 단위 작업 완료 시 본 문서 업데이트.
+
+---
+
 ## P0 — Critical 수정 사항
 
 ### [P0-1] 이모지 아이콘 제거 (`no-emoji-icons` Critical 위반)
 
-**현재 문제**: `Participants.tsx`와 `CompanyManagement.tsx` 전반에서 이모지가 UI 아이콘으로 사용.
+**현재 상태(2026-04-28 점검)**: 이모지 제거가 일부 진행되었으나, 아래 파일들에 🟢🔵🟡✅❌📞📧 등 이모지 아이콘이 잔존.
 
 발견된 위치:
 - `Participants.tsx` — `COURSE_TYPE_DOT` 상수에서 🟢🔵🟡 과정 타입 구분자
 - `Participants.tsx` — `CompletionBadge`에서 `🟢 수료` / `⚪ 미수료`
 - `Participants.tsx` — 기업 Popover 내 📞 📧 ✅ ❌ 이모지
 - `Participants.tsx` — 드로어 내 고용보험 ✅ ❌ ❓ 표시
-- `CompanyManagement.tsx` — 과정 그룹 구분 이모지 🟢🔵🟡
-- `CompanyManagement.tsx` — Participant Popover 내 📧
+- `frontend/src/pages/companies/CompanyDrawer.tsx` — 과정 그룹 구분 이모지 🟢🔵🟡
+- `frontend/src/components/DebugMode.tsx` — 디버그 UI 내 이모지
 
 **수정 방법**:
 
@@ -211,7 +227,7 @@ button[role="switch"]:focus-visible {
 
 ### [P0-5] 색상 대비 — `--color-text-tertiary` 기준 미달
 
-**현재 문제**: `--color-text-tertiary: #64748b` (Slate-500) — 흰 배경 대비 약 4.1:1 → WCAG AA 4.5:1 미달.
+**현재 상태(2026-04-28 점검)**: `frontend/src/styles/variables.css`에서 `--color-text-tertiary: #475569`로 적용되어 WCAG AA(4.5:1) 기준을 충족함.
 
 **수정 방법**:
 
@@ -230,7 +246,7 @@ button[role="switch"]:focus-visible {
 
 **설계서 Phase 1 섹션 11-2, Phase 2 섹션 8-2**: "Shift + 클릭 → 마지막 선택 행 ~ 현재 클릭 행까지 범위 선택"
 
-**수정 방법** (CompanyManagement.tsx, Participants.tsx 동일 적용):
+**수정 방법** (CompanyManagementPage.tsx, Participants.tsx 동일 적용):
 
 ```tsx
 // 상태 추가
@@ -273,7 +289,7 @@ const toggleSelect = useCallback((id: string, event?: React.MouseEvent) => {
 
 ### [P1-2] 설계서 스펙 미구현 — 헤더 체크박스 indeterminate 상태 (Participants.tsx)
 
-**현재 상태**: CompanyManagement.tsx에는 있으나 Participants.tsx 미구현.
+**현재 상태(2026-04-28 점검)**: `frontend/src/pages/companies/CompanyManagementPage.tsx`에는 있으나 Participants.tsx 미구현.
 
 **수정 방법**:
 
@@ -302,7 +318,7 @@ useEffect(() => {
 
 ### [P1-3] 설계서 스펙 미구현 — 엑셀 업로드 3-Step 컬럼 매핑
 
-**현재 상태**: Step 1(파일 업로드) + Step 3(확인)만 있음. **Step 2 컬럼 매핑 누락**.
+**현재 상태(2026-04-28 점검)**: `frontend/src/pages/companies/modals/UploadModal.tsx`에서 Step 1~3(컬럼 매핑 포함)이 구현되어 있음.
 
 **수정 방법**:
 
@@ -484,10 +500,7 @@ useEffect(() => { setCurrentPage(1); }, [activeTab, completionFilter, insuranceF
 **설계서 Phase 1 섹션 9**: "전역 상태 관리 (Zustand / Context)" 명시.  
 현재: 모든 데이터가 각 페이지의 로컬 `useState` — 페이지 이동 시 초기화됨.
 
-**설치**:
-```bash
-npm install zustand
-```
+**현재 상태(2026-04-28 점검)**: `frontend/package.json`에 `zustand`가 포함되어 있고, `frontend/src/stores/useCompanyStore.ts`, `frontend/src/stores/useParticipantStore.ts` 전역 스토어가 구현되어 있음.
 
 **파일 구조**:
 ```
@@ -635,6 +648,8 @@ import { EmptyState } from "../components/EmptyState";
 ### [P2-2] 애니메이션 — prefers-reduced-motion 미지원
 
 **ui-ux-pro-max 규칙**: `reduced-motion` — Check prefers-reduced-motion
+
+**현재 상태(2026-04-28 점검)**: `frontend/src/styles/animations.css` 및 `frontend/src/styles/modal.css`에 `@media (prefers-reduced-motion: reduce)` 처리가 추가되어 있음.
 
 **수정 방법**:
 
@@ -936,9 +951,7 @@ function validate() {
 // App.tsx — 동적 import + Suspense
 import { lazy, Suspense } from "react";
 
-const CompanyManagementPage = lazy(() =>
-  import("./pages/CompanyManagement").then((m) => ({ default: m.CompanyManagementPage }))
-);
+const CompanyManagementPage = lazy(() => import("./pages/companies"));
 const ParticipantsPage = lazy(() =>
   import("./pages/Participants").then((m) => ({ default: m.ParticipantsPage }))
 );
@@ -956,7 +969,9 @@ async function handleExportExcel() {
 
 ---
 
-### [P3-2] CompanyManagement.tsx 파일 분리 (3,600줄)
+### [P3-2] 기업관리 페이지 파일 분리
+
+**현재 상태(2026-04-28 점검)**: `frontend/src/pages/companies/` 구조로 분리 완료.
 
 **목표 구조**:
 
@@ -980,7 +995,7 @@ frontend/src/pages/companies/
 
 ### [P3-3] 공통 `useDebounce` 훅
 
-**현재 상태**: 각 페이지에서 debounce를 개별 구현 중.
+**현재 상태(2026-04-28 점검)**: `frontend/src/hooks/useDebounce.ts`가 존재하며, 기업/참여자 검색에 적용되어 있음.
 
 **수정 방법**:
 
@@ -1007,12 +1022,12 @@ const searchDebounced = useDebounce(searchTerm, 300);
 
 | 단계 | 항목 | 예상 작업량 |
 |------|------|------------|
-| Step 1 | P0-1~5: 이모지 제거, focus-visible, aria-label, 터치 타겟, 색상 대비 | 2~3h |
-| Step 2 | P1-1~4: Shift+클릭, indeterminate, 엑셀 3-step, 페이지네이션 | 4~5h |
-| Step 3 | P1-5~7: 반응형, Zustand 상태 관리 도입 | 3~4h |
-| Step 4 | P2-1~4: EmptyState, 애니메이션, 드로어 스티키 | 2~3h |
-| Step 5 | P2-5~9: 폰트, z-index, 로딩버튼, 에러피드백, 다크모드 | 2~3h |
-| Step 6 | P3-1~3: 번들 최적화, 파일 분리, useDebounce | 3~4h |
+| Step 1 | P0-1~5: 이모지 제거(진행중), focus-visible(부분완료), aria-label(부분완료), 터치 타겟(부분완료), 색상 대비(완료) | 2~3h |
+| Step 2 | P1-1~4: Shift+클릭(Participants 미완), indeterminate(Participants 미완), 엑셀 3-step(완료), 페이지네이션(Companies 완료/Participants 불일치) | 4~5h |
+| Step 3 | P1-5~7: 반응형(대부분 완료), Zustand 상태 관리 도입(완료) | 3~4h |
+| Step 4 | P2-1~4: EmptyState(Companies 완료/Participants 이슈), 애니메이션(완료), 드로어 스티키(완료) | 2~3h |
+| Step 5 | P2-5~9: 폰트, z-index(토큰 정의 필요), 로딩버튼, 에러피드백, 다크모드 | 2~3h |
+| Step 6 | P3-1~3: 번들 최적화, 파일 분리(완료), useDebounce(완료) | 3~4h |
 
 **총 예상**: 16~22시간
 
@@ -1020,65 +1035,89 @@ const searchDebounced = useDebounce(searchTerm, 300);
 
 ## 파일별 수정 목록
 
-### `frontend/src/pages/CompanyManagement.tsx`
-- [ ] P0-1: 이모지 → SVG (과정 그룹 헤더 🟢🔵🟡, Popover 내 📧)
-- [ ] P0-3: `.drawer-course-group-header` → `aria-expanded`, `aria-controls` 추가
-- [ ] P0-3: sub-course 토글 div → `<button>` + `aria-expanded` 교체
-- [ ] P0-3: 드로어 닫기 버튼 `aria-label="드로어 닫기"` 추가
-- [ ] P1-1: Shift+클릭 범위 선택 (`lastSelectedIdRef`)
-- [ ] P1-3: 엑셀 업로드 Step 2 컬럼 매핑 UI 구현
-- [ ] P1-4: 페이지네이션 (20개/페이지)
-- [ ] P2-1: EmptyState 컴포넌트 적용 (기업 0개, 검색 결과 0개)
-- [ ] P2-3: 드로어 닫기 출구 애니메이션 (`isClosing` 상태)
-- [ ] P2-7: 저장 버튼 로딩 상태 (`isSaving`)
+### `frontend/src/pages/companies/CompanyManagementPage.tsx`
+- [ ] P0-1: 이모지 → SVG (과정 그룹 헤더 🟢🔵🟡 등은 `CompanyDrawer.tsx`에 잔존)
+- [x] P1-1: Shift+클릭 범위 선택 (`toggleCompanySelection`에 shiftKey 처리)
+- [x] P1-3: 엑셀 업로드 Step 2 컬럼 매핑 UI 구현 (`frontend/src/pages/companies/modals/UploadModal.tsx`)
+- [x] P1-4: 페이지네이션 (20개/페이지)
+- [ ] P1-9: 기본 정렬 적용 (기업명 가나다순 - 현재 `useCompanySort` 초기값이 null임)
+- [ ] P1-10: 전역 상태 동기화 (현재 `companyParticipants`가 로컬 상태임 → `useParticipantStore`와 통합 필요)
+- [x] P2-1: EmptyState 컴포넌트 적용 (기업 0개, 검색 결과 0개)
+- [x] P2-3: 드로어 닫기 출구 애니메이션 (`isClosing` 상태)
+- [ ] P2-7: 저장 버튼 로딩 상태 (`isSaving` — 현재 고정값)
 - [ ] P2-8: 폼 유효성 검사 에러 표시
+- [ ] P2-10: 기업명 인라인 편집 진입 방식 수정 (현재 `onClick` → 설계서 5-2 기준 `onDoubleClick`)
+
+### `frontend/src/pages/companies/CompanyDrawer.tsx`
+- [ ] P0-1: 이모지 → SVG (과정 그룹 헤더 🟢🔵🟡)
+- [ ] P0-3: `.drawer-course-group-header` → `aria-expanded`, `aria-controls` 추가
+- [x] P0-3: sub-course 토글 → `<button>` + `aria-expanded` 적용됨
+- [x] P0-3: 드로어 닫기 버튼 `aria-label` 적용됨
 
 ### `frontend/src/pages/Participants.tsx`
-- [ ] P0-1: 이모지 → SVG (CompletionBadge, CompanyPopover, 고용보험 표시, 과정 타입 헤더)
-- [ ] P0-2: `ToggleSwitch` focus-visible CSS 추가
-- [ ] P0-3: 드로어 닫기 버튼 `aria-label` 추가
-- [ ] P1-1: Shift+클릭 범위 선택
-- [ ] P1-2: 헤더 체크박스 `indeterminate` 상태 (`selectAllRef`)
-- [ ] P1-4: 페이지네이션
-- [ ] P2-1: EmptyState 컴포넌트 적용
-- [ ] P2-3: 드로어 닫기 출구 애니메이션
+- [ ] P0-1: 이모지 → SVG (COURSE_TYPE_DOT, 기업 Popover 내 📞📧✅❌ 등 잔존)
+- [x] P0-2: `ToggleSwitch` focus-visible CSS (`frontend/src/styles/buttons.css`) 적용됨
+- [x] P0-3: 드로어 닫기 버튼 `aria-label` 적용됨
+- [ ] P1-1: Shift+클릭 범위 선택 (미구현)
+- [ ] P1-2: 헤더 체크박스 `indeterminate` 상태 (`selectAllRef`) (미구현)
+- [ ] P1-4: 페이지네이션 버그 수정 (현재 `filtered.map`으로 렌더링되어 전체 리스트가 보임 → `paginated.map`으로 수정 필요)
+- [ ] P1-8: 테이블 정렬 기능 구현 (이름, 소속 기업, 직위 등 - 설계서 4-3 기준 이름 가나다순 기본 정렬)
+- [ ] P2-1: EmptyState 컴포넌트 적용 (현재 tbody 내 중첩 렌더 구조 이슈)
+- [x] P2-3: 드로어 닫기 출구 애니메이션 (`isClosing` + `.drawer-panel.closing`) 적용됨
 - [ ] P2-7: 등록/저장 버튼 로딩 상태
 - [ ] P2-8: 폼 유효성 검사 에러 표시
+- [ ] P3-4: 파일 분리 (`CompanyManagementPage`와 동일하게 Table, Drawer, Hooks 등으로 분리)
 
 ### `frontend/src/styles/variables.css`
-- [ ] P0-5: `--color-text-tertiary: #475569`
+- [x] P0-5: `--color-text-tertiary: #475569`
 - [ ] P2-6: z-index 스케일 변수 (`--z-topbar`, `--z-modal` 등)
 
 ### `frontend/src/styles/tables.css`
-- [ ] P0-2: `.row-clickable:focus-visible` 강화
-- [ ] P0-4: 체크박스 터치 타겟 (18px + td 패딩)
-- [ ] P2-6: `z-index: 260` → `var(--z-floating-bar)` 교체
+- [x] P0-2: `.row-clickable:focus-visible` 적용됨
+- [ ] P0-4: 체크박스 터치 타겟 (회사 테이블은 CSS 반영됨 / 참여자 테이블은 inline style로 덮여 미완)
+- [x] P2-6: 플로팅 바 z-index가 `var(--z-floating-bar)` 참조로 변경됨(단, `--z-*` 토큰 정의는 별도 필요)
 
 ### `frontend/src/styles/modal.css`
 - [ ] P0-2: `.course-tree-group-select:focus-visible`, `.chip-option:focus-visible` 추가
-- [ ] P0-4: `.tree-icon-btn`, `.section-icon-btn`, `.detail-delete-btn` 패딩 확대
-- [ ] P2-3: `.drawer-panel.closing` + `@keyframes slideOutRight`
-- [ ] P2-4: 드로어 헤더 sticky + grid-template-rows
+- [ ] P0-4: `.tree-icon-btn`, `.section-icon-btn` 터치 타겟 확대 (현재 28x28)
+- [x] P0-4: `.detail-delete-btn` 터치 타겟 확대 반영됨
+- [x] P2-3: `.drawer-panel.closing` + `@keyframes slideOutRight` 적용됨
+- [x] P2-4: 드로어 헤더 sticky + grid-template-rows 적용됨
 - [ ] P2-6: z-index 하드코딩 → CSS 변수 교체
 - [ ] P2-9: `#ffffff`, `#f8fafc` → `var(--color-surface)`, `var(--color-surface-subtle)`
 
 ### `frontend/src/styles/animations.css`
-- [ ] P2-2: `@media (prefers-reduced-motion: reduce)` 추가
+- [x] P2-2: `@media (prefers-reduced-motion: reduce)` 추가
 
 ### `frontend/src/styles/responsive.css`
-- [ ] P1-5: 1024px 미만 드로어 전체 화면
-- [ ] P1-5: 1024~1279px 이메일 컬럼 숨김
-- [ ] P1-6: 640px 이하 테이블 컬럼 선택적 숨김
+- [x] P1-5: 1024px 미만 드로어 전체 화면
+- [x] P1-5: 1024~1279px 이메일 컬럼 숨김 (CSS는 적용됨 — Participants 마크업 클래스 적용은 점검 필요)
+- [x] P1-6: 640px 이하 테이블 컬럼 선택적 숨김
 - [ ] P2-5: 640px 이하 최소 폰트 13~14px
 
 ### `frontend/src/styles/buttons.css`
-- [ ] P0-2: `button[role="switch"]:focus-visible` 추가
+- [x] P0-2: `button[role="switch"]:focus-visible` 추가
 
 ### 신규 파일 생성
-- [ ] `frontend/src/components/EmptyState.tsx` (P2-1)
-- [ ] `frontend/src/stores/useCompanyStore.ts` (P1-7)
-- [ ] `frontend/src/stores/useParticipantStore.ts` (P1-7)
-- [ ] `frontend/src/hooks/useDebounce.ts` (P3-3)
+- [x] `frontend/src/components/EmptyState.tsx` (P2-1)
+- [x] `frontend/src/stores/useCompanyStore.ts` (P1-7)
+- [x] `frontend/src/stores/useParticipantStore.ts` (P1-7)
+- [x] `frontend/src/hooks/useDebounce.ts` (P3-3)
+
+---
+
+## PhaseDocs 설계서 대비 추가 점검 결과 (2026-04-28)
+
+아래 항목들은 PhaseDocs(Phase 1/2) 설계서에 명시되어 있으나, 현재 코드 기준으로 **미구현 또는 스펙 불일치**로 확인되어 `plan.md`에 보완 트래킹이 필요함.
+
+- **(Phase 2) 플로팅 액션바 기능**: `이메일 발송`, `내보내기`가 현재 “준비 중” 토스트로 대체되어 있음.
+- **(Phase 2) 전체 선택 범위**: 헤더 체크박스가 “현재 페이지 20개”가 아니라 `filtered` 전체를 선택/해제하는 동작으로 스펙과 불일치.
+- **(Phase 2) 페이지네이션 적용**: `paginated`를 계산하지만 tbody 렌더가 `filtered` 기준으로 렌더되어 페이지네이션이 실효되지 않음.
+- **(Phase 2) Shift+클릭 범위 선택 / indeterminate**: 설계서 규칙(8-2) 대비 미구현.
+- **(Phase 2) 1024~1279px 컬럼 숨김**: 설계서는 이메일 컬럼 숨김인데, 현재 마크업 클래스 적용으로 연락처까지 숨길 가능성이 있음.
+- **(Phase 1) 기업 검색 범위**: 설계서는 “기업명(사업자번호), 담당자, 이메일”인데 현재 검색 필드/필터가 사업자번호를 포함하지 않음.
+- **(Phase 1) 기본 정렬**: 설계서는 기업명 가나다순 기본 정렬인데, 현재 정렬 상태 초기값이 비활성화되어 있음.
+- **(Phase 1) 기업명 편집 진입**: 설계서는 “더블 클릭”인데, 현재는 클릭으로 편집 모드 진입.
 
 ---
 
@@ -1097,7 +1136,7 @@ const searchDebounced = useDebounce(searchTerm, 300);
 - [ ] Focus states visible → **P0-2에서 해결 필요** (ToggleSwitch 등 누락)
 
 ### Light/Dark Mode
-- [ ] Light mode text contrast 4.5:1 → **P0-5에서 해결 필요** (`#64748b` 미달)
+- [x] Light mode text contrast 4.5:1 → `--color-text-tertiary` 조정으로 기준 충족
 - [ ] Borders visible in both modes → `var(--color-border)` 사용, 양호
 - [ ] Hardcoded colors → **P2-9에서 해결**
 
@@ -1110,4 +1149,4 @@ const searchDebounced = useDebounce(searchTerm, 300);
 - [ ] SVG icons with `aria-hidden="true"` → P0-1과 동시에
 - [ ] Form inputs have `<label for>` → `modal.css .field label` 있음, 연결 확인
 - [ ] Color not only indicator → 수료 상태: 색상+텍스트 → 양호
-- [ ] `prefers-reduced-motion` respected → **P2-2에서 해결 필요**
+- [x] `prefers-reduced-motion` respected → `animations.css`/`modal.css`에 대응 추가됨

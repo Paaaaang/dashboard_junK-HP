@@ -8,7 +8,7 @@ import {
   initialTemplates,
   programCatalog as initialProgramCatalog,
 } from "../../constants";
-import { PageHeader } from "../../components/PageHeader";
+import { PageHeader } from "../../components";
 import type {
   CompanyRecord,
   CompanyParticipation,

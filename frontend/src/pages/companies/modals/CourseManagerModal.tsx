@@ -100,77 +100,77 @@ export function CourseManagerModal({
 }: CourseManagerModalProps) {
   return (
     <div
-      className="modal-backdrop"
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label="과정 관리"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="modal-panel course-manager-panel">
-        <div className="modal-header">
-          <h3>과정 관리</h3>
+      <div className="bg-white rounded-[32px] shadow-2xl flex flex-col w-full max-w-[1100px] max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+          <h3 className="text-xl font-bold text-slate-900">과정 관리</h3>
           <button
             type="button"
-            className="icon-btn"
+            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200"
             onClick={onClose}
             aria-label="닫기"
           >
-            <X className="icon-sm" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="modal-content course-manager-layout">
-          <aside className="course-tree-panel">
-            <div className="course-tree-head">
-              <p className="course-tree-title">과정 구분</p>
+        <div className="flex-1 overflow-hidden flex">
+          <aside className="w-[320px] border-r border-slate-100 bg-slate-50/50 flex flex-col">
+            <div className="p-6 space-y-4">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">과정 구분</p>
               <button
                 type="button"
-                className="btn btn-ghost course-tree-add"
+                className="w-full py-3 px-4 bg-white border border-slate-200 text-slate-600 hover:border-emerald-500 hover:text-emerald-600 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
                 onClick={onStartCreateGroup}
               >
-                <Plus className="icon-sm" />
+                <Plus className="w-4 h-4" />
                 <span>새 과정 구분 추가</span>
               </button>
             </div>
 
-            <div className="course-tree-list">
+            <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
               {courseGroups.map((group) => {
                 const isSelected = group.id === managerSelectedGroupId;
                 const isExpanded = managerExpandedGroups.has(group.id);
 
                 return (
-                  <div
-                    key={group.id}
-                    className={`course-tree-group${isSelected ? " active" : ""}`}
-                  >
+                  <div key={group.id} className="space-y-1">
                     <button
                       type="button"
-                      className="course-tree-group-select"
+                      className={`w-full flex items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
+                        isSelected 
+                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
+                          : "text-slate-600 hover:bg-white hover:shadow-sm"
+                      }`}
                       onClick={() => onSelectGroup(group.id)}
                     >
-                      <div className="course-tree-group-select-left">
-                        <span
-                          className="course-tree-group-toggle"
-                          onClick={(e) => onToggleGroup(group.id, e)}
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="icon-sm" />
-                          ) : (
-                            <ChevronRight className="icon-sm" />
-                          )}
-                        </span>
-                        <span>{group.name}</span>
+                      <div 
+                        className={`p-1 rounded-md transition-colors ${isSelected ? "text-emerald-100 hover:bg-emerald-500" : "text-slate-400 hover:bg-slate-100"}`}
+                        onClick={(e) => onToggleGroup(group.id, e)}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
                       </div>
+                      <span className="flex-1 text-left font-bold truncate">{group.name}</span>
                     </button>
                     {isExpanded && (
-                      <ul className="course-tree-detail-list">
+                      <ul className="ml-9 space-y-1 pr-2">
                         {group.details.map((detail) => (
                           <li
                             key={detail.id}
-                            className="course-tree-detail-item"
+                            className="text-sm py-2 px-3 text-slate-500 bg-white/50 rounded-lg border border-transparent hover:border-emerald-100 hover:text-emerald-600 transition-all truncate"
                           >
-                            <span className="course-tree-detail-name">
-                              {detail.name}
-                            </span>
+                            {detail.name}
                           </li>
                         ))}
                       </ul>
@@ -181,14 +181,14 @@ export function CourseManagerModal({
             </div>
           </aside>
 
-          <section className="course-editor-panel">
-            <div className="course-editor-header">
-              <h4 className="course-editor-title">
+          <section className="flex-1 flex flex-col bg-white overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+              <h4 className="text-lg font-bold text-slate-900 truncate mr-4">
                 {managerGroupForm.name || "새 과정 구분"}
               </h4>
               <button
                 type="button"
-                className="course-delete-btn"
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-30 disabled:hover:bg-transparent"
                 disabled={!managerSelectedGroupId}
                 onClick={() =>
                   managerSelectedGroupId &&
@@ -196,336 +196,333 @@ export function CourseManagerModal({
                 }
                 aria-label="과정 구분 삭제"
               >
-                <Trash2 className="icon-sm" />
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="course-editor-body">
-              {managerError && (
-                <p className="form-error-message">{managerError}</p>
-              )}
-              {managerMessage && (
-                <p className="form-success-message">{managerMessage}</p>
-              )}
-
-              <label className="field">
-                과정 구분 이름
-                <input
-                  value={managerGroupForm.name}
-                  onChange={(event) =>
-                    onGroupNameChange(event.target.value)
-                  }
-                  placeholder="예: 훈련비과정"
-                />
-              </label>
-
-              <hr className="course-editor-divider" />
-
-              <div>
-                <p
-                  className="course-section-label"
-                  style={{ marginBottom: 8 }}
-                >
-                  대상
-                </p>
-                <div className="course-target-grid">
-                  {audienceOptions.map((option) => (
-                    <label key={option} className="checkbox-field">
-                      <input
-                        type="checkbox"
-                        checked={managerGroupForm.audiences.includes(
-                          option,
-                        )}
-                        onChange={() => onToggleAudience(option)}
-                      />
-                      {option}
-                    </label>
-                  ))}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+              {(managerError || managerMessage) && (
+                <div className={`p-4 rounded-2xl border ${
+                  managerError ? "bg-red-50 border-red-100 text-red-600" : "bg-emerald-50 border-emerald-100 text-emerald-600"
+                } text-sm font-semibold`}>
+                  {managerError || managerMessage}
                 </div>
-              </div>
+              )}
 
-              <hr className="course-editor-divider" />
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    과정 구분 이름
+                  </label>
+                  <input
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200"
+                    value={managerGroupForm.name}
+                    onChange={(event) =>
+                      onGroupNameChange(event.target.value)
+                    }
+                    placeholder="예: 훈련비과정"
+                  />
+                </div>
 
-              <div>
-                <p
-                  className="course-section-label"
-                  style={{ marginBottom: 8 }}
-                >
-                  세부 과정
-                </p>
-                <table className="course-detail-table">
-                  <colgroup>
-                    <col style={{ width: "30%" }} />
-                    <col style={{ width: "38%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "8%" }} />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>과정명</th>
-                      <th>진행일</th>
-                      <th>시간</th>
-                      <th>목표</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {managerGroupForm.details.map((detail) => {
-                      const isRowEditing =
-                        managerEditingDetailId === detail.id &&
-                        managerDetailForm;
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">대상</p>
+                  <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    {audienceOptions.map((option) => (
+                      <label key={option} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 cursor-pointer transition-all duration-200">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 transition-all duration-200"
+                          checked={managerGroupForm.audiences.includes(
+                            option,
+                          )}
+                          onChange={() => onToggleAudience(option)}
+                        />
+                        <span className="text-sm font-medium text-slate-700">{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
-                      if (isRowEditing) {
-                        const autoDays = calculateDurationDays(
-                          managerDetailForm.startDate,
-                          managerDetailForm.endDate,
-                        );
-                        return (
-                          <tr
-                            key={detail.id}
-                            className="course-detail-edit-row"
-                          >
-                            <td>
-                              <input
-                                value={managerDetailForm.name}
-                                onChange={(event) =>
-                                  onDetailFormChange("name", event.target.value)
-                                }
-                                placeholder="과정명"
-                              />
-                            </td>
-                            <td>
-                              <div className="date-range-cell">
-                                <input
-                                  type="date"
-                                  value={managerDetailForm.startDate}
-                                  onChange={(event) =>
-                                    onDetailFormChange("startDate", event.target.value)
-                                  }
-                                />
-                                <span>~</span>
-                                <input
-                                  type="date"
-                                  value={managerDetailForm.endDate}
-                                  onChange={(event) =>
-                                    onDetailFormChange("endDate", event.target.value)
-                                  }
-                                />
-                              </div>
-                              {autoDays && (
-                                <div className="days-badge-line">
-                                  ({autoDays}일)
-                                </div>
-                              )}
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                min={1}
-                                value={managerDetailForm.totalHours}
-                                onChange={(event) =>
-                                  onDetailFormChange("totalHours", event.target.value)
-                                }
-                                placeholder="시간"
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                min={1}
-                                value={managerDetailForm.targetOutcome}
-                                onChange={(event) =>
-                                  onDetailFormChange("targetOutcome", event.target.value)
-                                }
-                                placeholder="목표"
-                              />
-                            </td>
-                            <td>
-                              <div className="course-table-edit-actions">
-                                <button
-                                  type="button"
-                                  className="section-icon-btn save"
-                                  onClick={onApplyDetailDraft}
-                                  aria-label="확인"
-                                >
-                                  <Check className="icon-sm" />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="section-icon-btn cancel"
-                                  onClick={onCancelDetailEdit}
-                                  aria-label="취소"
-                                >
-                                  <X className="icon-sm" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
+                <div className="space-y-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">세부 과정</p>
+                  <div className="border border-slate-100 rounded-[24px] overflow-hidden shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100">
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">과정명</th>
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">진행일</th>
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">시간</th>
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">목표</th>
+                          <th className="px-6 py-4 w-20" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {managerGroupForm.details.map((detail) => {
+                          const isRowEditing =
+                            managerEditingDetailId === detail.id &&
+                            managerDetailForm;
 
-                      return (
-                        <tr
-                          key={detail.id}
-                          className="course-detail-view-row"
-                          onClick={() =>
-                            onStartEditDetail(
-                              managerSelectedGroupId ?? "",
-                              detail.id,
-                            )
+                          if (isRowEditing) {
+                            const autoDays = calculateDurationDays(
+                              managerDetailForm.startDate,
+                              managerDetailForm.endDate,
+                            );
+                            return (
+                              <tr key={detail.id} className="bg-emerald-50/30">
+                                <td className="px-4 py-3">
+                                  <input
+                                    className="w-full px-3 py-2 rounded-lg border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
+                                    value={managerDetailForm.name}
+                                    onChange={(event) =>
+                                      onDetailFormChange("name", event.target.value)
+                                    }
+                                    placeholder="과정명"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="date"
+                                        className="px-2 py-1.5 rounded-lg border border-emerald-200 text-xs focus:outline-none"
+                                        value={managerDetailForm.startDate}
+                                        onChange={(event) =>
+                                          onDetailFormChange("startDate", event.target.value)
+                                        }
+                                      />
+                                      <span className="text-slate-400">~</span>
+                                      <input
+                                        type="date"
+                                        className="px-2 py-1.5 rounded-lg border border-emerald-200 text-xs focus:outline-none"
+                                        value={managerDetailForm.endDate}
+                                        onChange={(event) =>
+                                          onDetailFormChange("endDate", event.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    {autoDays && (
+                                      <span className="text-[10px] font-bold text-emerald-600 ml-1">({autoDays}일)</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="number"
+                                    className="w-20 mx-auto px-3 py-2 rounded-lg border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm text-center"
+                                    min={1}
+                                    value={managerDetailForm.totalHours}
+                                    onChange={(event) =>
+                                      onDetailFormChange("totalHours", event.target.value)
+                                    }
+                                    placeholder="시간"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="number"
+                                    className="w-20 mx-auto px-3 py-2 rounded-lg border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm text-center"
+                                    min={1}
+                                    value={managerDetailForm.targetOutcome}
+                                    onChange={(event) =>
+                                      onDetailFormChange("targetOutcome", event.target.value)
+                                    }
+                                    placeholder="목표"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1 justify-center">
+                                    <button
+                                      type="button"
+                                      className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                                      onClick={onApplyDetailDraft}
+                                      aria-label="확인"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
+                                      onClick={onCancelDetailEdit}
+                                      aria-label="취소"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
                           }
-                        >
-                          <td>{detail.name}</td>
-                          <td>
-                            {toDotDate(detail.startDate)} ~{" "}
-                            {toDotDate(detail.endDate)}
-                            {detail.durationDays > 0 && (
-                              <span className="days-badge">
-                                {" "}
-                                ({detail.durationDays}일)
-                              </span>
-                            )}
-                          </td>
-                          <td>{detail.totalHours}시간</td>
-                          <td>{detail.targetOutcome}명</td>
-                          <td className="detail-delete-col">
-                            <button
-                              type="button"
-                              className="detail-delete-btn"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onRemoveDetail(
+
+                          return (
+                            <tr
+                              key={detail.id}
+                              className="group hover:bg-slate-50/50 cursor-pointer transition-colors"
+                              onClick={() =>
+                                onStartEditDetail(
                                   managerSelectedGroupId ?? "",
                                   detail.id,
-                                );
-                              }}
-                              aria-label={`${detail.name} 삭제`}
+                                )
+                              }
                             >
-                              <Trash2 className="icon-sm" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-
-                    {managerEditingDetailId === addingNewDetailId &&
-                      managerDetailForm && (
-                        <tr className="course-detail-edit-row">
-                          <td>
-                            <input
-                              value={managerDetailForm.name}
-                              onChange={(event) =>
-                                onDetailFormChange("name", event.target.value)
-                              }
-                              placeholder="과정명"
-                              autoFocus
-                            />
-                          </td>
-                          <td>
-                            <div className="date-range-cell">
-                              <input
-                                type="date"
-                                value={managerDetailForm.startDate}
-                                onChange={(event) =>
-                                  onDetailFormChange("startDate", event.target.value)
-                                }
-                              />
-                              <span>~</span>
-                              <input
-                                type="date"
-                                value={managerDetailForm.endDate}
-                                onChange={(event) =>
-                                  onDetailFormChange("endDate", event.target.value)
-                                }
-                              />
-                            </div>
-                            {(() => {
-                              const d = calculateDurationDays(
-                                managerDetailForm.startDate,
-                                managerDetailForm.endDate,
-                              );
-                              return d ? (
-                                <div className="days-badge-line">
-                                  ({d}일)
+                              <td className="px-6 py-4 text-sm font-bold text-slate-900">{detail.name}</td>
+                              <td className="px-6 py-4 text-sm text-slate-600">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-slate-900">{toDotDate(detail.startDate)}</span>
+                                  <span className="text-slate-300">~</span>
+                                  <span className="font-medium text-slate-900">{toDotDate(detail.endDate)}</span>
+                                  {detail.durationDays > 0 && (
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md uppercase tracking-wider">
+                                      {detail.durationDays}일
+                                    </span>
+                                  )}
                                 </div>
-                              ) : null;
-                            })()}
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              min={1}
-                              value={managerDetailForm.totalHours}
-                              onChange={(event) =>
-                                onDetailFormChange("totalHours", event.target.value)
-                              }
-                              placeholder="시간"
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              min={1}
-                              value={managerDetailForm.targetOutcome}
-                              onChange={(event) =>
-                                onDetailFormChange("targetOutcome", event.target.value)
-                              }
-                              placeholder="목표"
-                            />
-                          </td>
-                          <td>
-                            <div className="course-table-edit-actions">
-                              <button
-                                type="button"
-                                className="section-icon-btn save"
-                                onClick={onApplyDetailDraft}
-                                aria-label="확인"
-                              >
-                                <Check className="icon-sm" />
-                              </button>
-                              <button
-                                type="button"
-                                className="section-icon-btn cancel"
-                                onClick={onCancelDetailEdit}
-                                aria-label="취소"
-                              >
-                                <X className="icon-sm" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-slate-600 font-medium text-center">{detail.totalHours}시간</td>
+                              <td className="px-6 py-4 text-sm text-slate-600 font-medium text-center">{detail.targetOutcome}명</td>
+                              <td className="px-6 py-4 text-center">
+                                <button
+                                  type="button"
+                                  className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onRemoveDetail(
+                                      managerSelectedGroupId ?? "",
+                                      detail.id,
+                                    );
+                                  }}
+                                  aria-label={`${detail.name} 삭제`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
 
-                    {!managerEditingDetailId && (
-                      <tr
-                        className="course-detail-add-row"
-                        onClick={onStartAddDetail}
-                      >
-                        <td colSpan={5}>
-                          <span className="course-detail-add-hint">
-                            <Plus className="icon-sm" />
-                            <span>세부 과정 추가</span>
-                          </span>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        {managerEditingDetailId === addingNewDetailId &&
+                          managerDetailForm && (
+                            <tr className="bg-emerald-50/30">
+                              <td className="px-4 py-3">
+                                <input
+                                  className="w-full px-3 py-2 rounded-lg border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm"
+                                  value={managerDetailForm.name}
+                                  onChange={(event) =>
+                                    onDetailFormChange("name", event.target.value)
+                                  }
+                                  placeholder="과정명"
+                                  autoFocus
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="date"
+                                      className="px-2 py-1.5 rounded-lg border border-emerald-200 text-xs focus:outline-none"
+                                      value={managerDetailForm.startDate}
+                                      onChange={(event) =>
+                                        onDetailFormChange("startDate", event.target.value)
+                                      }
+                                    />
+                                    <span className="text-slate-400">~</span>
+                                    <input
+                                      type="date"
+                                      className="px-2 py-1.5 rounded-lg border border-emerald-200 text-xs focus:outline-none"
+                                      value={managerDetailForm.endDate}
+                                      onChange={(event) =>
+                                        onDetailFormChange("endDate", event.target.value)
+                                      }
+                                    />
+                                  </div>
+                                  {(() => {
+                                    const d = calculateDurationDays(
+                                      managerDetailForm.startDate,
+                                      managerDetailForm.endDate,
+                                    );
+                                    return d ? (
+                                      <span className="text-[10px] font-bold text-emerald-600 ml-1">({d}일)</span>
+                                    ) : null;
+                                  })()}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  className="w-20 mx-auto px-3 py-2 rounded-lg border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm text-center"
+                                  min={1}
+                                  value={managerDetailForm.totalHours}
+                                  onChange={(event) =>
+                                    onDetailFormChange("totalHours", event.target.value)
+                                  }
+                                  placeholder="시간"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  className="w-20 mx-auto px-3 py-2 rounded-lg border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm text-center"
+                                  min={1}
+                                  value={managerDetailForm.targetOutcome}
+                                  onChange={(event) =>
+                                    onDetailFormChange("targetOutcome", event.target.value)
+                                  }
+                                  placeholder="목표"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1 justify-center">
+                                  <button
+                                    type="button"
+                                    className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                                    onClick={onApplyDetailDraft}
+                                    aria-label="확인"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
+                                    onClick={onCancelDetailEdit}
+                                    aria-label="취소"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+
+                        {!managerEditingDetailId && (
+                          <tr
+                            className="group hover:bg-emerald-50/50 cursor-pointer transition-colors"
+                            onClick={onStartAddDetail}
+                          >
+                            <td colSpan={5} className="px-6 py-6 text-center">
+                              <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
+                                <Plus className="w-4 h-4" />
+                                <span>세부 과정 추가</span>
+                              </span>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="course-editor-footer">
+            <div className="px-8 py-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="px-6 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-all duration-200"
                 onClick={onClose}
               >
                 취소
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:shadow-none"
                 disabled={!isManagerGroupModified}
                 onClick={onSaveGroup}
               >

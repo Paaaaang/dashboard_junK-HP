@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Building2, Users, Mail } from "lucide-react";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../components";
 
 export function EducationOverviewPage() {
   return (

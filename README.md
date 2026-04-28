@@ -12,8 +12,11 @@
 ### 1단계: 의존성 설치
 
 ```bash
+# 레포 루트에서 실행 (npm workspaces로 backend/frontend를 함께 설치)
 npm install
 ```
+
+만약 `npm`/`node` 커맨드가 인식되지 않으면 Node.js 설치 또는 PATH 설정이 필요합니다.
 
 ### 2단계: 환경 설정
 
@@ -37,9 +40,9 @@ npm run docker:up
 - **pgAdmin** (포트 5050)
 
 #### pgAdmin 접속
-- URL: http://localhost:5050
-- 이메일: admin@dashboard.local
-- 암호: admin
+- URL: http://localhost:5050/pgadmin
+- 이메일: khp@junkhp.com
+- 암호: khp_pgadmin
 
 ### 4단계: 개발 서버 시작
 
@@ -68,7 +71,7 @@ npm --workspace=frontend run dev
 ## 📁 프로젝트 구조
 
 ```
-dashboard_khp/
+dashboard_junK-HP/
 ├── backend/                    # Express.js + TypeScript 백엔드
 │   ├── src/
 │   │   ├── index.ts           # 애플리케이션 진입점
@@ -90,7 +93,8 @@ dashboard_khp/
 │   │   ├── pages/             # 페이지 컴포넌트
 │   │   ├── hooks/             # 커스텀 React 훅
 │   │   ├── api/               # API 클라이언트
-│   │   ├── store/             # Redux 스토어
+│   │   ├── stores/            # Zustand 스토어
+│   │   ├── styles/            # CSS 디자인 시스템 (variables/base/buttons/...) 
 │   │   ├── types/             # TypeScript 타입 정의
 │   │   └── index.css          # 전역 스타일
 │   ├── public/                # 정적 파일
@@ -153,7 +157,7 @@ npm run docker:logs      # 로그 확인 (실시간)
 - **TypeScript**: 타입 안정성
 - **Vite**: 번들러 & 개발 서버
 - **React Router**: 라우팅
-- **Redux Toolkit**: 상태 관리
+- **Zustand**: 상태 관리
 - **Axios**: HTTP 클라이언트
 
 ---
@@ -218,6 +222,15 @@ netstat -ano | findstr :3000
 # 프로세스 종료
 taskkill /PID <PID> /F
 
+
+### PowerShell에서 `npm.ps1` 실행이 차단되는 경우
+
+PowerShell 실행 정책(ExecutionPolicy) 때문에 `npm` 실행이 막히면, 아래처럼 `npm.cmd`로 실행할 수 있습니다.
+
+```bash
+npm.cmd -v
+npm.cmd install
+```
 # macOS/Linux
 lsof -i :3000
 kill -9 <PID>

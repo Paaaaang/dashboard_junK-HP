@@ -1,5 +1,5 @@
-export { Dashboard } from './Dashboard';
-export { EducationOverviewPage } from './EducationOverview';
-export { default as CompanyManagementPage } from './companies';
-export { ParticipantsPage } from './Participants';
-export { TemplateEditorPage } from './TemplateEditor';
+export * from "./Dashboard";
+export * from "./participants/ParticipantsPage";
+export * from "./EducationOverview";
+export * from "./TemplateEditor";
+export * from "./companies";

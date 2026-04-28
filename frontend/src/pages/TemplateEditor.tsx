@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { initialTemplates, templateVariables } from "../constants";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../components";
 import { applyTemplateVariables } from "../utils/templateVariables";
 import type { EmailTemplate, InsuranceTarget } from "../types/models";
 

@@ -26,7 +26,7 @@
 **프로덕션 의존성**:
 ```
 zustand@^4.4.7             - 핵심 상태 관리 (기업, 참여자 데이터 전역 관리)
-lucide-react@^0.294.0      - 24x24 SVG 아이콘 라이브러리 (이모지 완전 대체)
+lucide-react@^0.294.0      - 24x24 SVG 아이콘 라이브러리 (이모지 대체 진행 중)
 react@^18.2.0              - UI 라이브러리 (lazy/Suspense 최적화)
 react-router-dom@^6.20.1   - 클라이언트 사이드 라우팅
 recharts@^3.8.1            - React 차트 컴포넌트
@@ -54,7 +54,7 @@ Vite@^5.0.8               - 번들러 (최적화된 빌드 구성)
 **CSS Variables 기반 테마 (`styles/variables.css`)**:
 - `--color-text-tertiary`를 `#475569`로 상향하여 WCAG AA 대비 기준(4.5:1) 충족.
 - 하드코딩된 모든 색상(Hex)을 `var()` 변수로 전환하여 다크 모드 지원 기반 마련.
-- **z-index 스케일 정의**: `--z-modal`, `--z-drawer` 등 시스템화된 스택 순서 관리.
+- **z-index 스케일**: `--z-modal`, `--z-drawer` 등 변수 참조는 도입되어 있으나, `styles/variables.css` 내 토큰 정의 누락 등으로 추가 정리 필요.
 
 ---
 
@@ -100,7 +100,7 @@ frontend/src/
 ## 5. 핵심 개선 및 구현 기능
 
 ### ✅ UI/UX 및 접근성 (P0)
-- **이모지 제거**: 모든 🟢🔵🟡✅❌ 이모지를 Lucide SVG로 교체 (`aria-hidden="true"` 포함).
+- **이모지 제거**: Lucide SVG로의 대체가 진행되었으나, 일부 화면/문구에 🟢🔵🟡✅❌ 등 이모지가 잔존(추가 정리 필요).
 - **Focus Indicator**: `focus-visible` 속성을 모든 인터랙티브 요소(토글, 버튼, 행)에 적용.
 - **터치 영역 최적화**: 모바일 사용성을 위해 클릭 가능 영역을 44×44px 이상으로 확대.
 - **Aria 속성**: `aria-expanded`, `aria-label`, `aria-controls` 등을 활용하여 스크린 리더 호환성 확보.
@@ -128,3 +128,49 @@ frontend/src/
 
 ---
 **결론**: 본 리팩터링 작업을 통해 Dashboard KHP는 상용 수준의 UI/UX 품질과 확장 가능한 아키텍처를 갖추게 되었으며, 향후 기능 확장에 용이한 구조적 기틀을 마련함.
+
+---
+
+## 7. 디자인 시스템 기반 점검 결과 (추가 점검: 2026-04-28)
+
+### 7-1. 스타일 엔트리(로드 체인)
+
+- **전역 기본 스타일(리셋/폰트)**: `frontend/src/main.tsx` → `frontend/src/index.css`
+    - 폰트/기본 타이포/기본 body 색상·배경이 **하드코딩**되어 있음
+- **디자인 시스템 스타일(토큰/컴포넌트/레이아웃)**: `frontend/src/App.tsx` → `frontend/src/styles/index.css`
+    - `styles/index.css`가 아래 파일들을 `@import`로 합산 로드
+        - `styles/variables.css` (컬러/서피스/텍스트 등 토큰, 다크모드 토큰)
+        - `styles/base.css` (레이아웃/유틸리티 클래스)
+        - `styles/buttons.css`, `styles/cards.css`, `styles/tables.css`, `styles/modal.css`, `styles/template.css`, `styles/animations.css`, `styles/debug.css`, `styles/responsive.css`
+
+### 7-2. “소스 오브 트루스” 파일
+
+- **토큰(색/서피스/텍스트/보더 등)**: `frontend/src/styles/variables.css`
+- **레이아웃 프레임(앱 셸/워크스페이스)**: `frontend/src/styles/base.css`
+- **컴포넌트 룩앤필**:
+    - 버튼/포커스: `frontend/src/styles/buttons.css`
+    - 테이블/선택/툴팁: `frontend/src/styles/tables.css`
+    - 모달/드로어: `frontend/src/styles/modal.css`
+    - 반응형 규칙: `frontend/src/styles/responsive.css`
+
+### 7-3. 점검 중 발견 사항(설계/가이드 준수 관점)
+
+- `frontend/src/index.css`는 body 색상/배경이 hex로 하드코딩되어 있고, `styles/base.css`는 CSS 변수 기반이라 **중복/충돌 여지**가 있음(로드 순서에 따라 최종 적용이 달라질 수 있음).
+- 일부 화면은 CSS 변수 대신 **inline style + 하드코딩 hex**를 직접 사용(예: `#ffffff`, `#f8fafc`, `rgba(...)` 등)하여 다크 모드/토큰 일관성 측면에서 예외가 존재.
+- `styles/modal.css`, `styles/tables.css` 등에서 `var(--z-*)`를 참조하지만, `styles/variables.css`에는 해당 z-index 토큰 정의가 없어 **디자인 토큰의 완결성**이 깨져 있음.
+
+---
+
+## 8. 프로젝트 정리/설치 관련 업데이트 (2026-04-28)
+
+### 8-1. 불필요 파일 정리
+
+- 프론트엔드에 남아 있던 Redux placeholder(`frontend/src/store/`)를 제거하고, 실제 사용 중인 Zustand(`frontend/src/stores/`)만 유지.
+- 프로젝트 내 AI 도구 보조 폴더로 보이는 `.claude/`, `.gemini/`는 레포에 필수로 보이지 않아 정리 대상으로 처리.
+- Phase 설계 문서는 현재 워크스페이스에서 별도 폴더(레포 외부)로 관리되고 있어, 레포 루트에 중복으로 존재하던 사본은 정리 대상으로 처리.
+
+### 8-2. 의존성 설치 전제
+
+- 이 레포는 npm workspaces 기반이므로 기본적으로 레포 루트에서 `npm install`을 수행해 `backend/`, `frontend/`를 함께 설치하는 흐름을 사용.
+- 단, 일부 실행 환경에서는 `node`/`npm`이 설치되어 있지 않거나 PATH에 잡혀있지 않아 설치가 바로 진행되지 않을 수 있음(이 경우 Node.js 18+ 설치가 선행 필요).
+
