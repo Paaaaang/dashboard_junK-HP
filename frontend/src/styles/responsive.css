@@ -280,12 +280,22 @@
   }
 
   .data-table {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .data-table th,
   .data-table td {
-    padding: 8px 6px;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  /* Specific table overrides for mobile */
+  table {
+    font-size: 13px !important;
+  }
+
+  th span, td span {
+    font-size: 13px !important;
   }
 
   .participation-row {

@@ -1,34 +1,35 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useCompanyStore } from "../../stores";
-import { Mail, Phone } from "lucide-react";
+import { useCompanyStore, useParticipantStore, useCourseStore } from "../../stores";
+import { transformParticipantsToMap } from "../../utils/participantUtils";
+import { Mail, Phone, Check, Download } from "lucide-react";
 import {
   createEmptyCompany,
   cloneCompany,
   initialTemplates,
-  programCatalog as initialProgramCatalog,
 } from "../../constants";
 import { PageHeader } from "../../components";
 import type {
   CompanyRecord,
   CompanyParticipation,
   CourseType,
+  ParticipantRecord,
+  ParticipantEnrollment,
 } from "../../types/models";
 
 import { useCompanyFilters, TAB_ITEMS } from "./hooks/useCompanyFilters";
 import { useCompanySort, SortKey } from "./hooks/useCompanySort";
 import { CompanyTable } from "./CompanyTable";
-import { CompanyDrawer, CourseParticipantsMap } from "./CompanyDrawer";
+import { CompanyDrawer } from "./CompanyDrawer";
 import { AddCompanyModal } from "./modals/AddCompanyModal";
 import { UploadModal } from "./modals/UploadModal";
 import { EmailModal } from "./modals/EmailModal";
-import { CourseManagerModal, CourseGroup, CourseGroupForm, CourseDetailDraft, CourseDetail, AudienceOption } from "./modals/CourseManagerModal";
+import { CourseGroup } from "./modals/CourseManagerModal";
 import { AddCourseModal } from "./modals/AddCourseModal";
 
 type ActiveModal =
   | "choice"
   | "upload"
-  | "course-manager"
   | "email"
   | "add-course"
   | null;
@@ -44,66 +45,6 @@ const TAB_GROUP_IDS = {
   SEMINAR: "course-group-seminar",
 } as const;
 
-const AUDIENCE_OPTIONS: AudienceOption[] = [
-  "재직자 (고용보험 가입)",
-  "재직자 (고용보험 미가입)",
-  "기업 대표",
-  "임원",
-  "미래인재",
-];
-
-const ADDING_NEW_DETAIL = "__new__";
-
-let localSequence = 0;
-function createLocalId(prefix: string): string {
-  localSequence += 1;
-  return `${prefix}-${Date.now()}-${localSequence}`;
-}
-
-function createDefaultDetail(name: string, index: number): CourseDetail {
-  const month = String((index % 9) + 4).padStart(2, "0");
-  return {
-    id: createLocalId("detail"),
-    name,
-    startDate: `2026-${month}-01`,
-    endDate: `2026-${month}-03`,
-    durationDays: 3,
-    totalHours: 12,
-    targetOutcome: 20 + index * 2,
-  };
-}
-
-function buildInitialCourseGroups(): CourseGroup[] {
-  const entries = Object.entries(initialProgramCatalog) as Array<
-    [CourseType, string[]]
-  >;
-  return entries.map(([name, programs]) => {
-    const baseAudiences: Record<CourseType, AudienceOption[]> = {
-      훈련비과정: ["재직자 (고용보험 가입)", "재직자 (고용보험 미가입)"],
-      지원비과정: ["기업 대표", "임원"],
-      "공유개방 세미나": ["미래인재", "재직자 (고용보험 가입)"],
-    };
-
-    const groupId =
-      name === "훈련비과정"
-        ? TAB_GROUP_IDS.TRAINING
-        : name === "지원비과정"
-          ? TAB_GROUP_IDS.SUPPORT
-          : TAB_GROUP_IDS.SEMINAR;
-
-    return {
-      id: groupId,
-      name,
-      audiences: baseAudiences[name],
-      details: programs.map((program, index) =>
-        createDefaultDetail(program, index),
-      ),
-    };
-  });
-}
-
-const INITIAL_COURSE_GROUPS = buildInitialCourseGroups();
-
 const SYSTEM_FIELDS = [
   { key: "companyName", label: "기업명 *" },
   { key: "businessRegNo", label: "사업자번호" },
@@ -114,102 +55,6 @@ const SYSTEM_FIELDS = [
   { key: "email", label: "이메일" },
   { key: "__skip__", label: "건너뛰기" },
 ];
-
-const INITIAL_COMPANY_PARTICIPANTS: Record<string, CourseParticipantsMap> = {
-  "company-1": {
-    [TAB_GROUP_IDS.TRAINING]: {
-      "smart-factory": {
-        id: "smart-factory",
-        name: "스마트팩토리 실무",
-        startDate: "2026-03-15",
-        endDate: "2026-03-17",
-        totalHours: 24,
-        participants: [
-          {
-            id: "pt-1",
-            name: "박진우",
-            email: "jinwoo@hanbit.co.kr",
-            phone: "010-1111-2222",
-            position: "대리",
-            completedCourses: 2,
-            totalCourses: 3,
-            completed: true,
-          },
-          {
-            id: "pt-2",
-            name: "김민지",
-            email: "minji@hanbit.co.kr",
-            phone: "010-3333-4444",
-            position: "사원",
-            completedCourses: 0,
-            totalCourses: 3,
-            completed: false,
-          },
-          {
-            id: "pt-3",
-            name: "이태호",
-            email: "taeho@hanbit.co.kr",
-            phone: "010-5555-6666",
-            position: "과장",
-            completedCourses: 3,
-            totalCourses: 3,
-            completed: true,
-          },
-        ],
-      },
-    },
-  },
-  "company-2": {
-    [TAB_GROUP_IDS.SUPPORT]: {
-      "quality-mgmt": {
-        id: "quality-mgmt",
-        name: "품질관리 고도화",
-        startDate: "2026-04-01",
-        endDate: "2026-04-03",
-        totalHours: 16,
-        participants: [
-          {
-            id: "pt-4",
-            name: "최수진",
-            email: "sujin@mirae-precision.com",
-            phone: "010-7777-8888",
-            position: "팀장",
-            completedCourses: 1,
-            totalCourses: 1,
-            completed: true,
-          },
-        ],
-      },
-    },
-  },
-};
-
-function cloneGroupToForm(group: CourseGroup): CourseGroupForm {
-  return {
-    name: group.name,
-    audiences: [...group.audiences],
-    details: group.details.map((detail) => ({ ...detail })),
-  };
-}
-
-function createEmptyGroupForm(): CourseGroupForm {
-  return {
-    name: "",
-    audiences: [],
-    details: [],
-  };
-}
-
-function createEmptyDetailDraft(): CourseDetailDraft {
-  return {
-    name: "",
-    startDate: "",
-    endDate: "",
-    durationDays: "",
-    totalHours: "",
-    targetOutcome: "",
-  };
-}
 
 function formatBusinessRegNo(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 10);
@@ -242,18 +87,6 @@ function normalizeCompanyParticipations(
   return { ...company, participations };
 }
 
-function calculateDurationDays(
-  startDate: string,
-  endDate: string,
-): number | null {
-  if (!startDate || !endDate) return null;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const milliseconds = end.getTime() - start.getTime();
-  if (Number.isNaN(milliseconds) || milliseconds < 0) return null;
-  return Math.floor(milliseconds / (1000 * 60 * 60 * 24)) + 1;
-}
-
 function toDotDate(value: string | undefined): string {
   if (!value) return "-";
   return value.split("-").join(".");
@@ -274,11 +107,9 @@ export function CompanyManagementPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [courseGroups, setCourseGroups] = useState<CourseGroup[]>(
-    INITIAL_COURSE_GROUPS,
-  );
-  
-  const { companies: rawCompanies, setCompanies: setGlobalCompanies } = useCompanyStore();
+  const { courseGroups } = useCourseStore();
+  const { companies: rawCompanies, setCompanies: setGlobalCompanies, upsertCompany, isLoading } = useCompanyStore();
+
   const companies = useMemo(() => rawCompanies.map(c => normalizeCompanyParticipations(cloneCompany(c), courseGroups)), [rawCompanies, courseGroups]);
 
   const setCompanies = useCallback(
@@ -323,46 +154,13 @@ export function CompanyManagementPage() {
     initialTemplates[0]?.id ?? "",
   );
 
-  const [managerSelectedGroupId, setManagerSelectedGroupId] = useState<
-    string | null
-  >(INITIAL_COURSE_GROUPS[0]?.id ?? null);
-  const [managerExpandedGroups, setManagerExpandedGroups] = useState<
-    Set<string>
-  >(new Set([INITIAL_COURSE_GROUPS[0]?.id ?? ""]));
-  const [managerGroupForm, setManagerGroupForm] = useState<CourseGroupForm>(
-    () =>
-      INITIAL_COURSE_GROUPS[0]
-        ? cloneGroupToForm(INITIAL_COURSE_GROUPS[0])
-        : createEmptyGroupForm(),
-  );
-  const [managerDetailForm, setManagerDetailForm] =
-    useState<CourseDetailDraft | null>(null);
-  const [managerEditingDetailId, setManagerEditingDetailId] = useState<
-    string | null
-  >(null);
-  const [managerError, setManagerError] = useState("");
-  const [managerMessage, setManagerMessage] = useState("");
-  const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState<
-    string | null
-  >(null);
-  const [managerCancelConfirmPending, setManagerCancelConfirmPending] =
-    useState(false);
-
-  const isManagerGroupModified = useMemo(() => {
-    if (!managerSelectedGroupId) return true;
-    const original = courseGroups.find((g) => g.id === managerSelectedGroupId);
-    if (!original) return true;
-    const current = { id: original.id, ...managerGroupForm };
-    return JSON.stringify(original) !== JSON.stringify(current);
-  }, [managerSelectedGroupId, managerGroupForm, courseGroups]);
-
   const [editModeSnapshot, setEditModeSnapshot] =
     useState<CompanyRecord | null>(null);
   const [drawerNameEditing, setDrawerNameEditing] = useState(false);
   const [drawerNameDraft, setDrawerNameDraft] = useState("");
   const [cancelConfirmPending, setCancelConfirmPending] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [isSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [addCourseGroupName, setAddCourseGroupName] = useState("");
   const [addCourseSelection, setAddCourseSelection] = useState<Set<string>>(
@@ -371,8 +169,15 @@ export function CompanyManagementPage() {
 
   const lastSelectedIdRef = useRef<string | null>(null);
 
-  const [companyParticipants, setCompanyParticipants] =
-    useState<Record<string, CourseParticipantsMap>>(INITIAL_COMPANY_PARTICIPANTS);
+  const { participants, upsertParticipant } = useParticipantStore();
+
+  const companyParticipants = useMemo(() => {
+    const groupNames: Record<string, string> = {};
+    courseGroups.forEach((g) => {
+      groupNames[g.id] = g.name;
+    });
+    return transformParticipantsToMap(participants, groupNames);
+  }, [participants, courseGroups]);
 
   const [expandedSubCourses, setExpandedSubCourses] = useState<Set<string>>(
     new Set(),
@@ -526,10 +331,6 @@ export function CompanyManagementPage() {
   }
 
   function closeModal() {
-    if (activeModal === "course-manager" && isManagerGroupModified) {
-      setManagerCancelConfirmPending(true);
-      return;
-    }
     forceCloseModal();
   }
 
@@ -541,12 +342,6 @@ export function CompanyManagementPage() {
     setColumnMapping({});
     setUploadPreview(null);
     setUploadError(null);
-    setManagerError("");
-    setManagerMessage("");
-    setPendingDeleteGroupId(null);
-    setManagerDetailForm(null);
-    setManagerEditingDetailId(null);
-    setManagerCancelConfirmPending(false);
   }
 
   function handleDrawerClose() {
@@ -644,24 +439,27 @@ export function CompanyManagementPage() {
     setActiveModal(null);
   }
 
-  function saveDraftCompany() {
+  async function saveDraftCompany() {
     if (!draftCompany) return;
 
-    const normalized = normalizeCompanyParticipations(
-      draftCompany,
-      courseGroups,
-    );
-    setCompanies((current) => {
-      const exists = current.some((company) => company.id === normalized.id);
-      if (exists) {
-        return current.map((company) =>
-          company.id === normalized.id ? normalized : company,
-        );
-      }
-      return [normalized, ...current];
-    });
+    if (!draftCompany.companyName.trim()) {
+      setDrawerNotice("기업명을 입력해 주세요.");
+      return;
+    }
 
-    closeDrawer();
+    setIsSaving(true);
+    try {
+      const normalized = normalizeCompanyParticipations(
+        draftCompany,
+        courseGroups,
+      );
+      await upsertCompany(normalized);
+      setIsSaving(false);
+      closeDrawer();
+    } catch (err: any) {
+      setDrawerNotice(`저장 실패: ${err.message}`);
+      setIsSaving(false);
+    }
   }
 
   function getSortIndicator(key: SortKey): string {
@@ -669,13 +467,6 @@ export function CompanyManagementPage() {
       return "↕";
     }
     return sortState.direction === "asc" ? "↑" : "↓";
-  }
-
-  function getSortIndicatorClass(key: SortKey): string {
-    if (sortState.key !== key || !sortState.direction) {
-      return "sort-indicator sort-indicator-idle";
-    }
-    return "sort-indicator sort-indicator-active";
   }
 
   function toggleCompanySelection(companyId: string, event?: React.MouseEvent | React.ChangeEvent) {
@@ -894,309 +685,6 @@ export function CompanyManagementPage() {
     setUploadError(null);
   }
 
-  function openCourseManagerModal() {
-    const firstGroup = courseGroups[0];
-    setManagerSelectedGroupId(firstGroup?.id ?? null);
-    setManagerGroupForm(
-      firstGroup ? cloneGroupToForm(firstGroup) : createEmptyGroupForm(),
-    );
-    setManagerDetailForm(null);
-    setManagerEditingDetailId(null);
-    setManagerError("");
-    setManagerMessage("");
-    setPendingDeleteGroupId(null);
-    setActiveModal("course-manager");
-  }
-
-  function selectGroupForManager(groupId: string) {
-    const group = courseGroups.find((item) => item.id === groupId);
-    if (!group) return;
-
-    setManagerSelectedGroupId(group.id);
-    setManagerGroupForm(cloneGroupToForm(group));
-    setManagerDetailForm(null);
-    setManagerEditingDetailId(null);
-    setManagerError("");
-    setManagerMessage("");
-  }
-
-  function startCreateCourseGroup() {
-    setManagerSelectedGroupId(null);
-    setManagerGroupForm(createEmptyGroupForm());
-    setManagerDetailForm(null);
-    setManagerEditingDetailId(null);
-    setManagerError("");
-    setManagerMessage("");
-  }
-
-  function toggleManagerAudience(target: AudienceOption) {
-    setManagerGroupForm((previous) => {
-      const hasTarget = previous.audiences.includes(target);
-      const nextAudiences = hasTarget
-        ? previous.audiences.filter((audience) => audience !== target)
-        : [...previous.audiences, target];
-      return { ...previous, audiences: nextAudiences };
-    });
-  }
-
-  function startAddDetail() {
-    setManagerDetailForm(createEmptyDetailDraft());
-    setManagerEditingDetailId(ADDING_NEW_DETAIL);
-  }
-
-  function startEditDetail(groupId: string, detailId: string) {
-    const sourceGroup =
-      groupId === managerSelectedGroupId
-        ? {
-            id: groupId,
-            ...managerGroupForm,
-          }
-        : courseGroups.find((group) => group.id === groupId);
-
-    const detail = sourceGroup?.details.find((item) => item.id === detailId);
-    if (!detail || !sourceGroup) return;
-
-    if (groupId !== managerSelectedGroupId) {
-      setManagerSelectedGroupId(groupId);
-      setManagerGroupForm(cloneGroupToForm(sourceGroup as CourseGroup));
-    }
-
-    setManagerEditingDetailId(detail.id);
-    setManagerDetailForm({
-      name: detail.name,
-      startDate: detail.startDate,
-      endDate: detail.endDate,
-      durationDays: String(detail.durationDays),
-      totalHours: String(detail.totalHours),
-      targetOutcome: String(detail.targetOutcome),
-    });
-  }
-
-  function removeDetailFromForm(groupId: string, detailId: string) {
-    if (groupId !== managerSelectedGroupId) {
-      const group = courseGroups.find((item) => item.id === groupId);
-      if (!group) return;
-      setManagerSelectedGroupId(groupId);
-      setManagerGroupForm({
-        name: group.name,
-        audiences: [...group.audiences],
-        details: group.details.filter((detail) => detail.id !== detailId),
-      });
-      setManagerDetailForm(null);
-      setManagerEditingDetailId(null);
-      return;
-    }
-
-    setManagerGroupForm((previous) => ({
-      ...previous,
-      details: previous.details.filter((detail) => detail.id !== detailId),
-    }));
-
-    if (managerEditingDetailId === detailId) {
-      setManagerEditingDetailId(null);
-      setManagerDetailForm(null);
-    }
-  }
-
-  function applyDetailDraft() {
-    if (!managerDetailForm) return;
-    const trimmedName = managerDetailForm.name.trim();
-    if (!trimmedName) {
-      setManagerError("세부 과정명을 입력해 주세요.");
-      return;
-    }
-
-    const autoDuration = calculateDurationDays(
-      managerDetailForm.startDate,
-      managerDetailForm.endDate,
-    );
-    const durationValue =
-      Number(managerDetailForm.durationDays) || autoDuration || 0;
-    const totalHours = Number(managerDetailForm.totalHours) || 0;
-    const targetOutcome = Number(managerDetailForm.targetOutcome) || 0;
-
-    if (durationValue <= 0 || totalHours <= 0 || targetOutcome <= 0) {
-      setManagerError("진행 기간, 시간, 목표 성과는 1 이상 값이 필요합니다.");
-      return;
-    }
-
-    const isEditing =
-      managerEditingDetailId && managerEditingDetailId !== ADDING_NEW_DETAIL;
-
-    const nextDetail: CourseDetail = {
-      id: isEditing ? managerEditingDetailId! : createLocalId("detail"),
-      name: trimmedName,
-      startDate: managerDetailForm.startDate,
-      endDate: managerDetailForm.endDate,
-      durationDays: durationValue,
-      totalHours,
-      targetOutcome,
-    };
-
-    setManagerGroupForm((previous) => {
-      if (isEditing) {
-        return {
-          ...previous,
-          details: previous.details.map((detail) =>
-            detail.id === managerEditingDetailId ? nextDetail : detail,
-          ),
-        };
-      }
-
-      return {
-        ...previous,
-        details: [...previous.details, nextDetail],
-      };
-    });
-
-    setManagerDetailForm(null);
-    setManagerEditingDetailId(null);
-    setManagerError("");
-  }
-
-  function saveCourseGroup() {
-    const trimmedName = managerGroupForm.name.trim();
-    if (!trimmedName) {
-      setManagerError("과정 구분 이름을 입력해 주세요.");
-      return;
-    }
-
-    const duplicate = courseGroups.find(
-      (group) =>
-        group.name.toLowerCase() === trimmedName.toLowerCase() &&
-        group.id !== managerSelectedGroupId,
-    );
-    if (duplicate) {
-      setManagerError("동일한 과정 구분 이름이 이미 존재합니다.");
-      return;
-    }
-
-    if (managerGroupForm.details.length === 0) {
-      setManagerError("세부 과정을 최소 1개 이상 등록해 주세요.");
-      return;
-    }
-
-    const nextGroup: CourseGroup = {
-      id: managerSelectedGroupId ?? createLocalId("group"),
-      name: trimmedName,
-      audiences: [...managerGroupForm.audiences],
-      details: managerGroupForm.details.map((detail) => ({ ...detail })),
-    };
-
-    if (managerSelectedGroupId) {
-      const oldGroup = courseGroups.find(
-        (group) => group.id === managerSelectedGroupId,
-      );
-      if (!oldGroup) return;
-
-      const removedDetailNames = oldGroup.details
-        .map((detail) => detail.name)
-        .filter(
-          (name) =>
-            !nextGroup.details.some(
-              (detail) => detail.name.toLowerCase() === name.toLowerCase(),
-            ),
-        );
-
-      setCourseGroups((current) =>
-        current.map((group) => (group.id === oldGroup.id ? nextGroup : group)),
-      );
-
-      setCompanies((current) =>
-        current.map((company) => {
-          let matched = false;
-          const nextParticipations = company.participations.map(
-            (participation) => {
-              if (participation.courseType !== oldGroup.name) {
-                return participation;
-              }
-              matched = true;
-              const nextProgramNames = participation.programNames.filter(
-                (programName) => !removedDetailNames.includes(programName),
-              );
-              return {
-                ...participation,
-                courseType: nextGroup.name,
-                programNames: nextProgramNames,
-                enabled:
-                  nextProgramNames.length > 0 ? participation.enabled : false,
-                status:
-                  nextProgramNames.length > 0 ? participation.status : "미참여",
-              };
-            },
-          );
-
-          if (!matched) {
-            nextParticipations.push({
-              courseType: nextGroup.name,
-              enabled: false,
-              programNames: [],
-              status: "미참여",
-            });
-          }
-
-          return { ...company, participations: nextParticipations };
-        }),
-      );
-
-      setManagerGroupForm(cloneGroupToForm(nextGroup));
-      setManagerMessage("과정 구분이 저장되었습니다.");
-      setManagerError("");
-      return;
-    }
-
-    setCourseGroups((current) => [...current, nextGroup]);
-    setCompanies((current) =>
-      current.map((company) => ({
-        ...company,
-        participations: [
-          ...company.participations,
-          {
-            courseType: nextGroup.name,
-            enabled: false,
-            programNames: [],
-            status: "미참여",
-          },
-        ],
-      })),
-    );
-
-    setManagerSelectedGroupId(nextGroup.id);
-    setManagerGroupForm(cloneGroupToForm(nextGroup));
-    setManagerMessage("새 과정 구분이 추가되었습니다.");
-    setManagerError("");
-  }
-
-  function confirmDeleteCourseGroup() {
-    if (!pendingDeleteGroupId) return;
-    const target = courseGroups.find(
-      (group) => group.id === pendingDeleteGroupId,
-    );
-    if (!target) return;
-
-    setCourseGroups((current) =>
-      current.filter((group) => group.id !== target.id),
-    );
-    setCompanies((current) =>
-      current.map((company) => ({
-        ...company,
-        participations: company.participations.filter(
-          (participation) => participation.courseType !== target.name,
-        ),
-      })),
-    );
-
-    const remaining = courseGroups.filter((group) => group.id !== target.id);
-    const firstGroup = remaining[0];
-    setManagerSelectedGroupId(firstGroup?.id ?? null);
-    setManagerGroupForm(
-      firstGroup ? cloneGroupToForm(firstGroup) : createEmptyGroupForm(),
-    );
-    setManagerMessage("과정 구분이 삭제되었습니다.");
-    setManagerError("");
-    setPendingDeleteGroupId(null);
-  }
-
   function openAddCourseModal() {
     if (!draftCompany) return;
     const firstGroupName = courseGroups[0]?.name ?? "";
@@ -1275,19 +763,6 @@ export function CompanyManagementPage() {
     });
   }
 
-  function toggleManagerGroup(groupId: string, event: React.MouseEvent) {
-    event.stopPropagation();
-    setManagerExpandedGroups((previous) => {
-      const next = new Set(previous);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  }
-
   function handleLocationEnter(
     event: React.MouseEvent<HTMLTableCellElement>,
     locationText: string,
@@ -1312,51 +787,30 @@ export function CompanyManagementPage() {
     participations: CompanyParticipation[],
   ) {
     if (participations.length === 0) return;
+
     const rect = event.currentTarget.getBoundingClientRect();
+    const content = (
+      <div className="flex flex-col gap-1 min-w-[120px]">
+        {participations.map((p) => (
+          <div key={p.courseType} className="flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold">{p.courseType}</span>
+            <span className="text-[10px] bg-slate-100 px-1.5 rounded">{p.programNames.length}개 과정</span>
+          </div>
+        ))}
+      </div>
+    );
 
     setTooltipInfo({
-      content: (
-        <>
-          {participations.map((participation) => (
-            <div key={participation.courseType} className="tooltip-course-row">
-              <span className="tooltip-course-type">
-                {participation.courseType}
-              </span>
-              <span className="tooltip-course-names">
-                {participation.programNames.join(", ") || "세부 과정 없음"}
-              </span>
-            </div>
-          ))}
-        </>
-      ),
+      content,
       style: {
-        left: rect.left,
-        top: rect.top + rect.height / 2,
-        transform: "translateX(calc(-100% - 8px)) translateY(-50%)",
+        left: rect.left + rect.width / 2,
+        top: rect.top,
+        transform: "translateX(-50%) translateY(calc(-100% - 8px))",
       },
     });
   }
 
-  function getCourseTypeTagStyle(courseType: string): React.CSSProperties {
-    if (courseType === "훈련비과정") {
-      return { background: "#dcfce7", color: "#166534" };
-    }
-    if (courseType === "지원비과정") {
-      return { background: "#dbeafe", color: "#1d4ed8" };
-    }
-    return { background: "#fef9c3", color: "#854d0e" };
-  }
-
-  function getCourseTypeTagLabel(courseType: string): string {
-    if (courseType === "훈련비과정") return "훈련";
-    if (courseType === "지원비과정") return "지원";
-    return "세미나";
-  }
-
-  function getSubCoursesForCompany(
-    companyId: string,
-    groupId: string,
-  ) {
+  function getSubCoursesForCompany(companyId: string, groupId: string) {
     return companyParticipants[companyId]?.[groupId] ?? {};
   }
 
@@ -1386,73 +840,63 @@ export function CompanyManagementPage() {
     subCourseId: string,
     participantId: string,
   ) {
-    if (!draftCompany) return;
-    const companyId = draftCompany.id;
-    setCompanyParticipants((prev) => {
-      const groupMap = { ...(prev[companyId]?.[groupId] ?? {}) };
-      const sc = groupMap[subCourseId];
-      if (!sc) return prev;
-      groupMap[subCourseId] = {
-        ...sc,
-        participants: sc.participants.filter((p) => p.id !== participantId),
-      };
-      return {
-        ...prev,
-        [companyId]: {
-          ...(prev[companyId] ?? {}),
-          [groupId]: groupMap,
-        },
-      };
-    });
+    const pt = participants.find((p) => p.id === participantId);
+    if (!pt) return;
+
+    const group = courseGroups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    const nextEnrollments = pt.enrollments.filter(
+      (e) => !(e.courseType === group.name && e.subCourseName === subCourseId),
+    );
+
+    upsertParticipant({ ...pt, enrollments: nextEnrollments });
   }
 
-  function addParticipantToSubCourse(
-    subCourseId: string,
-    groupId: string,
-  ) {
+  function addParticipantToSubCourse(subCourseId: string, groupId: string) {
     if (!draftCompany || !addParticipantDraft.trim()) return;
     const companyId = draftCompany.id;
     const name = addParticipantDraft.trim();
+    const group = courseGroups.find((g) => g.id === groupId);
+    if (!group) return;
 
-    const newParticipant = {
-      id: createLocalId("pt"),
-      name: name,
-      email: "",
-      phone: "",
-      position: "",
-      completedCourses: 0,
-      totalCourses: 1,
-      completed: false,
+    const nextEnrollmentId = `enr-${Date.now()}`;
+    const newEnrollment: ParticipantEnrollment = {
+      id: nextEnrollmentId,
+      courseType: group.name as CourseType,
+      subCourseName: subCourseId,
+      startDate: "",
+      endDate: "",
+      totalHours: 0,
+      status: "미수료",
     };
 
-    setCompanyParticipants((prev) => {
-      const groupMap = { ...(prev[companyId]?.[groupId] ?? {}) };
-      const sc = groupMap[subCourseId];
-      if (sc) {
-        groupMap[subCourseId] = {
-          ...sc,
-          participants: [...sc.participants, newParticipant],
-        };
-      } else {
-        groupMap[subCourseId] = {
-          id: subCourseId,
-          name: subCourseId,
-          startDate: "",
-          endDate: "",
-          totalHours: 0,
-          participants: [newParticipant],
-        };
-      }
-      return {
-        ...prev,
-        [companyId]: {
-          ...(prev[companyId] ?? {}),
-          [groupId]: groupMap,
-        },
+    const existing = participants.find(
+      (p) => p.name === name && p.companyId === companyId,
+    );
+
+    if (existing) {
+      upsertParticipant({
+        ...existing,
+        enrollments: [...existing.enrollments, newEnrollment],
+      });
+    } else {
+      const newP: ParticipantRecord = {
+        id: `pt-${Date.now()}`,
+        name,
+        companyId,
+        companyName: draftCompany.companyName,
+        position: "",
+        phone: "",
+        email: "",
+        employmentInsurance: "미확인",
+        enrollments: [newEnrollment],
       };
-    });
-    setAddParticipantDraft("");
+      upsertParticipant(newP);
+    }
+
     setAddParticipantSubCourseId(null);
+    setAddParticipantDraft("");
   }
 
   function showParticipantPopover(
@@ -1462,10 +906,18 @@ export function CompanyManagementPage() {
     if (popoverTimerRef.current) clearTimeout(popoverTimerRef.current);
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     popoverTimerRef.current = setTimeout(() => {
+      const popoverWidth = 220;
+      const margin = 8;
+      const hasSpaceOnRight = rect.right + popoverWidth + margin < window.innerWidth;
+      
+      const left = hasSpaceOnRight 
+        ? rect.right + margin 
+        : rect.left - popoverWidth - margin;
+
       setParticipantPopover({
         participant,
         style: {
-          left: rect.right + 8,
+          left,
           top: rect.top,
         },
       });
@@ -1500,7 +952,6 @@ export function CompanyManagementPage() {
         tabItems={TAB_ITEMS}
         searchText={searchText}
         onSearchChange={setSearchText}
-        onOpenCourseManager={openCourseManagerModal}
         onOpenChoiceModal={openChoiceModal}
         paginatedCompanies={paginated}
         allVisibleSelected={allVisibleSelected}
@@ -1511,9 +962,6 @@ export function CompanyManagementPage() {
         draftCompanyId={draftCompany?.id}
         onToggleSort={toggleSort}
         getSortIndicator={getSortIndicator}
-        getSortIndicatorClass={getSortIndicatorClass}
-        getCourseTypeTagStyle={getCourseTypeTagStyle}
-        getCourseTypeTagLabel={getCourseTypeTagLabel}
         onLocationEnter={handleLocationEnter}
         onParticipationEnter={handleParticipationEnter}
         onTooltipLeave={() => setTooltipInfo(null)}
@@ -1546,7 +994,7 @@ export function CompanyManagementPage() {
                 className="btn btn-secondary"
                 onClick={exportSelectedCompanies}
               >
-                <Phone className="icon-sm" />
+                <Download className="icon-sm" />
                 <span>내보내기</span>
               </button>
               <button
@@ -1596,38 +1044,6 @@ export function CompanyManagementPage() {
           onTemplateChange={setSelectedTemplateId}
           onSend={sendEmailTemplate}
           templates={initialTemplates}
-        />
-      )}
-
-      {activeModal === "course-manager" && (
-        <CourseManagerModal
-          onClose={closeModal}
-          courseGroups={courseGroups}
-          managerSelectedGroupId={managerSelectedGroupId}
-          managerExpandedGroups={managerExpandedGroups}
-          managerGroupForm={managerGroupForm}
-          managerDetailForm={managerDetailForm}
-          managerEditingDetailId={managerEditingDetailId}
-          managerError={managerError}
-          managerMessage={managerMessage}
-          audienceOptions={AUDIENCE_OPTIONS}
-          addingNewDetailId={ADDING_NEW_DETAIL}
-          isManagerGroupModified={isManagerGroupModified}
-          onSelectGroup={selectGroupForManager}
-          onStartCreateGroup={startCreateCourseGroup}
-          onToggleGroup={toggleManagerGroup}
-          onDeleteGroupClick={setPendingDeleteGroupId}
-          onGroupNameChange={(name) => setManagerGroupForm(prev => ({ ...prev, name }))}
-          onToggleAudience={toggleManagerAudience}
-          onStartAddDetail={startAddDetail}
-          onStartEditDetail={startEditDetail}
-          onRemoveDetail={removeDetailFromForm}
-          onDetailFormChange={(field, value) => setManagerDetailForm(prev => prev ? ({ ...prev, [field]: value }) : prev)}
-          onApplyDetailDraft={applyDetailDraft}
-          onCancelDetailEdit={() => { setManagerDetailForm(null); setManagerEditingDetailId(null); }}
-          onSaveGroup={saveCourseGroup}
-          calculateDurationDays={calculateDurationDays}
-          toDotDate={toDotDate}
         />
       )}
 
@@ -1685,44 +1101,12 @@ export function CompanyManagementPage() {
         />
       )}
 
-      {pendingDeleteGroupId && (
-        <div className="modal-backdrop confirm-modal">
-          <div className="modal-panel modal-panel-sm">
-            <div className="modal-header">
-              <h3>과정 삭제</h3>
-              <button type="button" className="icon-btn" onClick={() => setPendingDeleteGroupId(null)}><X className="icon-sm" /></button>
-            </div>
-            <div className="modal-content"><p>과정을 삭제하시겠습니까?</p></div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setPendingDeleteGroupId(null)}>취소</button>
-              <button className="btn btn-primary" onClick={confirmDeleteCourseGroup}>삭제</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {managerCancelConfirmPending && (
-        <div className="modal-backdrop confirm-modal">
-          <div className="modal-panel modal-panel-sm">
-            <div className="modal-header">
-              <h3>변경 사항 취소</h3>
-              <button type="button" className="icon-btn" onClick={() => setManagerCancelConfirmPending(false)}><X className="icon-sm" /></button>
-            </div>
-            <div className="modal-content"><p>내용이 저장되지 않았습니다. 닫으시겠습니까?</p></div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setManagerCancelConfirmPending(false)}>계속 편집</button>
-              <button className="btn btn-primary" onClick={() => { setManagerCancelConfirmPending(false); forceCloseModal(); }}>닫기</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {cancelConfirmPending && (
         <div className="modal-backdrop confirm-modal">
           <div className="modal-panel modal-panel-sm">
             <div className="modal-header">
               <h3>변경 사항 취소</h3>
-              <button type="button" className="icon-btn" onClick={() => setCancelConfirmPending(false)}><X className="icon-sm" /></button>
+              <button type="button" className="icon-btn" onClick={() => setCancelConfirmPending(false)}><Check className="icon-sm" /></button>
             </div>
             <div className="modal-content"><p>내용이 저장되지 않았습니다. 취소하시겠습니까?</p></div>
             <div className="modal-footer">

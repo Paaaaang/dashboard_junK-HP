@@ -102,3 +102,28 @@ export interface HeatPoint {
   day: string;
   time: string;
 }
+
+export interface SubCourseParticipant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  completedCourses: number;
+  totalCourses: number;
+  completed: boolean;
+}
+
+export interface SubCourseWithParticipants {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  totalHours: number;
+  participants: SubCourseParticipant[];
+}
+
+export type CourseParticipantsMap = Record<
+  string,
+  Record<string, SubCourseWithParticipants>
+>;

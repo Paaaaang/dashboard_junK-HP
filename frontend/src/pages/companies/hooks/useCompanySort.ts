@@ -11,8 +11,8 @@ export interface SortState {
 
 export function useCompanySort() {
   const [sortState, setSortState] = useState<SortState>({
-    key: null,
-    direction: null,
+    key: "companyName",
+    direction: "asc",
   });
 
   const toggleSort = (key: SortKey) => {

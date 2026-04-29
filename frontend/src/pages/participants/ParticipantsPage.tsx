@@ -1,71 +1,106 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Search,
-  Plus,
-  Mail,
-  Download,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-} from "lucide-react";
+import { Mail, Download, X, Check } from "lucide-react";
 
 import { PageHeader } from "../../components/layout";
-import { EmptyState } from "../../components/shared";
-import { useCompanyStore, useParticipantStore } from "../../stores";
-import { useDebounce } from "../../hooks/useDebounce";
+import { useCompanyStore, useParticipantStore, useCourseStore } from "../../stores";
 import { ParticipantDrawer } from "./ParticipantDrawer";
 import { AddParticipantModal } from "./modals/AddParticipantModal";
-
-import type {
-  ParticipantEnrollment,
-  CourseType,
-} from "../../types/models";
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-type TabKey = "ALL" | CourseType;
-type InsuranceFilter = "ALL" | "가입" | "미가입";
-type CompletionFilter = "ALL" | "수료" | "미수료";
-
-const TAB_ITEMS: Array<{ key: TabKey; label: string }> = [
-  { key: "ALL", label: "전체" },
-  { key: "훈련비과정", label: "훈련비" },
-  { key: "지원비과정", label: "지원비" },
-  { key: "공유개방 세미나", label: "세미나" },
-];
+import { ParticipantsTable } from "./ParticipantsTable";
+import { useParticipantFilters } from "./hooks/useParticipantFilters";
+import { 
+  CourseManagerModal, 
+  CourseGroup, 
+  CourseGroupForm, 
+  CourseDetailDraft, 
+  CourseDetail, 
+  AudienceOption 
+} from "../companies/modals/CourseManagerModal";
+import type { CompanyRecord, CompanyParticipation, CourseType, ParticipantEnrollment, ParticipantRecord } from "../../types/models";
 
 const PAGE_SIZE = 20;
 
-// ── Utility ────────────────────────────────────────────────────────────────────
+const AUDIENCE_OPTIONS: AudienceOption[] = [
+  "재직자 (고용보험 가입)",
+  "재직자 (고용보험 미가입)",
+  "기업 대표",
+  "임원",
+  "미래인재",
+];
 
-function calcCompletionSummary(enrollments: ParticipantEnrollment[]) {
-  const total = enrollments.length;
-  const completed = enrollments.filter((e) => e.status === "수료").length;
-  return { total, completed };
+const ADDING_NEW_DETAIL = "__new__";
+
+let localSequence = 0;
+function createLocalId(prefix: string): string {
+  localSequence += 1;
+  return `${prefix}-${Date.now()}-${localSequence}`;
 }
 
-function completionVariant(completed: number, total: number) {
-  if (total === 0) return "gray";
-  if (completed === total) return "green";
-  return "default";
+function cloneGroupToForm(group: CourseGroup): CourseGroupForm {
+  return {
+    name: group.name,
+    audiences: [...group.audiences],
+    details: group.details.map((detail) => ({ ...detail })),
+  };
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+function createEmptyGroupForm(): CourseGroupForm {
+  return {
+    name: "",
+    audiences: [],
+    details: [],
+  };
+}
+
+function createEmptyDetailDraft(): CourseDetailDraft {
+  return {
+    name: "",
+    startDate: "",
+    endDate: "",
+    durationDays: "",
+    totalHours: "",
+    targetOutcome: "",
+  };
+}
+
+function calculateDurationDays(
+  startDate: string,
+  endDate: string,
+): number | null {
+  if (!startDate || !endDate) return null;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const milliseconds = end.getTime() - start.getTime();
+  if (Number.isNaN(milliseconds) || milliseconds < 0) return null;
+  return Math.floor(milliseconds / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function toDotDate(value: string | undefined): string {
+  if (!value) return "-";
+  return value.split("-").join(".");
+}
 
 export function ParticipantsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { participants, upsertParticipant } = useParticipantStore();
-  const { companies: allCompanies } = useCompanyStore();
+  const { companies: allCompanies, setCompanies: setGlobalCompanies } = useCompanyStore();
+  const { courseGroups, updateCourseGroup, addCourseGroup, deleteCourseGroup } = useCourseStore();
 
-  const [activeTab, setActiveTab] = useState<TabKey>("ALL");
-  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("ALL");
-  const [insuranceFilter, setInsuranceFilter] = useState<InsuranceFilter>("ALL");
-  const [searchRaw, setSearchRaw] = useState("");
-  const searchDebounced = useDebounce(searchRaw, 300);
+  const {
+    activeTab,
+    setActiveTab,
+    completionFilter,
+    setCompletionFilter,
+    insuranceFilter,
+    setInsuranceFilter,
+    searchRaw,
+    setSearchRaw,
+    filtered,
+    filtersActive,
+    resetFilters,
+  } = useParticipantFilters(participants);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openParticipantId, setOpenParticipantId] = useState<string | null>(null);
@@ -76,6 +111,28 @@ export function ParticipantsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const lastSelectedIdRef = useRef<string | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
+
+  // ── Course Manager State ──
+  const [showCourseManager, setShowCourseManager] = useState(false);
+  const [managerSelectedGroupId, setManagerSelectedGroupId] = useState<string | null>(courseGroups[0]?.id ?? null);
+  const [managerExpandedGroups, setManagerExpandedGroups] = useState<Set<string>>(new Set([courseGroups[0]?.id ?? ""]));
+  const [managerGroupForm, setManagerGroupForm] = useState<CourseGroupForm>(
+    () => courseGroups[0] ? cloneGroupToForm(courseGroups[0]) : createEmptyGroupForm()
+  );
+  const [managerDetailForm, setManagerDetailForm] = useState<CourseDetailDraft | null>(null);
+  const [managerEditingDetailId, setManagerEditingDetailId] = useState<string | null>(null);
+  const [managerError, setManagerError] = useState("");
+  const [managerMessage, setManagerMessage] = useState("");
+  const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState<string | null>(null);
+  const [managerCancelConfirmPending, setManagerCancelConfirmPending] = useState(false);
+
+  const isManagerGroupModified = useMemo(() => {
+    if (!managerSelectedGroupId) return true;
+    const original = courseGroups.find((g) => g.id === managerSelectedGroupId);
+    if (!original) return true;
+    const current = { id: original.id, ...managerGroupForm };
+    return JSON.stringify(original) !== JSON.stringify(current);
+  }, [managerSelectedGroupId, managerGroupForm, courseGroups]);
 
   // ?open=participantId → auto open drawer
   useEffect(() => {
@@ -109,47 +166,6 @@ export function ParticipantsPage() {
     }, 200);
   }, [closeDrawer]);
 
-  // Filter & Sort (Default: Alphabetical)
-  const filtered = useMemo(() => {
-    let list = [...participants];
-
-    // 1. 기본 정렬 (이름 가나다순)
-    list.sort((a, b) => a.name.localeCompare(b.name, "ko"));
-
-    // 2. 탭 필터
-    if (activeTab !== "ALL") {
-      list = list.filter((p) => p.enrollments.some((e) => e.courseType === activeTab));
-    }
-
-    // 3. 수료 상태 필터
-    if (completionFilter !== "ALL") {
-      list = list.filter((p) => {
-        const { completed, total } = calcCompletionSummary(p.enrollments);
-        if (completionFilter === "수료") return total > 0 && completed === total;
-        return total === 0 || completed < total;
-      });
-    }
-
-    // 4. 고용보험 필터
-    if (insuranceFilter !== "ALL") {
-      list = list.filter((p) => p.employmentInsurance === insuranceFilter);
-    }
-
-    // 5. 검색어 필터
-    if (searchDebounced.trim()) {
-      const q = searchDebounced.trim().toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.companyName.toLowerCase().includes(q) ||
-          p.email.toLowerCase().includes(q) ||
-          p.phone.toLowerCase().includes(q),
-      );
-    }
-
-    return list;
-  }, [participants, activeTab, completionFilter, insuranceFilter, searchDebounced]);
-
   // Pagination
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -160,7 +176,7 @@ export function ParticipantsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, completionFilter, insuranceFilter, searchDebounced]);
+  }, [filtered]);
 
   // Selection Logic
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
@@ -225,262 +241,296 @@ export function ParticipantsPage() {
     [openParticipantId, participants],
   );
 
-  const filtersActive = activeTab !== "ALL" || completionFilter !== "ALL" || insuranceFilter !== "ALL" || searchDebounced.trim() !== "";
+  // ── Course Manager Handlers ──
+  const openCourseManagerModal = () => {
+    const firstGroup = courseGroups[0];
+    setManagerSelectedGroupId(firstGroup?.id ?? null);
+    setManagerGroupForm(firstGroup ? cloneGroupToForm(firstGroup) : createEmptyGroupForm());
+    setManagerDetailForm(null);
+    setManagerEditingDetailId(null);
+    setManagerError("");
+    setManagerMessage("");
+    setPendingDeleteGroupId(null);
+    setShowCourseManager(true);
+  };
+
+  const closeCourseManager = () => {
+    if (isManagerGroupModified) {
+      setManagerCancelConfirmPending(true);
+      return;
+    }
+    forceCloseCourseManager();
+  };
+
+  const forceCloseCourseManager = () => {
+    setShowCourseManager(false);
+    setManagerError("");
+    setManagerMessage("");
+    setPendingDeleteGroupId(null);
+    setManagerDetailForm(null);
+    setManagerEditingDetailId(null);
+    setManagerCancelConfirmPending(false);
+  };
+
+  const selectGroupForManager = (groupId: string) => {
+    const group = courseGroups.find((item) => item.id === groupId);
+    if (!group) return;
+    setManagerSelectedGroupId(group.id);
+    setManagerGroupForm(cloneGroupToForm(group));
+    setManagerDetailForm(null);
+    setManagerEditingDetailId(null);
+    setManagerError("");
+    setManagerMessage("");
+  };
+
+  const startCreateCourseGroup = () => {
+    setManagerSelectedGroupId(null);
+    setManagerGroupForm(createEmptyGroupForm());
+    setManagerDetailForm(null);
+    setManagerEditingDetailId(null);
+    setManagerError("");
+    setManagerMessage("");
+  };
+
+  const toggleManagerAudience = (target: AudienceOption) => {
+    setManagerGroupForm((prev) => {
+      const hasTarget = prev.audiences.includes(target);
+      const nextAudiences = hasTarget
+        ? prev.audiences.filter((a) => a !== target)
+        : [...prev.audiences, target];
+      return { ...prev, audiences: nextAudiences };
+    });
+  };
+
+  const startAddDetail = () => {
+    setManagerDetailForm(createEmptyDetailDraft());
+    setManagerEditingDetailId(ADDING_NEW_DETAIL);
+  };
+
+  const startEditDetail = (groupId: string, detailId: string) => {
+    const sourceGroup = groupId === managerSelectedGroupId
+      ? { id: groupId, ...managerGroupForm }
+      : courseGroups.find((g) => g.id === groupId);
+    const detail = sourceGroup?.details.find((d) => d.id === detailId);
+    if (!detail || !sourceGroup) return;
+    if (groupId !== managerSelectedGroupId) {
+      setManagerSelectedGroupId(groupId);
+      setManagerGroupForm(cloneGroupToForm(sourceGroup as CourseGroup));
+    }
+    setManagerEditingDetailId(detail.id);
+    setManagerDetailForm({
+      name: detail.name,
+      startDate: detail.startDate,
+      endDate: detail.endDate,
+      durationDays: String(detail.durationDays),
+      totalHours: String(detail.totalHours),
+      targetOutcome: String(detail.targetOutcome),
+    });
+  };
+
+  const removeDetailFromForm = (groupId: string, detailId: string) => {
+    if (groupId !== managerSelectedGroupId) {
+      const group = courseGroups.find((g) => g.id === groupId);
+      if (!group) return;
+      setManagerSelectedGroupId(groupId);
+      setManagerGroupForm({
+        name: group.name,
+        audiences: [...group.audiences],
+        details: group.details.filter((d) => d.id !== detailId),
+      });
+      return;
+    }
+    setManagerGroupForm((prev) => ({
+      ...prev,
+      details: prev.details.filter((d) => d.id !== detailId),
+    }));
+  };
+
+  const applyDetailDraft = () => {
+    if (!managerDetailForm) return;
+    const trimmedName = managerDetailForm.name.trim();
+    if (!trimmedName) {
+      setManagerError("세부 과정명을 입력해 주세요.");
+      return;
+    }
+    const autoDuration = calculateDurationDays(managerDetailForm.startDate, managerDetailForm.endDate);
+    const durationValue = Number(managerDetailForm.durationDays) || autoDuration || 0;
+    const totalHours = Number(managerDetailForm.totalHours) || 0;
+    const targetOutcome = Number(managerDetailForm.targetOutcome) || 0;
+
+    if (durationValue <= 0 || totalHours <= 0 || targetOutcome <= 0) {
+      setManagerError("진행 기간, 시간, 목표 성과는 1 이상 값이 필요합니다.");
+      return;
+    }
+
+    const isEditing = managerEditingDetailId && managerEditingDetailId !== ADDING_NEW_DETAIL;
+    const nextDetail: CourseDetail = {
+      id: isEditing ? managerEditingDetailId! : createLocalId("detail"),
+      name: trimmedName,
+      startDate: managerDetailForm.startDate,
+      endDate: managerDetailForm.endDate,
+      durationDays: durationValue,
+      totalHours,
+      targetOutcome,
+    };
+
+    setManagerGroupForm((prev) => {
+      if (isEditing) {
+        return {
+          ...prev,
+          details: prev.details.map((d) => d.id === managerEditingDetailId ? nextDetail : d),
+        };
+      }
+      return { ...prev, details: [...prev.details, nextDetail] };
+    });
+    setManagerDetailForm(null);
+    setManagerEditingDetailId(null);
+    setManagerError("");
+  };
+
+  const saveCourseGroup = () => {
+    const trimmedName = managerGroupForm.name.trim();
+    if (!trimmedName) {
+      setManagerError("과정 구분 이름을 입력해 주세요.");
+      return;
+    }
+    const duplicate = courseGroups.find(g => g.name.toLowerCase() === trimmedName.toLowerCase() && g.id !== managerSelectedGroupId);
+    if (duplicate) {
+      setManagerError("동일한 과정 구분 이름이 이미 존재합니다.");
+      return;
+    }
+    if (managerGroupForm.details.length === 0) {
+      setManagerError("세부 과정을 최소 1개 이상 등록해 주세요.");
+      return;
+    }
+
+    const nextGroup: CourseGroup = {
+      id: managerSelectedGroupId ?? createLocalId("group"),
+      name: trimmedName,
+      audiences: [...managerGroupForm.audiences],
+      details: managerGroupForm.details.map(d => ({ ...d })),
+    };
+
+    if (managerSelectedGroupId) {
+      const oldGroup = courseGroups.find(g => g.id === managerSelectedGroupId);
+      if (!oldGroup) return;
+
+      const removedDetailNames = oldGroup.details
+        .map(d => d.name)
+        .filter(name => !nextGroup.details.some(d => d.name.toLowerCase() === name.toLowerCase()));
+
+      useCourseStore.getState().updateCourseGroup(nextGroup);
+
+      // Cascading update to companies participations
+      const currRaw = useCompanyStore.getState().companies;
+      const nextRaw = currRaw.map(company => {
+        let matched = false;
+        const nextParticipations = company.participations.map(p => {
+          if (p.courseType !== oldGroup.name) return p;
+          matched = true;
+          const nextProgramNames = p.programNames.filter(name => !removedDetailNames.includes(name));
+          return {
+            ...p,
+            courseType: nextGroup.name,
+            programNames: nextProgramNames,
+            enabled: nextProgramNames.length > 0 ? p.enabled : false,
+            status: nextProgramNames.length > 0 ? p.status : ("미참여" as const),
+          };
+        });
+        if (!matched) {
+          nextParticipations.push({
+            courseType: nextGroup.name,
+            enabled: false,
+            programNames: [],
+            status: "미참여" as const,
+          });
+        }
+        return { ...company, participations: nextParticipations };
+      });
+      setGlobalCompanies(nextRaw);
+
+      setManagerGroupForm(cloneGroupToForm(nextGroup));
+      setManagerMessage("과정 구분이 저장되었습니다.");
+      setManagerError("");
+    } else {
+      useCourseStore.getState().addCourseGroup(nextGroup);
+      const currRaw = useCompanyStore.getState().companies;
+      const nextRaw = currRaw.map(company => ({
+        ...company,
+        participations: [
+          ...company.participations,
+          { courseType: nextGroup.name, enabled: false, programNames: [], status: "미참여" as const }
+        ]
+      }));
+      setGlobalCompanies(nextRaw);
+      setManagerSelectedGroupId(nextGroup.id);
+      setManagerGroupForm(cloneGroupToForm(nextGroup));
+      setManagerMessage("새 과정 구분이 추가되었습니다.");
+      setManagerError("");
+    }
+  };
+
+  const confirmDeleteCourseGroup = () => {
+    if (!pendingDeleteGroupId) return;
+    const target = courseGroups.find(g => g.id === pendingDeleteGroupId);
+    if (!target) return;
+
+    useCourseStore.getState().deleteCourseGroup(target.id);
+    const currRaw = useCompanyStore.getState().companies;
+    const nextRaw = currRaw.map(company => ({
+      ...company,
+      participations: company.participations.filter(p => p.courseType !== target.name)
+    }));
+    setGlobalCompanies(nextRaw);
+
+    const remaining = courseGroups.filter(g => g.id !== target.id);
+    const firstGroup = remaining[0];
+    setManagerSelectedGroupId(firstGroup?.id ?? null);
+    setManagerGroupForm(firstGroup ? cloneGroupToForm(firstGroup) : createEmptyGroupForm());
+    setManagerMessage("과정 구분이 삭제되었습니다.");
+    setManagerError("");
+    setPendingDeleteGroupId(null);
+  };
+
+  const toggleManagerGroup = (groupId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setManagerExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen pb-20">
       <PageHeader title="참여자 관리" />
 
-      {/* ── Filters & Action Bar ── */}
-      <div className="flex flex-col gap-6 mb-8">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-soft w-fit">
-            {TAB_ITEMS.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`px-5 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
-                  activeTab === tab.key
-                    ? "bg-emerald-500 text-white shadow-soft scale-[1.02]"
-                    : "text-slate-500 hover:text-emerald-600 hover:bg-emerald-50/50"
-                }`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 text-white rounded-xl font-bold shadow-soft hover:bg-emerald-600 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            onClick={() => setShowAddModal(true)}
-          >
-            <Plus size={18} strokeWidth={2.5} />
-            <span>참여자 추가</span>
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[320px]">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
-            <input
-              type="search"
-              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm placeholder:text-slate-400"
-              placeholder="이름, 기업명, 이메일, 연락처 검색"
-              value={searchRaw}
-              onChange={(e) => setSearchRaw(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                className="pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm cursor-pointer appearance-none min-w-[140px]"
-                value={completionFilter}
-                onChange={(e) => setCompletionFilter(e.target.value as CompletionFilter)}
-              >
-                <option value="ALL">수료 상태</option>
-                <option value="수료">수료 완료</option>
-                <option value="미수료">미수료</option>
-              </select>
-              <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronRight className="rotate-90 text-slate-400" size={14} />
-              </div>
-            </div>
-
-            <div className="relative">
-              <select
-                className="pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm cursor-pointer appearance-none min-w-[130px]"
-                value={insuranceFilter}
-                onChange={(e) => setInsuranceFilter(e.target.value as InsuranceFilter)}
-              >
-                <option value="ALL">고용보험</option>
-                <option value="가입">보험 가입</option>
-                <option value="미가입">미가입</option>
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronRight className="rotate-90 text-slate-400" size={14} />
-              </div>
-            </div>
-
-            {filtersActive && (
-              <button
-                type="button"
-                className="flex items-center gap-1.5 px-4 py-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all text-sm font-medium"
-                onClick={() => {
-                  setActiveTab("ALL");
-                  setCompletionFilter("ALL");
-                  setInsuranceFilter("ALL");
-                  setSearchRaw("");
-                }}
-              >
-                <X size={16} />
-                <span>초기화</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Data Table ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-200">
-                <th scope="col" className="px-5 py-4 w-12 text-center">
-                  <input
-                    ref={selectAllRef}
-                    type="checkbox"
-                    checked={allFilteredSelected}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-colors"
-                    aria-label="전체 선택"
-                  />
-                </th>
-                <th scope="col" className="px-4 py-4 text-left text-[13px] font-semibold text-slate-500 tracking-tight">이름</th>
-                <th scope="col" className="px-4 py-4 text-left text-[13px] font-semibold text-slate-500 tracking-tight">소속 기업</th>
-                <th scope="col" className="px-4 py-4 text-left text-[13px] font-semibold text-slate-500 tracking-tight">직위</th>
-                <th scope="col" className="px-4 py-4 text-left text-[13px] font-semibold text-slate-500 tracking-tight">연락처</th>
-                <th scope="col" className="px-4 py-4 text-left text-[13px] font-semibold text-slate-500 tracking-tight">이메일</th>
-                <th scope="col" className="px-4 py-4 text-left text-[13px] font-semibold text-slate-500 tracking-tight">수료 현황</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {paginated.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-24">
-                    <EmptyState
-                      icon={Search}
-                      title={filtersActive ? "검색 결과가 없습니다" : "등록된 참여자가 없습니다"}
-                      description={filtersActive ? "다른 검색어나 필터 조건을 시도해 보세요." : "새로운 참여자를 추가해 보세요."}
-                      action={!filtersActive ? { label: "참여자 추가", onClick: () => setShowAddModal(true) } : undefined}
-                    />
-                  </td>
-                </tr>
-              ) : (
-                paginated.map((p) => {
-                  const { completed, total } = calcCompletionSummary(p.enrollments);
-                  const variant = completionVariant(completed, total);
-                  const isSelected = selectedIds.has(p.id);
-                  return (
-                    <tr
-                      key={p.id}
-                      className={`group transition-colors cursor-pointer hover:bg-emerald-50/40 ${
-                        isSelected ? "bg-emerald-50/60" : ""
-                      }`}
-                      onClick={() => openDrawer(p.id)}
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") openDrawer(p.id);
-                      }}
-                    >
-                      <td
-                        className="px-5 py-5 text-center"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSelect(p.id, e);
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-colors"
-                          aria-label={`${p.name} 선택`}
-                        />
-                      </td>
-                      <td className="px-4 py-5">
-                        <span className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                          {p.name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-5">
-                        {p.companyId ? (
-                          <button
-                            type="button"
-                            className="text-emerald-600 font-medium text-[13px] hover:text-emerald-700 hover:underline transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/companies?open=${p.companyId}`);
-                            }}
-                          >
-                            {p.companyName}
-                          </button>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-5">
-                        <span className="text-sm text-slate-500">{p.position || "—"}</span>
-                      </td>
-                      <td className="px-4 py-5">
-                        <span className="text-[13px] text-slate-500 font-mono tracking-tight">
-                          {p.phone || "—"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-5">
-                        <span className="text-[13px] text-slate-400 italic font-medium">
-                          {p.email || "—"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-5">
-                        <div className="flex flex-col gap-1.5 min-w-[100px]">
-                          <div className="flex items-center justify-between text-[11px] font-bold">
-                            <span className={variant === "green" ? "text-emerald-600" : "text-slate-500"}>
-                              {completed}/{total}
-                            </span>
-                            <span className="text-slate-400 font-medium">
-                              {total > 0 ? Math.round((completed / total) * 100) : 0}%
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                            <div
-                              className={`h-full transition-all duration-700 ease-out ${
-                                variant === "green" ? "bg-emerald-500" : "bg-slate-300"
-                              }`}
-                              style={{ width: total > 0 ? `${(completed / total) * 100}%` : "0%" }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── Pagination ── */}
-      {totalPages > 1 && (
-        <nav aria-label="페이지 네비게이션" className="flex justify-center items-center gap-2 mt-10">
-          <button
-            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <div className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-2xl shadow-sm">
-            <span className="text-sm font-bold text-emerald-600">{currentPage}</span>
-            <span className="text-slate-300 font-light text-lg mx-1">/</span>
-            <span className="text-sm font-medium text-slate-500">{totalPages}</span>
-          </div>
-          <button
-            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
-            <ChevronRight size={22} />
-          </button>
-        </nav>
-      )}
+      <ParticipantsTable
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        completionFilter={completionFilter}
+        setCompletionFilter={setCompletionFilter}
+        insuranceFilter={insuranceFilter}
+        setInsuranceFilter={setInsuranceFilter}
+        searchRaw={searchRaw}
+        setSearchRaw={setSearchRaw}
+        filtersActive={filtersActive}
+        resetFilters={resetFilters}
+        onOpenCourseManager={openCourseManagerModal}
+        onShowAddModal={() => setShowAddModal(true)}
+        paginatedParticipants={paginated}
+        allFilteredSelected={allFilteredSelected}
+        toggleSelectAll={toggleSelectAll}
+        selectedIds={selectedIds}
+        toggleSelect={toggleSelect}
+        openDrawer={openDrawer}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+        selectAllRef={selectAllRef}
+        navigate={navigate}
+      />
 
       {/* ── Floating Selection Bar ── */}
       {selectedIds.size > 0 && (
@@ -532,7 +582,16 @@ export function ParticipantsPage() {
           isClosing={isClosing}
           allCompanies={allCompanies}
           participants={participants}
-          onUpdate={(updated) => upsertParticipant(updated)}
+          onUpdate={async (updated) => {
+            if (!updated.name.trim()) {
+              addToast("이름을 입력해 주세요.");
+              return;
+            }
+            // Simulate API delay
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            upsertParticipant(updated);
+            addToast("정보가 저장되었습니다.");
+          }}
         />
       )}
 
@@ -546,6 +605,70 @@ export function ParticipantsPage() {
             addToast(`${p.name} 참여자가 추가되었습니다.`);
           }}
         />
+      )}
+
+      {showCourseManager && (
+        <CourseManagerModal
+          onClose={closeCourseManager}
+          courseGroups={courseGroups}
+          managerSelectedGroupId={managerSelectedGroupId}
+          managerExpandedGroups={managerExpandedGroups}
+          managerGroupForm={managerGroupForm}
+          managerDetailForm={managerDetailForm}
+          managerEditingDetailId={managerEditingDetailId}
+          managerError={managerError}
+          managerMessage={managerMessage}
+          audienceOptions={AUDIENCE_OPTIONS}
+          addingNewDetailId={ADDING_NEW_DETAIL}
+          isManagerGroupModified={isManagerGroupModified}
+          onSelectGroup={selectGroupForManager}
+          onStartCreateGroup={startCreateCourseGroup}
+          onToggleGroup={toggleManagerGroup}
+          onDeleteGroupClick={setPendingDeleteGroupId}
+          onGroupNameChange={(name) => setManagerGroupForm(prev => ({ ...prev, name }))}
+          onToggleAudience={toggleManagerAudience}
+          onStartAddDetail={startAddDetail}
+          onStartEditDetail={startEditDetail}
+          onRemoveDetail={removeDetailFromForm}
+          onDetailFormChange={(field, value) => setManagerDetailForm(prev => prev ? ({ ...prev, [field]: value }) : prev)}
+          onApplyDetailDraft={applyDetailDraft}
+          onCancelDetailEdit={() => { setManagerDetailForm(null); setManagerEditingDetailId(null); }}
+          onSaveGroup={saveCourseGroup}
+          calculateDurationDays={calculateDurationDays}
+          toDotDate={toDotDate}
+        />
+      )}
+
+      {pendingDeleteGroupId && (
+        <div className="modal-backdrop confirm-modal">
+          <div className="modal-panel modal-panel-sm">
+            <div className="modal-header">
+              <h3>과정 삭제</h3>
+              <button type="button" className="icon-btn" onClick={() => setPendingDeleteGroupId(null)}><X className="icon-sm" /></button>
+            </div>
+            <div className="modal-content"><p>과정을 삭제하시겠습니까?</p></div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPendingDeleteGroupId(null)}>취소</button>
+              <button className="btn btn-primary" onClick={confirmDeleteCourseGroup}>삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {managerCancelConfirmPending && (
+        <div className="modal-backdrop confirm-modal">
+          <div className="modal-panel modal-panel-sm">
+            <div className="modal-header">
+              <h3>변경 사항 취소</h3>
+              <button type="button" className="icon-btn" onClick={() => setManagerCancelConfirmPending(false)}><X className="icon-sm" /></button>
+            </div>
+            <div className="modal-content"><p>내용이 저장되지 않았습니다. 닫으시겠습니까?</p></div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setManagerCancelConfirmPending(false)}>계속 편집</button>
+              <button className="btn btn-primary" onClick={() => { setManagerCancelConfirmPending(false); forceCloseCourseManager(); }}>닫기</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Toast Notifications ── */}

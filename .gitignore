@@ -35,3 +35,6 @@ temp/
 # OS files
 Thumbs.db
 .env*.local
+
+.claude/
+.gemini/

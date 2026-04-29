@@ -9,9 +9,9 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <tr>
-      <td colSpan={999} className="py-20 px-4">     
-        <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+    <tr className="w-full">
+      <td colSpan={100} className="py-32 px-4 text-center">     
+        <div className="flex flex-col items-center justify-center max-w-md mx-auto">
           <div
             className="w-20 h-20 rounded-3xl bg-emerald-50 flex items-center justify-center mb-6 shadow-sm"
             aria-hidden="true"

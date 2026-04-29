@@ -1,8 +1,9 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './styles/index.css';
 
 import { Sidebar, TopRail, PlaceholderPage, DebugMode } from './components';
+import { useCompanyStore, useCourseStore, useParticipantStore } from './stores';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -12,6 +13,16 @@ const TemplateEditorPage = lazy(() => import('./pages/TemplateEditor').then(m =>
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { fetchCourseGroups } = useCourseStore();
+  const { fetchCompanies } = useCompanyStore();
+  const { fetchParticipants } = useParticipantStore();
+
+  useEffect(() => {
+    // Initial data load
+    fetchCourseGroups();
+    fetchCompanies();
+    fetchParticipants();
+  }, [fetchCourseGroups, fetchCompanies, fetchParticipants]);
 
   return (
     <Router>

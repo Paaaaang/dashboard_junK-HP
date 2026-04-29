@@ -28,5 +28,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {}
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.4"
+  }
 }

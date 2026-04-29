@@ -892,6 +892,13 @@
   font-weight: 700;
 }
 
+.course-tree-group-select:focus-visible,
+.chip-option:focus-visible,
+.choice-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .course-tree-group-select {
   border: 0;
   background: transparent;
@@ -962,8 +969,10 @@
 }
 
 .tree-icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  box-sizing: content-box;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
@@ -1340,8 +1349,10 @@
 }
 
 .section-icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  box-sizing: content-box;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: transparent;

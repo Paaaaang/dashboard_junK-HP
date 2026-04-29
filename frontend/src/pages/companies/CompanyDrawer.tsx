@@ -161,7 +161,6 @@ export function CompanyDrawer({
               </div>
             )}
             <p className="flex items-center gap-1.5 text-sm text-slate-500">
-              <Building2 size={14} className="text-emerald-500" /> 
               기업 상세 관리
             </p>
           </div>
@@ -207,7 +206,7 @@ export function CompanyDrawer({
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">사업자번호</label>
                   {drawerEditMode ? (
                     <input 
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full px-3 py-2 text-[15px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-mono tracking-tight"
                       value={draftCompany.businessRegNo} 
                       onChange={e => onUpdateDraftField("businessRegNo", formatBusinessRegNo(e.target.value))} 
                     />
@@ -221,7 +220,7 @@ export function CompanyDrawer({
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">대표자명</label>
                   {drawerEditMode ? (
                     <input 
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full px-3 py-2 text-[15px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       value={draftCompany.representative} 
                       onChange={e => onUpdateDraftField("representative", e.target.value)} 
                     />
@@ -236,7 +235,7 @@ export function CompanyDrawer({
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">소재지</label>
                 {drawerEditMode ? (
                   <input 
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                    className="w-full px-3 py-2 text-[15px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                     value={draftCompany.location} 
                     onChange={e => onUpdateDraftField("location", e.target.value)} 
                   />
@@ -264,7 +263,7 @@ export function CompanyDrawer({
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">담당자</label>
                   {drawerEditMode ? (
                     <input 
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full px-3 py-2 text-[15px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       value={draftCompany.manager} 
                       onChange={e => onUpdateDraftField("manager", e.target.value)} 
                     />
@@ -278,7 +277,7 @@ export function CompanyDrawer({
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">연락처</label>
                   {drawerEditMode ? (
                     <input 
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full px-3 py-2 text-[15px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       value={draftCompany.phone} 
                       onChange={e => onUpdateDraftField("phone", e.target.value)} 
                     />
@@ -293,7 +292,7 @@ export function CompanyDrawer({
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">이메일</label>
                 {drawerEditMode ? (
                   <input 
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                    className="w-full px-3 py-2 text-[15px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                     type="email" 
                     value={draftCompany.email} 
                     onChange={e => onUpdateDraftField("email", e.target.value)} 

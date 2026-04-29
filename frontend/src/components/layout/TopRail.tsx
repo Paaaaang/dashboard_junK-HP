@@ -1,4 +1,4 @@
-import { BellRing, Search } from "lucide-react";
+import { BellRing } from "lucide-react";
 
 export function TopRail() {
   return (

@@ -1,7 +1,7 @@
-import { Search, Settings2, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
-import { EmptyState, StatusBadge } from "../../components";
-import type { CompanyRecord, CompanyParticipation } from "../../types/models";
-import type { TabKey, TAB_ITEMS } from "./hooks/useCompanyFilters";
+import { Search, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
+import { EmptyState, StatusBadge, CourseTypeBadge } from "../../components";
+import type { CompanyRecord, CompanyParticipation, CourseType } from "../../types/models";
+import { TabKey, TAB_ITEMS } from "./hooks/useCompanyFilters";
 import type { SortKey } from "./hooks/useCompanySort";
 
 interface CompanyTableProps {
@@ -10,7 +10,6 @@ interface CompanyTableProps {
   tabItems: typeof TAB_ITEMS;
   searchText: string;
   onSearchChange: (text: string) => void;
-  onOpenCourseManager: () => void;
   onOpenChoiceModal: () => void;
   paginatedCompanies: CompanyRecord[];
   allVisibleSelected: boolean;
@@ -21,9 +20,6 @@ interface CompanyTableProps {
   draftCompanyId?: string;
   onToggleSort: (key: SortKey) => void;
   getSortIndicator: (key: SortKey) => string;
-  getSortIndicatorClass: (key: SortKey) => string;
-  getCourseTypeTagStyle: (courseType: string) => React.CSSProperties;
-  getCourseTypeTagLabel: (courseType: string) => string;
   onLocationEnter: (event: React.MouseEvent<HTMLTableCellElement>, location: string) => void;
   onParticipationEnter: (event: React.MouseEvent<HTMLTableCellElement>, participations: CompanyParticipation[]) => void;
   onTooltipLeave: () => void;
@@ -36,7 +32,6 @@ export function CompanyTable({
   tabItems,
   searchText,
   onSearchChange,
-  onOpenCourseManager,
   onOpenChoiceModal,
   paginatedCompanies,
   allVisibleSelected,
@@ -47,9 +42,6 @@ export function CompanyTable({
   draftCompanyId,
   onToggleSort,
   getSortIndicator,
-  getSortIndicatorClass,
-  getCourseTypeTagStyle,
-  getCourseTypeTagLabel,
   onLocationEnter,
   onParticipationEnter,
   onTooltipLeave,
@@ -86,17 +78,17 @@ export function CompanyTable({
   return (
     <section aria-label="기업 관리 화면" className="w-full space-y-4">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Filter Tabs & Course Management */}
-        <div className="flex items-center gap-2 bg-slate-100/60 p-1.5 rounded-2xl border border-slate-200/50 group/shell shadow-sm">
+        {/* Filter Tabs */}
+        <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-soft w-fit">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[500px]">
             {tabItems.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTab === tab.key 
-                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-200" 
-                    : "text-slate-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm"
+                className={`px-5 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                  activeTab === tab.key
+                    ? "bg-emerald-500 text-white shadow-soft scale-[1.02]"
+                    : "text-slate-500 hover:text-emerald-600 hover:bg-emerald-50/50"
                 }`}
                 onClick={() => setActiveTab(tab.key)}
               >
@@ -104,15 +96,6 @@ export function CompanyTable({
               </button>
             ))}
           </div>
-          <div className="w-px h-4 bg-slate-300 mx-1 flex-shrink-0" />
-          <button
-            type="button"
-            className="p-1.5 rounded-full text-slate-400 hover:bg-white hover:text-emerald-500 hover:shadow-sm transition-all cursor-pointer group-hover/shell:opacity-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-            onClick={onOpenCourseManager}
-            aria-label="과정 관리 팝업 열기"
-          >
-            <Settings2 className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Search Field */}
@@ -155,10 +138,10 @@ export function CompanyTable({
                 <th scope="col" className="px-4 py-4">
                   {renderSortableHeader("기업명", "companyName")}
                 </th>
-                <th scope="col" className="px-4 py-4">
+                <th scope="col" className="px-4 py-4 hidden md:table-cell">
                   {renderSortableHeader("소재지", "location")}
                 </th>
-                <th scope="col" className="px-4 py-4 text-slate-500 font-semibold text-center uppercase tracking-wider text-[11px]">
+                <th scope="col" className="px-4 py-4 text-slate-500 font-semibold text-center uppercase tracking-wider text-[11px] hidden lg:table-cell">
                   대표자
                 </th>
                 <th scope="col" className="px-4 py-4">
@@ -244,7 +227,7 @@ export function CompanyTable({
                     </td>
 
                     <td
-                      className="px-4 py-4 text-center"
+                      className="px-4 py-4 text-center hidden md:table-cell"
                       onMouseEnter={(event) =>
                         onLocationEnter(event, company.location)
                       }
@@ -255,7 +238,7 @@ export function CompanyTable({
                       </span>
                     </td>
 
-                    <td className="px-4 py-4 text-center text-slate-600 text-xs">
+                    <td className="px-4 py-4 text-center text-slate-600 text-xs hidden lg:table-cell">
                       {company.representative}
                     </td>
 
@@ -278,31 +261,12 @@ export function CompanyTable({
                         {activeParticipations.length === 0 ? (
                           <span className="text-slate-300 text-xs">-</span>
                         ) : (
-                          activeParticipations.map((p: CompanyParticipation) => {
-                            const tagStyle = getCourseTypeTagStyle(p.courseType);
-                            const tagLabel = getCourseTypeTagLabel(p.courseType);
-                            
-                            // Adjusting tag colors to match Emerald theme if they are "훈련비과정"
-                            const isEmeraldTag = p.courseType === "훈련비과정";
-                            const baseClass = "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold shadow-sm whitespace-nowrap transition-transform group-hover:scale-105";
-                            
-                            return (
-                              <span
-                                key={p.courseType}
-                                className={`${baseClass} ${
-                                  isEmeraldTag 
-                                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
-                                    : p.courseType === "지원비과정"
-                                      ? "bg-teal-100 text-teal-700 border border-teal-200"
-                                      : "bg-amber-100 text-amber-700 border border-amber-200"
-                                }`}
-                                title={p.programNames.join(", ")}
-                                style={!isEmeraldTag ? tagStyle : {}} // Fallback to provided style if not overridden
-                              >
-                                {tagLabel}
-                              </span>
-                            );
-                          })
+                          activeParticipations.map((p: CompanyParticipation) => (
+                            <CourseTypeBadge 
+                              key={p.courseType} 
+                              type={p.courseType as CourseType} 
+                            />
+                          ))
                         )}
                       </div>
                     </td>

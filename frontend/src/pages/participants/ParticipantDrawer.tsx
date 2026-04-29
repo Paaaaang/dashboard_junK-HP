@@ -8,7 +8,7 @@ import {
   User,
   GraduationCap
 } from "lucide-react";
-import { CompletionBadge, ToggleSwitch } from "../../components";
+import { CompletionBadge, ToggleSwitch, CourseTypeBadge, StatusBadge } from "../../components";
 import { LinkCourseModal } from "./modals/LinkCourseModal";
 import { 
   ParticipantRecord, 
@@ -16,26 +16,7 @@ import {
   CompletionStatus, 
   CourseType, 
   CompanyRecord
-} from "../../../types/models";
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const COURSE_TYPE_COLORS: Record<CourseType, { bg: string, dot: string, text: string }> = {
-  훈련비과정: { bg: "bg-emerald-50", dot: "bg-emerald-500", text: "text-emerald-700" },
-  지원비과정: { bg: "bg-blue-50", dot: "bg-blue-500", text: "text-blue-700" },
-  "공유개방 세미나": { bg: "bg-amber-50", dot: "bg-amber-500", text: "text-amber-700" },
-};
-
-function CourseTypeBadge({ type, count }: { type: CourseType, count: number }) {
-  const colors = COURSE_TYPE_COLORS[type];
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${colors.bg} ${colors.text} font-bold text-xs`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-      {type}
-      <span className="opacity-50 ml-1">({count})</span>
-    </div>
-  );
-}
+} from "../../types/models";
 
 // ── Sub Components ───────────────────────────────────────────────────────────
 
@@ -118,6 +99,7 @@ export function ParticipantDrawer({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ ...participant });
   const [showLinkModal, setShowLinkModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setDraft({ ...participant });
@@ -125,8 +107,10 @@ export function ParticipantDrawer({
 
   const COURSE_TYPES: CourseType[] = ["훈련비과정", "지원비과정", "공유개방 세미나"];
 
-  const handleSave = () => {
-    onUpdate(draft);
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onUpdate(draft);
+    setIsSaving(false);
     setEditing(false);
   };
 
@@ -147,10 +131,25 @@ export function ParticipantDrawer({
         <header className="sticky top-0 z-10 px-6 py-6 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-black text-slate-800 tracking-tight">{participant.name}</h3>
-              <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg uppercase tracking-wide">
-                {participant.position}
-              </span>
+              {editing ? (
+                <input 
+                  className="text-2xl font-black text-slate-800 tracking-tight bg-emerald-50/50 border border-emerald-200 rounded-xl px-3 py-1 outline-none focus:ring-4 focus:ring-emerald-500/10"
+                  value={draft.name} 
+                  onChange={e => setDraft({...draft, name: e.target.value})} 
+                />
+              ) : (
+                <h3 
+                  className="text-2xl font-black text-slate-800 tracking-tight cursor-pointer"
+                  onDoubleClick={() => setEditing(true)}
+                >
+                  {participant.name}
+                </h3>
+              )}
+              {!editing && (
+                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg uppercase tracking-wide">
+                  {participant.position}
+                </span>
+              )}
             </div>
             <button 
               type="button"
@@ -175,6 +174,7 @@ export function ParticipantDrawer({
               type="button" 
               className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-all duration-200" 
               onClick={onClose}
+              aria-label="드로어 닫기"
             >
               <X size={24} />
             </button>
@@ -235,9 +235,11 @@ export function ParticipantDrawer({
                         />
                       </div>
                     ) : (
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${participant.employmentInsurance === "가입" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                        {participant.employmentInsurance}
-                      </span>
+                      <StatusBadge 
+                        status={participant.employmentInsurance === "가입" ? "success" : "neutral"} 
+                        label={participant.employmentInsurance} 
+                        compact 
+                      />
                     )}
                   </div>
                 </div>
@@ -311,10 +313,11 @@ export function ParticipantDrawer({
               </button>
               <button 
                 type="button" 
-                className="flex-[2] py-4 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl transition-all shadow-lg shadow-emerald-200 active:scale-[0.98]" 
+                className="flex-[2] py-4 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl transition-all shadow-lg shadow-emerald-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" 
                 onClick={handleSave}
+                disabled={isSaving}
               >
-                변경 사항 저장
+                {isSaving ? "저장 중..." : "변경 사항 저장"}
               </button>
             </div>
           ) : (
@@ -333,7 +336,7 @@ export function ParticipantDrawer({
         <LinkCourseModal 
           participant={participant} 
           onClose={() => setShowLinkModal(false)} 
-          onLink={(id, enr) => { onUpdate({ ...participant, enrollments: [...participant.enrollments, enr] }); setShowLinkModal(false); }}
+          onLink={(_id, enr) => { onUpdate({ ...participant, enrollments: [...participant.enrollments, enr] }); setShowLinkModal(false); }}
         />
       )}
     </>

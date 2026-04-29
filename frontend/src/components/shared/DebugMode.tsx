@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Terminal, CheckCircle2, Bug, Code, X, AlertCircle, Layers } from "lucide-react";
+import { Terminal, CheckCircle2, X, AlertCircle, Layers } from "lucide-react";
 
 interface DebugToast {
   id: string;
@@ -14,7 +14,7 @@ interface HoverInfo {
 }
 
 export function DebugMode() {
-  const isDev = import.meta.env.DEV || process.env.NODE_ENV === "development";
+  const isDev = import.meta.env.DEV;
   const [isEnabled, setIsEnabled] = useState(false);
   const [toasts, setToasts] = useState<DebugToast[]>([]);
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
@@ -100,10 +100,10 @@ export function DebugMode() {
       
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(json)
-          .then(() => addToast("🚀 계층 구조 정보가 복사되었습니다!"))
-          .catch(() => addToast("❌ 복사 실패", true));
+          .then(() => addToast("계층 구조 정보가 복사되었습니다!"))
+          .catch(() => addToast("복사 실패", true));
       } else {
-        addToast("❌ Clipboard API 오류", true);
+        addToast("Clipboard API 오류", true);
       }
     }
   }, [isEnabled]);
