@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { supabase } from "../api/supabase";
-import type { CompanyRecord, CompanyParticipation } from "../types/models";
+import apiClient from "../api/client";
+import type { CompanyRecord } from "../types/models";
 
 interface CompanyStore {
   companies: CompanyRecord[];
@@ -9,7 +9,9 @@ interface CompanyStore {
   fetchCompanies: () => Promise<void>;
   setCompanies: (companies: CompanyRecord[]) => void;
   upsertCompany: (company: CompanyRecord) => Promise<void>;
+  batchUpsertCompanies: (companies: CompanyRecord[]) => Promise<void>;
   deleteCompanies: (ids: string[]) => Promise<void>;
+  clearError: () => void;
 }
 
 export const useCompanyStore = create<CompanyStore>((set, _get) => ({
@@ -17,78 +19,15 @@ export const useCompanyStore = create<CompanyStore>((set, _get) => ({
   isLoading: false,
   error: null,
 
+  clearError: () => set({ error: null }),
+
   fetchCompanies: async () => {
     set({ isLoading: true, error: null });
     try {
-      // 1. Fetch companies
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('companies')
-        .select('*')
-        .order('company_name', { ascending: true });
-
-      if (companiesError) throw companiesError;
-
-      // 2. Fetch participations info (through participants -> enrollments -> sub_courses -> course_groups)
-      // Since fetching everything in one go can be complex with the many-to-many-ish structure,
-      // we'll fetch the relevant joins to reconstruct the participations array.
-      const { data: participationData, error: participationError } = await supabase
-        .from('participants')
-        .select(`
-          company_id,
-          enrollments (
-            sub_courses (
-              name,
-              course_groups (
-                name
-              )
-            )
-          )
-        `);
-
-      if (participationError) throw participationError;
-
-      // 3. Map database rows to CompanyRecord
-      const companies: CompanyRecord[] = (companiesData || []).map(row => {
-        // Group participations by courseType
-        const participationMap = new Map<string, Set<string>>();
-        
-        participationData?.filter(p => p.company_id === row.id).forEach(p => {
-          p.enrollments?.forEach((enr: any) => {
-            const typeName = enr.sub_courses?.course_groups?.name;
-            const programName = enr.sub_courses?.name;
-            if (typeName && programName) {
-              if (!participationMap.has(typeName)) participationMap.set(typeName, new Set());
-              participationMap.get(typeName)!.add(programName);
-            }
-          });
-        });
-
-        const participations: CompanyParticipation[] = Array.from(participationMap.entries()).map(([type, programs]) => ({
-          courseType: type,
-          enabled: true,
-          programNames: Array.from(programs),
-          status: "참여중"
-        }));
-
-        return {
-          id: row.id,
-          companyName: row.company_name,
-          businessRegNo: row.business_reg_no,
-          location: row.location,
-          representative: row.representative,
-          manager: row.manager,
-          phone: row.phone,
-          email: row.email,
-          mouSigned: row.mou_signed,
-          mouSignedDate: row.mou_signed_date,
-          createdAt: row.created_at,
-          participations
-        };
-      });
-
-      set({ companies, isLoading: false });
+      const response = await apiClient.get('v1/companies');
+      set({ companies: response.data, isLoading: false });
     } catch (err: any) {
-      set({ error: err.message, isLoading: false });
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
     }
   },
 
@@ -99,39 +38,14 @@ export const useCompanyStore = create<CompanyStore>((set, _get) => ({
     try {
       const isNew = !company.id || company.id.startsWith('new-') || company.id.startsWith('upload-');
       
-      const dbRow = {
-        company_name: company.companyName,
-        business_reg_no: company.businessRegNo,
-        location: company.location,
-        representative: company.representative,
-        manager: company.manager,
-        phone: company.phone,
-        email: company.email,
-        mou_signed: company.mouSigned,
-        mou_signed_date: company.mouSignedDate || null,
-      };
-
-      let resultId = company.id;
-
+      let response;
       if (isNew) {
-        const { data, error } = await supabase
-          .from('companies')
-          .insert([dbRow])
-          .select()
-          .single();
-        if (error) throw error;
-        resultId = data.id;
+        response = await apiClient.post('v1/companies', company);
       } else {
-        const { error } = await supabase
-          .from('companies')
-          .update(dbRow)
-          .eq('id', company.id);
-        if (error) throw error;
+        response = await apiClient.put(`v1/companies/${company.id}`, company);
       }
       
-      // Refresh to get full data including calculated fields if necessary
-      // Or just update local state if we don't want to re-fetch everything
-      const savedCompany = { ...company, id: resultId };
+      const savedCompany = response.data;
       
       set((state) => ({
         companies: state.companies.some((c) => c.id === savedCompany.id)
@@ -140,7 +54,31 @@ export const useCompanyStore = create<CompanyStore>((set, _get) => ({
         isLoading: false
       }));
     } catch (err: any) {
-      set({ error: err.message, isLoading: false });
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  batchUpsertCompanies: async (companies) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.post('v1/companies/batch', { companies });
+      const savedCompanies = response.data;
+
+      set((state) => {
+        const nextCompanies = [...state.companies];
+        savedCompanies.forEach((saved: CompanyRecord) => {
+          const idx = nextCompanies.findIndex(c => c.id === saved.id || (c.businessRegNo && c.businessRegNo === saved.businessRegNo));
+          if (idx !== -1) {
+            nextCompanies[idx] = saved;
+          } else {
+            nextCompanies.unshift(saved);
+          }
+        });
+        return { companies: nextCompanies, isLoading: false };
+      });
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
       throw err;
     }
   },
@@ -148,19 +86,19 @@ export const useCompanyStore = create<CompanyStore>((set, _get) => ({
   deleteCompanies: async (ids) => {
     set({ isLoading: true, error: null });
     try {
-      const { error } = await supabase
-        .from('companies')
-        .delete()
-        .in('id', ids);
-      if (error) throw error;
+      // If the backend supports batch delete, use it. Otherwise, loop.
+      // Currently the backend has DELETE /api/v1/companies/:id
+      // We'll use Promise.all for now, or update backend to support batch delete.
+      await Promise.all(ids.map(id => apiClient.delete(`v1/companies/${id}`)));
 
       set((state) => ({
         companies: state.companies.filter((c) => !ids.includes(c.id)),
         isLoading: false
       }));
     } catch (err: any) {
-      set({ error: err.message, isLoading: false });
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
       throw err;
     }
   },
 }));
+

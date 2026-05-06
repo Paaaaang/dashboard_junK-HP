@@ -2,13 +2,14 @@ import { useState, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './styles/index.css';
 
-import { Sidebar, TopRail, PlaceholderPage, DebugMode } from './components';
-import { useCompanyStore, useCourseStore, useParticipantStore } from './stores';
+import { Sidebar, TopRail, PlaceholderPage, DebugMode, GlobalToast } from './components';
+import { useCompanyStore, useCourseStore, useParticipantStore, useTemplateStore } from './stores';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const CompanyManagementPage = lazy(() => import('./pages/companies'));
 const ParticipantsPage = lazy(() => import('./pages').then(m => ({ default: m.ParticipantsPage })));
+const CourseManagementPage = lazy(() => import('./pages').then(m => ({ default: m.CourseManagementPage })));
 const TemplateEditorPage = lazy(() => import('./pages/TemplateEditor').then(m => ({ default: m.TemplateEditorPage })));
 
 function App() {
@@ -16,33 +17,36 @@ function App() {
   const { fetchCourseGroups } = useCourseStore();
   const { fetchCompanies } = useCompanyStore();
   const { fetchParticipants } = useParticipantStore();
+  const { fetchTemplates } = useTemplateStore();
 
   useEffect(() => {
     // Initial data load
     fetchCourseGroups();
     fetchCompanies();
     fetchParticipants();
-  }, [fetchCourseGroups, fetchCompanies, fetchParticipants]);
+    fetchTemplates();
+  }, [fetchCourseGroups, fetchCompanies, fetchParticipants, fetchTemplates]);
 
   return (
     <Router>
-      <div className="flex h-screen w-full bg-slate-50 text-slate-900 font-sans overflow-hidden">
+      <div className="flex h-screen w-full bg-background text-text-primary font-sans overflow-hidden">
         <Sidebar
           collapsed={sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed((prev) => !prev)}
         />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <TopRail />
-          <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-slate-50/50">
+          <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-background/50">
             <Suspense fallback={
               <div className="flex items-center justify-center h-full">
-                <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
               </div>
             }>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/companies" element={<CompanyManagementPage />} />
                 <Route path="/participants" element={<ParticipantsPage />} />
+                <Route path="/courses" element={<CourseManagementPage />} />
                 <Route path="/templates" element={<TemplateEditorPage />} />
                 <Route
                   path="/forms"
@@ -57,6 +61,7 @@ function App() {
           </main>
         </div>
         <DebugMode />
+        <GlobalToast />
       </div>
     </Router>
   );

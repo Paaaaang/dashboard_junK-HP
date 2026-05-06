@@ -1,9 +1,9 @@
 import { CourseType } from "../../types/models";
 
 const COURSE_TYPE_COLORS: Record<CourseType, { bg: string, dot: string, text: string }> = {
-  훈련비과정: { bg: "bg-emerald-50", dot: "bg-emerald-500", text: "text-emerald-700" },
-  지원비과정: { bg: "bg-blue-50", dot: "bg-blue-500", text: "text-blue-700" },
-  "공유개방 세미나": { bg: "bg-amber-50", dot: "bg-amber-500", text: "text-amber-700" },
+  훈련비과정: { bg: "bg-brand-primary/10", dot: "bg-brand-primary", text: "text-brand-primary" },
+  지원비과정: { bg: "bg-info/10", dot: "bg-info", text: "text-info" },
+  "공유개방 세미나": { bg: "bg-warning/10", dot: "bg-warning", text: "text-warning" },
 };
 
 interface CourseTypeBadgeProps {

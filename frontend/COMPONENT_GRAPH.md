@@ -14,31 +14,57 @@ This file tracks the relationship between components and their usage to ensure s
 - **ToggleSwitch**
   - Path: `src/components/ui/ToggleSwitch.tsx`
   - Replaced: Manual peer-checked checkbox implementations.
-  - Usage: `CompanyDrawer.tsx`, `ParticipantDrawer.tsx`
+  - Usage: `CompanyDrawer.tsx`, `ParticipantDrawer.tsx`, `AddParticipantModal.tsx`
 - **CompletionBadge**
   - Path: `src/components/ui/CompletionBadge.tsx`
-  - Replaced: Manual status spans in tables and drawers.
-  - Usage: `ParticipantDrawer.tsx`, `CompanyDrawer.tsx`
+  - Usage: `ParticipantDrawer.tsx`, `ParticipantsTable.tsx`
 - **StatusBadge**
   - Path: `src/components/ui/StatusBadge.tsx`
-  - Replaced: Manual conditional class badges.
-  - Usage: `CompanyDrawer.tsx`, `CompanyTable.tsx`, `ParticipantDrawer.tsx`
-- **CourseTypeBadge** (New)
+  - Usage: `CompanyDrawer.tsx`, `CompanyTable.tsx`, `MOUStatusSection.tsx`
+- **CourseTypeBadge**
   - Path: `src/components/ui/CourseTypeBadge.tsx`
-  - Replaced: `COURSE_TYPE_COLORS` constants and local `CourseTypeBadge` in drawers/tables.
-  - Usage: `ParticipantDrawer.tsx`, `CompanyTable.tsx`
+  - Usage: `CompanyTable.tsx`
 
 ### Shared Components
 - **EmptyState**
   - Path: `src/components/shared/EmptyState.tsx`
   - Usage: `CompanyTable.tsx`, `ParticipantsTable.tsx`
+- **PageHeader**
+  - Path: `src/components/layout/PageHeader.tsx`
+  - Usage: All main pages. Now includes centralized action buttons.
 
-## Pending Migrations
-- [x] Merge `index.css` into `styles/index.css` and unify entry point.
-- [x] Remove legacy `COURSE_TYPE_COLORS` from `ParticipantDrawer.tsx`.
-- [x] Investigate and resolve PostCSS `NaN` error in `styles/index.css` (Simplified config applied).
-- [x] Verify all `StatusBadge` usage across the app.
-- [x] Fix `CompanyDrawer.tsx` syntax errors and corrupted content.
+### Page Modules (SOLID Refactored)
 
+#### Companies Module
+- **Hooks**:
+  - `useCompanyFilters`: Filtering logic.
+  - `useCompanySort`: Sorting logic.
+  - `useCompanySelection`: Selection logic.
+  - `useCompanyModals`: Modal orchestration.
+  - `useCompanyDrawerState`: Drawer internal state.
+  - `useCompanyExcel`: Excel parsing and upload.
+  - `useCompanyTooltips`: Table tooltips.
+  - `useParticipantPopover`: Participant preview popover.
+- **Drawer Sections**:
+  - `DrawerHeader`, `BasicInfoSection`, `ManagerInfoSection`, `MOUStatusSection`, `CourseParticipationSection`.
 
+#### Participants Module
+- **Hooks**:
+  - `useParticipantFilters`: Filtering logic.
+  - `useParticipantSelection`: Selection logic.
+  - `useParticipantExcel`: Excel parsing and upload.
+  - `useCourseManager`: Course management logic.
+- **Modals**:
+  - `AddParticipantChoiceModal`: Consolidated entry point for adding participants.
+  - `AddParticipantModal`: Inline enterprise registration support.
+  - `LinkCourseModal`: Synchronized with real-time database courses.
 
+## Completed Migrations
+- [x] Unify `index.css` and move to `styles/`.
+- [x] Refactor `CompanyManagementPage` and `ParticipantsPage` to SOLID architecture.
+- [x] Decompose `CompanyDrawer` into modular sections.
+- [x] Transition to 3-tier architecture with Express backend.
+- [x] Implement Recharts analytics dashboard.
+- [x] Replace inline error alerts with professional Toast system.
+- [x] Consolidate participant action buttons.
+- [x] Secure database with RLS hardening.

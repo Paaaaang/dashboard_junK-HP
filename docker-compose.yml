@@ -6,12 +6,12 @@ services:
       dockerfile: Dockerfile
     container_name: dashboard_khp_frontend
     ports:
-      - "5173:5173"
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:3001/api/v1
+      - VITE_API_URL=http://localhost:3001/api
     networks:
       - dashboard_network
     depends_on:
@@ -30,36 +30,14 @@ services:
       - /app/node_modules
     environment:
       - PORT=3001
-      - DATABASE_URL=postgres://khp_user:dashboard_password_secure@postgres:5432/dashboard_khp_db
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=development
     networks:
       - dashboard_network
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: dashboard_khp_postgres
-    environment:
-      POSTGRES_DB: dashboard_khp_db
-      POSTGRES_USER: khp_user
-      POSTGRES_PASSWORD: dashboard_password_secure
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dashboard_user -d dashboard_khp_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - dashboard_network
 
   # Redis (for Bull job queue)
   redis:
@@ -77,25 +55,7 @@ services:
     networks:
       - dashboard_network
 
-  # pgAdmin (Database Management UI - optional)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: dashboard_khp_pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: khp@junkhp.com
-      PGADMIN_DEFAULT_PASSWORD: khp_pgadmin
-      SCRIPT_NAME: /pgadmin
-    ports:
-      - "5050:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - dashboard_network
-
 volumes:
-  postgres_data:
-    driver: local
   redis_data:
     driver: local
 

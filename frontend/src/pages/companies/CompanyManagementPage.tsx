@@ -1,49 +1,40 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useCompanyStore, useParticipantStore, useCourseStore } from "../../stores";
+import { useCompanyStore, useParticipantStore, useCourseStore, useTemplateStore, useToastStore } from "../../stores";
 import { transformParticipantsToMap } from "../../utils/participantUtils";
-import { Mail, Phone, Check, Download } from "lucide-react";
-import {
-  createEmptyCompany,
-  cloneCompany,
-  initialTemplates,
-} from "../../constants";
-import { PageHeader } from "../../components";
+import { Mail, Download, X, ChevronRight } from "lucide-react";
+import { PageHeader, FloatingActionBar } from "../../components";
 import type {
   CompanyRecord,
-  CompanyParticipation,
   CourseType,
-  ParticipantRecord,
   ParticipantEnrollment,
 } from "../../types/models";
 
+// Hooks
 import { useCompanyFilters, TAB_ITEMS } from "./hooks/useCompanyFilters";
-import { useCompanySort, SortKey } from "./hooks/useCompanySort";
+import { useCompanySort } from "./hooks/useCompanySort";
+import { useCompanySelection } from "./hooks/useCompanySelection";
+import { useCompanyModals } from "./hooks/useCompanyModals";
+import { useCompanyDrawerState } from "./hooks/useCompanyDrawerState";
+import { useCompanyExcel } from "./hooks/useCompanyExcel";
+import { useCompanyTooltips } from "./hooks/useCompanyTooltips";
+import { useParticipantPopover } from "./hooks/useParticipantPopover";
+
+// Components
 import { CompanyTable } from "./CompanyTable";
 import { CompanyDrawer } from "./CompanyDrawer";
 import { AddCompanyModal } from "./modals/AddCompanyModal";
 import { UploadModal } from "./modals/UploadModal";
 import { EmailModal } from "./modals/EmailModal";
-import { CourseGroup } from "./modals/CourseManagerModal";
-import { AddCourseModal } from "./modals/AddCourseModal";
 
-type ActiveModal =
-  | "choice"
-  | "upload"
-  | "email"
-  | "add-course"
-  | null;
-
-interface TooltipInfo {
-  content: React.ReactNode;
-  style: React.CSSProperties;
-}
-
-const TAB_GROUP_IDS = {
-  TRAINING: "course-group-training",
-  SUPPORT: "course-group-support",
-  SEMINAR: "course-group-seminar",
-} as const;
+// Utils
+import { 
+  normalizeCompanyParticipations, 
+  getParticipationCount, 
+  toDotDate, 
+  getToday, 
+  formatBusinessRegNo 
+} from "./utils/companyUtils";
 
 const SYSTEM_FIELDS = [
   { key: "companyName", label: "기업명 *" },
@@ -56,121 +47,20 @@ const SYSTEM_FIELDS = [
   { key: "__skip__", label: "건너뛰기" },
 ];
 
-function formatBusinessRegNo(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
-}
-
-function normalizeCompanyParticipations(
-  company: CompanyRecord,
-  groups: CourseGroup[],
-): CompanyRecord {
-  const byType = new Map(
-    company.participations.map((participation) => [
-      participation.courseType,
-      participation,
-    ]),
-  );
-  const participations = groups.map((group) => {
-    const existing = byType.get(group.name);
-    if (existing) return { ...existing };
-    return {
-      courseType: group.name,
-      enabled: false,
-      programNames: [],
-      status: "미참여" as const,
-    };
-  });
-
-  return { ...company, participations };
-}
-
-function toDotDate(value: string | undefined): string {
-  if (!value) return "-";
-  return value.split("-").join(".");
-}
-
-function getToday(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getParticipationCount(company: CompanyRecord): number {
-  return company.participations.reduce((count, participation) => {
-    if (!participation.enabled) return count;
-    return count + participation.programNames.length;
-  }, 0);
-}
-
 export function CompanyManagementPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // Stores
   const { courseGroups } = useCourseStore();
-  const { companies: rawCompanies, setCompanies: setGlobalCompanies, upsertCompany, isLoading } = useCompanyStore();
-
-  const companies = useMemo(() => rawCompanies.map(c => normalizeCompanyParticipations(cloneCompany(c), courseGroups)), [rawCompanies, courseGroups]);
-
-  const setCompanies = useCallback(
-    (updater: (curr: CompanyRecord[]) => CompanyRecord[]) => {
-      const currRaw = useCompanyStore.getState().companies;
-      const currNorm = currRaw.map(c => normalizeCompanyParticipations(cloneCompany(c), courseGroups));
-      const nextNorm = updater(currNorm);
-      setGlobalCompanies(nextNorm);
-    },
-    [courseGroups, setGlobalCompanies]
-  );
-
-  const { activeTab, setActiveTab, searchRaw: searchText, setSearchRaw: setSearchText, searchDebounced, filterCompanies } = useCompanyFilters();
-  const { sortState, toggleSort, sortCompanies } = useCompanySort();
-  
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [tableNotice, setTableNotice] = useState("");
-
-  const [activeModal, setActiveModal] = useState<ActiveModal>(null);
-  const [draftCompany, setDraftCompany] = useState<CompanyRecord | null>(null);
-  const [drawerEditMode, setDrawerEditMode] = useState(false);
-  const [expandedDrawerGroups, setExpandedDrawerGroups] = useState<Set<string>>(
-    new Set(),
-  );
-  const [drawerNotice, setDrawerNotice] = useState("");
-
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadStep, setUploadStep] = useState<1 | 2 | 3>(1);
-  const [rawRows, setRawRows] = useState<Record<string, unknown>[]>([]);
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
-  const [uploadPreview, setUploadPreview] = useState<CompanyRecord[] | null>(
-    null,
-  );
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const [tooltipInfo, setTooltipInfo] = useState<TooltipInfo | null>(null);
-
-  const [emailRecipientIds, setEmailRecipientIds] = useState<string[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState(
-    initialTemplates[0]?.id ?? "",
-  );
-
-  const [editModeSnapshot, setEditModeSnapshot] =
-    useState<CompanyRecord | null>(null);
-  const [drawerNameEditing, setDrawerNameEditing] = useState(false);
-  const [drawerNameDraft, setDrawerNameDraft] = useState("");
-  const [cancelConfirmPending, setCancelConfirmPending] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [addCourseGroupName, setAddCourseGroupName] = useState("");
-  const [addCourseSelection, setAddCourseSelection] = useState<Set<string>>(
-    new Set(),
-  );
-
-  const lastSelectedIdRef = useRef<string | null>(null);
-
+  const { companies: rawCompanies, upsertCompany, error: storeError } = useCompanyStore();
   const { participants, upsertParticipant } = useParticipantStore();
+  const { templates } = useTemplateStore();
+  const { addToast } = useToastStore();
 
+  // Memoized Data
+  const companies = useMemo(() => rawCompanies.map(c => normalizeCompanyParticipations(c, courseGroups)), [rawCompanies, courseGroups]);
+  
   const companyParticipants = useMemo(() => {
     const groupNames: Record<string, string> = {};
     courseGroups.forEach((g) => {
@@ -179,33 +69,17 @@ export function CompanyManagementPage() {
     return transformParticipantsToMap(participants, groupNames);
   }, [participants, courseGroups]);
 
-  const [expandedSubCourses, setExpandedSubCourses] = useState<Set<string>>(
-    new Set(),
-  );
-
-  const [addParticipantSubCourseId, setAddParticipantSubCourseId] = useState<
-    string | null
-  >(null);
-  const [addParticipantDraft, setAddParticipantDraft] = useState("");
-
-  const [participantPopover, setParticipantPopover] = useState<{
-    participant: any;
-    style: React.CSSProperties;
-  } | null>(null);
-  const popoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const selectAllRef = useRef<HTMLInputElement>(null);
-
+  // Logic Hooks
+  const { 
+    activeTab, setActiveTab, searchRaw: searchText, setSearchRaw: setSearchText, searchDebounced, filterCompanies 
+  } = useCompanyFilters();
+  
+  const { sortState, toggleSort, sortCompanies } = useCompanySort();
+  
   const tabTargetGroupName = useMemo(() => {
     if (activeTab === "ALL") return null;
-    const groupId =
-      activeTab === "TRAINING"
-        ? TAB_GROUP_IDS.TRAINING
-        : activeTab === "SUPPORT"
-          ? TAB_GROUP_IDS.SUPPORT
-          : TAB_GROUP_IDS.SEMINAR;
-    const group = courseGroups.find((item) => item.id === groupId);
-    return group?.name ?? null;
+    const keyword = activeTab === "TRAINING" ? "훈련비" : activeTab === "SUPPORT" ? "지원비" : "세미나";
+    return courseGroups.find((item) => item.name.includes(keyword))?.name ?? null;
   }, [activeTab, courseGroups]);
 
   const filteredCompanies = useMemo(() => {
@@ -213,9 +87,95 @@ export function CompanyManagementPage() {
     return sortCompanies(tabFiltered, getParticipationCount);
   }, [companies, tabTargetGroupName, filterCompanies, sortCompanies]);
 
+  const {
+    selectedCompanyIds,
+    toggleCompanySelection,
+    toggleVisibleSelection,
+    clearSelectedCompanies,
+    allVisibleSelected,
+    selectAllRef,
+  } = useCompanySelection(filteredCompanies);
+
+  const {
+    activeModal,
+    setActiveModal,
+    emailRecipientIds,
+    selectedTemplateId,
+    setSelectedTemplateId,
+    openEmailModal,
+    closeModal,
+  } = useCompanyModals();
+
+  const {
+    draftCompany,
+    setDraftCompany,
+    drawerEditMode,
+    setDrawerEditMode,
+    expandedDrawerGroups,
+    setExpandedDrawerGroups,
+    drawerNotice,
+    setDrawerNotice,
+    editModeSnapshot,
+    drawerNameEditing,
+    setDrawerNameEditing,
+    drawerNameDraft,
+    setDrawerNameDraft,
+    cancelConfirmPending,
+    setCancelConfirmPending,
+    isClosing,
+    setIsClosing,
+    isSaving,
+    setIsSaving,
+    expandedSubCourses,
+    setExpandedSubCourses,
+    addParticipantSubCourseId,
+    setAddParticipantSubCourseId,
+    addParticipantDraft,
+    setAddParticipantDraft,
+    addParticipantSessionId,
+    setAddParticipantSessionId,
+    enterEditMode,
+    closeDrawer,
+  } = useCompanyDrawerState();
+
+  const {
+    uploadFile,
+    uploadStep,
+    rawRows,
+    columnMapping,
+    setColumnMapping,
+    uploadPreview,
+    uploadError,
+    resetUpload,
+    goNextToPreview,
+    handleFileChange,
+    handleDropzoneDrop,
+    confirmUpload,
+  } = useCompanyExcel(courseGroups);
+
+  const {
+    tooltipInfo,
+    handleLocationEnter,
+    handleParticipationEnter,
+    hideTooltip,
+  } = useCompanyTooltips();
+
+  const {
+    participantPopover,
+    showParticipantPopover,
+    hideParticipantPopover,
+    popoverTimerRef,
+  } = useParticipantPopover();
+
+  // Confirmation States
+  const [pendingRemoveProgram, setPendingRemoveProgram] = useState<{ courseType: string; programName: string } | null>(null);
+  const [pendingRemoveParticipant, setPendingRemoveParticipant] = useState<{ groupId: string; subCourseId: string; ptId: string } | null>(null);
+
+  // Local State for specific transitions
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 20;
 
+  // Pagination
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredCompanies.slice(start, start + PAGE_SIZE);
@@ -223,196 +183,41 @@ export function CompanyManagementPage() {
 
   useEffect(() => { setCurrentPage(1); }, [activeTab, searchDebounced, sortState, tabTargetGroupName]);
 
-  const visibleCompanyIds = useMemo(
-    () => filteredCompanies.map((company) => company.id),
-    [filteredCompanies],
-  );
-
-  const selectedVisibleCount = useMemo(
-    () =>
-      visibleCompanyIds.filter((companyId) => selectedCompanyIds.has(companyId))
-        .length,
-    [selectedCompanyIds, visibleCompanyIds],
-  );
-
-  const allVisibleSelected =
-    visibleCompanyIds.length > 0 &&
-    selectedVisibleCount === visibleCompanyIds.length;
-  const hasPartialSelection = selectedVisibleCount > 0 && !allVisibleSelected;
-
-  const selectedCompanies = useMemo(
-    () => companies.filter((company) => selectedCompanyIds.has(company.id)),
-    [companies, selectedCompanyIds],
-  );
-
-  const addCourseGroup = useMemo(
-    () =>
-      courseGroups.find((group) => group.name === addCourseGroupName) ?? null,
-    [addCourseGroupName, courseGroups],
-  );
-
   useEffect(() => {
-    if (selectAllRef.current) {
-      selectAllRef.current.indeterminate = hasPartialSelection;
+    if (storeError) {
+      addToast(`에러: ${storeError}`, "error");
+      useCompanyStore.getState().clearError();
     }
-  }, [hasPartialSelection]);
+  }, [storeError, addToast]);
 
-  useEffect(() => {
-    setSelectedCompanyIds((previous) => {
-      const validIds = new Set(companies.map((company) => company.id));
-      const next = new Set<string>();
-      previous.forEach((companyId) => {
-        if (validIds.has(companyId)) {
-          next.add(companyId);
-        }
-      });
-      return next.size === previous.size ? previous : next;
-    });
-  }, [companies]);
-
+  // Initialization
   useEffect(() => {
     const openId = searchParams.get("open");
-    if (!openId) return;
-    const target = companies.find((c) => c.id === openId);
-    if (target) {
-      openEditDrawer(target);
+    if (openId) {
+      const target = companies.find((c) => c.id === openId);
+      if (target) openEditDrawer(target);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && selectedCompanyIds.size > 0 && !draftCompany && !activeModal) {
-        clearSelectedCompanies();
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedCompanyIds, draftCompany, activeModal]);
-
-  function updateDraftField(
-    field: keyof CompanyRecord,
-    value: any,
-  ) {
-    setDraftCompany((current) =>
-      current ? { ...current, [field]: value } : current,
-    );
-  }
-
-  function updateDraftParticipation(
-    courseType: string,
-    updater: (participation: CompanyParticipation) => CompanyParticipation,
-  ) {
-    setDraftCompany((current) => {
-      if (!current) return current;
-
-      let found = false;
-      const nextParticipations = current.participations.map((participation) => {
-        if (participation.courseType !== courseType) {
-          return participation;
-        }
-        found = true;
-        return updater(participation);
-      });
-
-      if (!found) {
-        nextParticipations.push(
-          updater({
-            courseType,
-            enabled: false,
-            programNames: [],
-            status: "미참여",
-          }),
-        );
-      }
-
-      return { ...current, participations: nextParticipations };
-    });
-  }
-
-  function closeModal() {
-    forceCloseModal();
-  }
-
-  function forceCloseModal() {
-    setActiveModal(null);
-    setUploadFile(null);
-    setUploadStep(1);
-    setRawRows([]);
-    setColumnMapping({});
-    setUploadPreview(null);
-    setUploadError(null);
-  }
-
-  function handleDrawerClose() {
-    setIsClosing(true);
-    setTimeout(() => {
-      closeDrawer();
-      setIsClosing(false);
-    }, 200);
-  }
-
-  function closeDrawer() {
-    setDraftCompany(null);
-    setDrawerEditMode(false);
-    setDrawerNotice("");
-    setActiveModal(null);
-    setTooltipInfo(null);
-    setEditModeSnapshot(null);
-    setDrawerNameEditing(false);
-    setCancelConfirmPending(false);
-    setExpandedSubCourses(new Set());
-    setAddParticipantSubCourseId(null);
-    setAddParticipantDraft("");
-    setParticipantPopover(null);
-  }
-
-  function enterEditMode() {
-    setEditModeSnapshot(draftCompany ? cloneCompany(draftCompany) : null);
-    setDrawerEditMode(true);
-  }
-
-  function handleCancelEdit() {
-    const snapshotJson = editModeSnapshot
-      ? JSON.stringify(editModeSnapshot)
-      : null;
-    const draftJson = draftCompany ? JSON.stringify(draftCompany) : null;
-    if (snapshotJson && draftJson && snapshotJson !== draftJson) {
-      setCancelConfirmPending(true);
-    } else {
-      if (editModeSnapshot) setDraftCompany(cloneCompany(editModeSnapshot));
-      setDrawerEditMode(false);
-      setEditModeSnapshot(null);
-    }
-  }
-
-  function confirmCancelEdit() {
-    if (editModeSnapshot) setDraftCompany(cloneCompany(editModeSnapshot));
-    setCancelConfirmPending(false);
-    setDrawerEditMode(false);
-    setEditModeSnapshot(null);
-  }
-
-  function openChoiceModal() {
-    setActiveModal("choice");
-  }
-
-  function openUploadModal() {
-    setUploadFile(null);
-    setUploadStep(1);
-    setRawRows([]);
-    setColumnMapping({});
-    setUploadPreview(null);
-    setUploadError(null);
-    setActiveModal("upload");
-  }
+  // Handlers
+  function openChoiceModal() { setActiveModal("choice"); }
 
   function openCreateDrawer() {
-    const created = normalizeCompanyParticipations(
-      createEmptyCompany(),
-      courseGroups,
-    );
-    created.createdAt = getToday();
+    const created = normalizeCompanyParticipations({
+      id: `new-${Date.now()}`,
+      companyName: "",
+      businessRegNo: "",
+      location: "",
+      representative: "",
+      manager: "",
+      phone: "",
+      email: "",
+      mouSigned: false,
+      mouSignedDate: undefined,
+      createdAt: getToday(),
+      participations: []
+    }, courseGroups);
     setDraftCompany(created);
     setDrawerEditMode(true);
     setExpandedDrawerGroups(new Set(courseGroups.map((group) => group.name)));
@@ -421,16 +226,10 @@ export function CompanyManagementPage() {
   }
 
   function openEditDrawer(company: CompanyRecord) {
-    const normalized = normalizeCompanyParticipations(
-      cloneCompany(company),
-      courseGroups,
-    );
+    const normalized = normalizeCompanyParticipations(company, courseGroups);
     const expanded = normalized.participations
-      .filter(
-        (participation) =>
-          participation.enabled && participation.programNames.length > 0,
-      )
-      .map((participation) => participation.courseType);
+      .filter((p) => p.enabled && p.programNames.length > 0)
+      .map((p) => p.courseType);
 
     setDraftCompany(normalized);
     setDrawerEditMode(false);
@@ -439,22 +238,17 @@ export function CompanyManagementPage() {
     setActiveModal(null);
   }
 
-  async function saveDraftCompany() {
+  async function handleSaveDraftCompany() {
     if (!draftCompany) return;
-
     if (!draftCompany.companyName.trim()) {
       setDrawerNotice("기업명을 입력해 주세요.");
       return;
     }
-
     setIsSaving(true);
     try {
-      const normalized = normalizeCompanyParticipations(
-        draftCompany,
-        courseGroups,
-      );
-      await upsertCompany(normalized);
+      await upsertCompany(draftCompany);
       setIsSaving(false);
+      addToast("정보가 저장되었습니다.", "success");
       closeDrawer();
     } catch (err: any) {
       setDrawerNotice(`저장 실패: ${err.message}`);
@@ -462,488 +256,23 @@ export function CompanyManagementPage() {
     }
   }
 
-  function getSortIndicator(key: SortKey): string {
-    if (sortState.key !== key || !sortState.direction) {
-      return "↕";
-    }
-    return sortState.direction === "asc" ? "↑" : "↓";
+  function handleConfirmUpload() {
+    confirmUpload()
+      .then(() => {
+        closeModal();
+        addToast("기업 데이터가 업로드되었습니다.", "success");
+      })
+      .catch(() => {});
   }
 
-  function toggleCompanySelection(companyId: string, event?: React.MouseEvent | React.ChangeEvent) {
-    if (
-      event &&
-      "nativeEvent" in event &&
-      event.nativeEvent instanceof MouseEvent &&
-      event.nativeEvent.shiftKey &&
-      lastSelectedIdRef.current
-    ) {
-      const ids = filteredCompanies.map((company) => company.id);
-      const lastIdx = ids.indexOf(lastSelectedIdRef.current);
-      const currIdx = ids.indexOf(companyId);
-      if (lastIdx !== -1 && currIdx !== -1) {
-        const start = Math.min(lastIdx, currIdx);
-        const end = Math.max(lastIdx, currIdx);
-        const rangeIds = ids.slice(start, end + 1);
-        setSelectedCompanyIds((prev) => {
-          const next = new Set(prev);
-          rangeIds.forEach((rid) => next.add(rid));
-          return next;
-        });
-        return;
-      }
-    }
-    
-    setSelectedCompanyIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(companyId)) {
-        next.delete(companyId);
-      } else {
-        next.add(companyId);
-      }
-      return next;
-    });
-    lastSelectedIdRef.current = companyId;
-  }
-
-  function toggleVisibleSelection(checked: boolean) {
-    setSelectedCompanyIds((previous) => {
-      const next = new Set(previous);
-      visibleCompanyIds.forEach((companyId) => {
-        if (checked) {
-          next.add(companyId);
-        } else {
-          next.delete(companyId);
-        }
-      });
-      return next;
-    });
-  }
-
-  function clearSelectedCompanies() {
-    setSelectedCompanyIds(new Set());
-  }
-
-  function openEmailModal(companyIds: string[]) {
-    if (companyIds.length === 0) return;
-    setEmailRecipientIds(companyIds);
-    setSelectedTemplateId(initialTemplates[0]?.id ?? "");
-    setActiveModal("email");
-  }
-
-  function sendEmailTemplate() {
-    if (!selectedTemplateId || emailRecipientIds.length === 0) return;
-    const template = initialTemplates.find(
-      (item) => item.id === selectedTemplateId,
-    );
-    const message = `${emailRecipientIds.length}개 기업에 "${template?.name ?? "선택 템플릿"}" 발송을 준비했습니다.`;
-    setTableNotice(message);
-
-    if (draftCompany && emailRecipientIds.includes(draftCompany.id)) {
-      setDrawerNotice(
-        `"${template?.name ?? "선택 템플릿"}"으로 이메일 발송을 준비했습니다.`,
-      );
-    }
-
-    setActiveModal(null);
-  }
-
-  async function exportSelectedCompanies() {
-    if (selectedCompanies.length === 0) return;
-    const XLSX = await import("xlsx");
-
-    const rows = selectedCompanies.map((company) => ({
-      기업명: company.companyName,
-      사업자번호: company.businessRegNo,
-      소재지: company.location,
-      대표명: company.representative,
-      담당자: company.manager,
-      연락처: company.phone,
-      이메일: company.email,
-      협약서여부: company.mouSigned ? "체결" : "미체결",
-      참여과정수: getParticipationCount(company),
-      참여과정: company.participations
-        .filter((participation) => participation.enabled)
-        .map(
-          (participation) =>
-            `${participation.courseType}: ${participation.programNames.join(", ")}`,
-        )
-        .join(" | "),
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "기업관리");
-    XLSX.writeFile(workbook, `companies_${Date.now()}.xlsx`);
-  }
-
-  function parseExcelFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const XLSX = await import("xlsx");
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
-          worksheet,
-          { defval: "" },
-        );
-
-        if (rows.length === 0) {
-          setUploadError("인식된 데이터가 없습니다.");
-          return;
-        }
-
-        const headers = Object.keys(rows[0]);
-        const initialMapping: Record<string, string> = {};
-        headers.forEach((h) => {
-          const header = h.trim();
-          if (["기업명", "회사명"].includes(header)) initialMapping[h] = "companyName";
-          else if (["사업자번호", "사업자등록번호"].includes(header)) initialMapping[h] = "businessRegNo";
-          else if (["소재지", "주소"].includes(header)) initialMapping[h] = "location";
-          else if (["대표명", "대표자"].includes(header)) initialMapping[h] = "representative";
-          else if (["담당자"].includes(header)) initialMapping[h] = "manager";
-          else if (["연락처", "전화"].includes(header)) initialMapping[h] = "phone";
-          else if (["이메일"].includes(header)) initialMapping[h] = "email";
-          else initialMapping[h] = "__skip__";
-        });
-
-        setRawRows(rows);
-        setColumnMapping(initialMapping);
-        setUploadStep(2);
-      } catch {
-        setUploadError(
-          "파일 파싱에 실패했습니다. xlsx/xls 형식을 확인해 주세요.",
-        );
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-  }
-
-  function goNextToPreview() {
-    const parsed = rawRows.map((row, index) => {
-      const company = normalizeCompanyParticipations(
-        createEmptyCompany(),
-        courseGroups,
-      );
-      company.id = `upload-${Date.now()}-${index}`;
-
-      Object.entries(columnMapping).forEach(([colName, systemField]) => {
-        if (systemField === "__skip__") return;
-        const value = String(row[colName] ?? "").trim();
-        if (systemField === "businessRegNo") {
-          company.businessRegNo = formatBusinessRegNo(value);
-        } else if (systemField in company) {
-          (company as any)[systemField] = value;
-        }
-      });
-
-      return company;
-    }).filter(company => company.companyName.trim().length > 0);
-
-    if (parsed.length === 0) {
-      setUploadError("매핑된 기업명이 없습니다. 컬럼 매핑을 확인해 주세요.");
-      return;
-    }
-
-    setUploadPreview(parsed);
-    setUploadStep(3);
-  }
-
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setUploadFile(file);
-    setUploadError(null);
-    setUploadPreview(null);
-    parseExcelFile(file);
-  }
-
-  function handleDropzoneDrop(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
-    setUploadFile(file);
-    setUploadError(null);
-    setUploadPreview(null);
-    parseExcelFile(file);
-  }
-
-  function confirmUpload() {
-    if (!uploadPreview || uploadPreview.length === 0) return;
-    setCompanies((current) => [...uploadPreview, ...current]);
-    closeModal();
-  }
-
-  function resetUpload() {
-    setUploadFile(null);
-    setUploadStep(1);
-    setRawRows([]);
-    setColumnMapping({});
-    setUploadPreview(null);
-    setUploadError(null);
-  }
-
-  function openAddCourseModal() {
-    if (!draftCompany) return;
-    const firstGroupName = courseGroups[0]?.name ?? "";
-    setAddCourseGroupName(firstGroupName);
-    setAddCourseSelection(new Set());
-    setActiveModal("add-course");
-  }
-
-  function toggleAddCourseSelectionItem(detailName: string, checked: boolean) {
-    setAddCourseSelection((previous) => {
-      const next = new Set(previous);
-      if (checked) {
-        next.add(detailName);
-      } else {
-        next.delete(detailName);
-      }
-      return next;
-    });
-  }
-
-  function saveAddCourseModal() {
-    if (!draftCompany || !addCourseGroup || addCourseSelection.size === 0)
-      return;
-
-    updateDraftParticipation(addCourseGroup.name, (participation) => {
-      const nextProgramNames = Array.from(
-        new Set([
-          ...participation.programNames,
-          ...Array.from(addCourseSelection),
-        ]),
-      );
-      return {
-        ...participation,
-        enabled: true,
-        programNames: nextProgramNames,
-        status:
-          participation.status === "미참여" ? "대기" : participation.status,
-      };
-    });
-
-    setExpandedDrawerGroups((previous) => {
-      const next = new Set(previous);
-      next.add(addCourseGroup.name);
-      return next;
-    });
-
-    setDrawerNotice(
-      `${addCourseSelection.size}개 세부 과정을 참여 목록에 추가했습니다.`,
-    );
-    setActiveModal(null);
-  }
-
-  function removeCourseProgram(courseType: string, programName: string) {
-    updateDraftParticipation(courseType, (participation) => {
-      const nextProgramNames = participation.programNames.filter(
-        (name) => name !== programName,
-      );
-      return {
-        ...participation,
-        programNames: nextProgramNames,
-        enabled: nextProgramNames.length > 0 ? participation.enabled : false,
-        status: nextProgramNames.length > 0 ? participation.status : "미참여",
-      };
-    });
-  }
-
-  function toggleDrawerGroup(groupName: string) {
-    setExpandedDrawerGroups((previous) => {
-      const next = new Set(previous);
-      if (next.has(groupName)) {
-        next.delete(groupName);
-      } else {
-        next.add(groupName);
-      }
-      return next;
-    });
-  }
-
-  function handleLocationEnter(
-    event: React.MouseEvent<HTMLTableCellElement>,
-    locationText: string,
-  ) {
-    const span =
-      event.currentTarget.querySelector<HTMLSpanElement>(".location-text");
-    if (!span || span.scrollWidth <= span.clientWidth) return;
-
-    const rect = span.getBoundingClientRect();
-    setTooltipInfo({
-      content: locationText,
-      style: {
-        left: rect.left + rect.width / 2,
-        top: rect.top,
-        transform: "translateX(-50%) translateY(calc(-100% - 8px))",
-      },
-    });
-  }
-
-  function handleParticipationEnter(
-    event: React.MouseEvent<HTMLTableCellElement>,
-    participations: CompanyParticipation[],
-  ) {
-    if (participations.length === 0) return;
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const content = (
-      <div className="flex flex-col gap-1 min-w-[120px]">
-        {participations.map((p) => (
-          <div key={p.courseType} className="flex items-center justify-between gap-3">
-            <span className="text-xs font-semibold">{p.courseType}</span>
-            <span className="text-[10px] bg-slate-100 px-1.5 rounded">{p.programNames.length}개 과정</span>
-          </div>
-        ))}
-      </div>
-    );
-
-    setTooltipInfo({
-      content,
-      style: {
-        left: rect.left + rect.width / 2,
-        top: rect.top,
-        transform: "translateX(-50%) translateY(calc(-100% - 8px))",
-      },
-    });
-  }
-
-  function getSubCoursesForCompany(companyId: string, groupId: string) {
-    return companyParticipants[companyId]?.[groupId] ?? {};
-  }
-
-  function getSubCourseByName(
-    companyId: string,
-    groupId: string,
-    detailName: string,
-  ) {
-    const map = getSubCoursesForCompany(companyId, groupId);
-    return Object.values(map).find((sc) => sc.name === detailName);
-  }
-
-  function toggleSubCourse(detailId: string) {
-    setExpandedSubCourses((prev) => {
-      const next = new Set(prev);
-      if (next.has(detailId)) {
-        next.delete(detailId);
-      } else {
-        next.add(detailId);
-      }
-      return next;
-    });
-  }
-
-  function removeParticipantFromSubCourse(
-    groupId: string,
-    subCourseId: string,
-    participantId: string,
-  ) {
-    const pt = participants.find((p) => p.id === participantId);
-    if (!pt) return;
-
-    const group = courseGroups.find((g) => g.id === groupId);
-    if (!group) return;
-
-    const nextEnrollments = pt.enrollments.filter(
-      (e) => !(e.courseType === group.name && e.subCourseName === subCourseId),
-    );
-
-    upsertParticipant({ ...pt, enrollments: nextEnrollments });
-  }
-
-  function addParticipantToSubCourse(subCourseId: string, groupId: string) {
-    if (!draftCompany || !addParticipantDraft.trim()) return;
-    const companyId = draftCompany.id;
-    const name = addParticipantDraft.trim();
-    const group = courseGroups.find((g) => g.id === groupId);
-    if (!group) return;
-
-    const nextEnrollmentId = `enr-${Date.now()}`;
-    const newEnrollment: ParticipantEnrollment = {
-      id: nextEnrollmentId,
-      courseType: group.name as CourseType,
-      subCourseName: subCourseId,
-      startDate: "",
-      endDate: "",
-      totalHours: 0,
-      status: "미수료",
-    };
-
-    const existing = participants.find(
-      (p) => p.name === name && p.companyId === companyId,
-    );
-
-    if (existing) {
-      upsertParticipant({
-        ...existing,
-        enrollments: [...existing.enrollments, newEnrollment],
-      });
-    } else {
-      const newP: ParticipantRecord = {
-        id: `pt-${Date.now()}`,
-        name,
-        companyId,
-        companyName: draftCompany.companyName,
-        position: "",
-        phone: "",
-        email: "",
-        employmentInsurance: "미확인",
-        enrollments: [newEnrollment],
-      };
-      upsertParticipant(newP);
-    }
-
-    setAddParticipantSubCourseId(null);
-    setAddParticipantDraft("");
-  }
-
-  function showParticipantPopover(
-    participant: any,
-    event: React.MouseEvent,
-  ) {
-    if (popoverTimerRef.current) clearTimeout(popoverTimerRef.current);
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    popoverTimerRef.current = setTimeout(() => {
-      const popoverWidth = 220;
-      const margin = 8;
-      const hasSpaceOnRight = rect.right + popoverWidth + margin < window.innerWidth;
-      
-      const left = hasSpaceOnRight 
-        ? rect.right + margin 
-        : rect.left - popoverWidth - margin;
-
-      setParticipantPopover({
-        participant,
-        style: {
-          left,
-          top: rect.top,
-        },
-      });
-    }, 300);
-  }
-
-  function hideParticipantPopover() {
-    if (popoverTimerRef.current) clearTimeout(popoverTimerRef.current);
-    popoverTimerRef.current = setTimeout(() => {
-      setParticipantPopover(null);
-    }, 200);
-  }
+  // Render Helpers
+  const selectedCompany = useMemo(() => companies.find(c => c.id === draftCompany?.id) || null, [companies, draftCompany]);
 
   return (
     <>
       <PageHeader
         title="기업 관리"
-        actions={
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={openChoiceModal}
-          >
-            <span>기업 추가</span>
-          </button>
-        }
+        actions={<button type="button" className="btn btn-primary" onClick={openChoiceModal}><span>기업 추가</span></button>}
       />
 
       <CompanyTable
@@ -961,60 +290,59 @@ export function CompanyManagementPage() {
         onOpenEditDrawer={openEditDrawer}
         draftCompanyId={draftCompany?.id}
         onToggleSort={toggleSort}
-        getSortIndicator={getSortIndicator}
+        getSortIndicator={(key) => (sortState.key !== key || !sortState.direction ? "↕" : sortState.direction === "asc" ? "↑" : "↓")}
         onLocationEnter={handleLocationEnter}
         onParticipationEnter={handleParticipationEnter}
-        onTooltipLeave={() => setTooltipInfo(null)}
+        onTooltipLeave={hideTooltip}
         selectAllRef={selectAllRef}
       />
 
-      {tableNotice && <p className="table-notice">{tableNotice}</p>}
+      <FloatingActionBar
+        count={selectedCompanyIds.size}
+        label="개 기업 선택됨"
+        onClear={clearSelectedCompanies}
+        actions={[
+          {
+            label: "이메일 발송",
+            icon: Mail,
+            onClick: () => openEmailModal(Array.from(selectedCompanyIds)),
+          },
+          {
+            label: "내보내기",
+            icon: Download,
+            onClick: async () => {
+              const XLSX = await import("xlsx");
+              const selectedData = companies.filter(c => selectedCompanyIds.has(c.id));
+              
+              const rows = selectedData.map(c => ({
+                기업명: c.companyName,
+                사업자번호: c.businessRegNo || "-",
+                소재지: c.location,
+                대표자: c.representative,
+                담당자: c.manager || "-",
+                연락처: c.phone || "-",
+                이메일: c.email || "-",
+                "협약서 여부": c.mouSigned ? "체결" : "미체결",
+                "협약 체결일": toDotDate(c.mouSignedDate),
+                "참여 과정 수": getParticipationCount(c),
+                "참여 과정 목록": c.participations
+                  .filter(p => p.enabled && p.programNames.length > 0)
+                  .map(p => `${p.courseType}(${p.programNames.join(", ")})`)
+                  .join(" | ")
+              }));
 
-      {selectedCompanyIds.size > 0 && (
-        <div
-          className="floating-action-bar"
-          role="region"
-          aria-label="선택된 기업 액션바"
-        >
-          <div className="floating-action-inner">
-            <p className="floating-action-count">
-              {selectedCompanyIds.size}개 기업 선택됨
-            </p>
-            <div className="floating-action-buttons">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => openEmailModal(Array.from(selectedCompanyIds))}
-              >
-                <Mail className="icon-sm" />
-                <span>이메일 발송</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={exportSelectedCompanies}
-              >
-                <Download className="icon-sm" />
-                <span>내보내기</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={clearSelectedCompanies}
-              >
-                <span>선택 해제</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              const ws = XLSX.utils.json_to_sheet(rows);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "기업관리 명단");
+              XLSX.writeFile(wb, `companies_export_${Date.now()}.xlsx`);
+              addToast(`${selectedCompanyIds.size}개 기업의 데이터를 내보냈습니다.`, "success");
+            }
+          }
+        ]}
+      />
 
       {activeModal === "choice" && (
-        <AddCompanyModal
-          onClose={closeModal}
-          onUploadClick={openUploadModal}
-          onCreateDrawerClick={openCreateDrawer}
-        />
+        <AddCompanyModal onClose={closeModal} onUploadClick={() => setActiveModal("upload")} onCreateDrawerClick={openCreateDrawer} />
       )}
 
       {activeModal === "upload" && (
@@ -1031,7 +359,7 @@ export function CompanyManagementPage() {
           uploadError={uploadError}
           onFileChange={handleFileChange}
           onDropzoneDrop={handleDropzoneDrop}
-          onConfirm={confirmUpload}
+          onConfirm={handleConfirmUpload}
           onReset={resetUpload}
         />
       )}
@@ -1042,28 +370,19 @@ export function CompanyManagementPage() {
           emailRecipientIds={emailRecipientIds}
           selectedTemplateId={selectedTemplateId}
           onTemplateChange={setSelectedTemplateId}
-          onSend={sendEmailTemplate}
-          templates={initialTemplates}
-        />
-      )}
-
-      {activeModal === "add-course" && (
-        <AddCourseModal
-          onClose={closeModal}
-          isClosing={isClosing}
-          addCourseGroupName={addCourseGroupName}
-          onAddCourseGroupNameChange={setAddCourseGroupName}
-          addCourseGroup={addCourseGroup}
-          addCourseSelection={addCourseSelection}
-          onToggleAddCourseSelectionItem={toggleAddCourseSelectionItem}
-          onSave={saveAddCourseModal}
-          courseGroups={courseGroups}
+          onSend={() => {
+             addToast(`${emailRecipientIds.length}개 기업에 이메일 발송을 준비했습니다.`, "info");
+             setActiveModal(null);
+          }}
+          templates={templates}
         />
       )}
 
       {draftCompany && (
-        <CompanyDrawer
+        <CompanyDrawer 
+          company={selectedCompany}
           draftCompany={draftCompany}
+
           drawerEditMode={drawerEditMode}
           drawerNotice={drawerNotice}
           drawerNameEditing={drawerNameEditing}
@@ -1072,29 +391,81 @@ export function CompanyManagementPage() {
           expandedSubCourses={expandedSubCourses}
           addParticipantSubCourseId={addParticipantSubCourseId}
           addParticipantDraft={addParticipantDraft}
+          addParticipantSessionId={addParticipantSessionId}
           isSaving={isSaving}
           isClosing={isClosing}
           courseGroups={courseGroups}
-          onDrawerClose={handleDrawerClose}
+          onDrawerClose={() => { setIsClosing(true); setTimeout(() => { closeDrawer(); setIsClosing(false); }, 200); }}
           onDrawerNameEditToggle={setDrawerNameEditing}
           onDrawerNameDraftChange={setDrawerNameDraft}
-          onUpdateDraftField={updateDraftField}
+          onUpdateDraftField={(f, v) => setDraftCompany(prev => prev ? ({ ...prev, [f]: v }) : prev)}
           onEnterEditMode={enterEditMode}
-          onCancelEdit={handleCancelEdit}
-          onSaveDraftCompany={saveDraftCompany}
-          onOpenAddCourseModal={openAddCourseModal}
-          onToggleDrawerGroup={toggleDrawerGroup}
-          onToggleSubCourse={toggleSubCourse}
-          onRemoveCourseProgram={removeCourseProgram}
+          onCancelEdit={() => {
+            if (JSON.stringify(editModeSnapshot) !== JSON.stringify(draftCompany)) setCancelConfirmPending(true);
+            else { setDraftCompany(editModeSnapshot); setDrawerEditMode(false); }
+          }}
+          onSaveDraftCompany={handleSaveDraftCompany}
+          onToggleDrawerGroup={(name) => setExpandedDrawerGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name); else next.add(name);
+            return next;
+          })}
+          onToggleSubCourse={(id) => setExpandedSubCourses(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+          })}
+          onRemoveCourseProgram={(type, name) => setPendingRemoveProgram({ courseType: type, programName: name })}
           onAddParticipantClick={setAddParticipantSubCourseId}
           onAddParticipantDraftChange={setAddParticipantDraft}
-          onConfirmAddParticipant={addParticipantToSubCourse}
+          onAddParticipantSessionChange={setAddParticipantSessionId}
+          onConfirmAddParticipant={(subName, gId, sId) => {
+            const name = addParticipantDraft.trim();
+            const group = courseGroups.find(g => g.id === gId);
+            const subDetail = group?.details.find(d => d.name === subName);
+            const session = subDetail?.sessions?.find(s => s.id === sId);
+            
+            if (!name || !group || !subDetail) return;
+
+            const newE: ParticipantEnrollment = { 
+              id: `enr-${Date.now()}`, 
+              courseType: group.name as CourseType, 
+              subCourseName: subName, 
+              sessionId: sId || undefined,
+              startDate: session?.startDate || subDetail.startDate || "", 
+              endDate: session?.endDate || subDetail.endDate || "", 
+              totalHours: session?.totalHours || subDetail.totalHours || 0, 
+              status: "미수료" 
+            };
+
+            const existing = participants.find(p => p.name === name && p.companyId === draftCompany!.id);
+            if (existing) {
+              upsertParticipant({ ...existing, enrollments: [...existing.enrollments, newE] });
+            } else {
+              upsertParticipant({ 
+                id: `pt-${Date.now()}`, 
+                name, 
+                companyId: draftCompany!.id, 
+                companyName: draftCompany!.companyName, 
+                position: "", 
+                phone: "", 
+                email: "", 
+                employmentInsurance: "미확인", 
+                enrollments: [newE] 
+              });
+            }
+            setAddParticipantSubCourseId(null); 
+            setAddParticipantDraft("");
+            setAddParticipantSessionId("");
+            addToast(`${name} 참여자가 해당 과정에 추가되었습니다.`, "success");
+          }}
           onCancelAddParticipant={() => { setAddParticipantSubCourseId(null); setAddParticipantDraft(""); }}
-          onRemoveParticipant={removeParticipantFromSubCourse}
+          onRemoveParticipant={(gId, subName, pId) => setPendingRemoveParticipant({ groupId: gId, subCourseId: subName, ptId: pId })}
           onShowParticipantPopover={showParticipantPopover}
           onHideParticipantPopover={hideParticipantPopover}
           onOpenEmailModal={openEmailModal}
-          getSubCourseByName={getSubCourseByName}
+          onNavigateToCourses={() => navigate("/courses")}
+          getSubCourseByName={(cId, gId, name) => Object.values(companyParticipants[cId]?.[gId] ?? {}).find(sc => sc.name === name)}
           toDotDate={toDotDate}
           getToday={getToday}
           formatBusinessRegNo={formatBusinessRegNo}
@@ -1102,68 +473,96 @@ export function CompanyManagementPage() {
       )}
 
       {cancelConfirmPending && (
-        <div className="modal-backdrop confirm-modal">
+        <div className="modal-backdrop confirm-modal !z-[300]">
           <div className="modal-panel modal-panel-sm">
-            <div className="modal-header">
-              <h3>변경 사항 취소</h3>
-              <button type="button" className="icon-btn" onClick={() => setCancelConfirmPending(false)}><Check className="icon-sm" /></button>
-            </div>
+            <div className="modal-header"><h3>변경 사항 취소</h3><button type="button" className="icon-btn" onClick={() => setCancelConfirmPending(false)}><X className="icon-sm" /></button></div>
             <div className="modal-content"><p>내용이 저장되지 않았습니다. 취소하시겠습니까?</p></div>
+            <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setCancelConfirmPending(false)}>계속 편집</button><button className="btn btn-primary" onClick={() => { setDraftCompany(editModeSnapshot); setCancelConfirmPending(false); setDrawerEditMode(false); }}>취소</button></div>
+          </div>
+        </div>
+      )}
+
+      {pendingRemoveProgram && (
+        <div className="modal-backdrop confirm-modal !z-[300]">
+          <div className="modal-panel modal-panel-sm">
+            <div className="modal-header"><h3>과정 삭제 확인</h3><button type="button" className="icon-btn" onClick={() => setPendingRemoveProgram(null)}><X className="icon-sm" /></button></div>
+            <div className="modal-content"><p><strong>{pendingRemoveProgram.programName}</strong> 과정을 삭제하시겠습니까?</p></div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setCancelConfirmPending(false)}>계속 편집</button>
-              <button className="btn btn-primary" onClick={confirmCancelEdit}>취소</button>
+              <button className="btn btn-secondary" onClick={() => setPendingRemoveProgram(null)}>취소</button>
+              <button className="btn btn-primary bg-error hover:opacity-90" onClick={() => {
+                if (draftCompany && pendingRemoveProgram) {
+                  const nextP = draftCompany.participations.map(p => p.courseType === pendingRemoveProgram.courseType ? ({ ...p, programNames: p.programNames.filter(n => n !== pendingRemoveProgram.programName) }) : p);
+                  setDraftCompany({ ...draftCompany, participations: nextP });
+                  setPendingRemoveProgram(null);
+                  addToast("과정이 목록에서 제외되었습니다 (저장 시 반영).", "info");
+                }
+              }}>삭제</button>
             </div>
           </div>
         </div>
       )}
 
-      {tooltipInfo && (
-        <div className="fixed-tooltip" style={tooltipInfo.style}>
-          {tooltipInfo.content}
+      {pendingRemoveParticipant && (
+        <div className="modal-backdrop confirm-modal !z-[300]">
+          <div className="modal-panel modal-panel-sm">
+            <div className="modal-header"><h3>참여자 제외 확인</h3><button type="button" className="icon-btn" onClick={() => setPendingRemoveParticipant(null)}><X className="icon-sm" /></button></div>
+            <div className="modal-content">
+              <p>해당 참여자를 이 과정에서 제외하시겠습니까?</p>
+              <p className="text-xs text-tertiary mt-2">* 참여자 정보 자체는 삭제되지 않으며 수강 이력만 삭제됩니다.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPendingRemoveParticipant(null)}>취소</button>
+              <button className="btn btn-primary bg-error hover:opacity-90" onClick={() => {
+                if (pendingRemoveParticipant) {
+                  const { groupId, subCourseId, ptId } = pendingRemoveParticipant;
+                  const pt = participants.find(p => p.id === ptId);
+                  const group = courseGroups.find(g => g.id === groupId);
+                  if (pt && group) {
+                    upsertParticipant({ ...pt, enrollments: pt.enrollments.filter(e => !(e.courseType === group.name && e.subCourseName === subCourseId)) });
+                    addToast(`${pt.name} 참여자가 과정에서 제외되었습니다.`, "info");
+                  }
+                  setPendingRemoveParticipant(null);
+                }
+              }}>제외하기</button>
+            </div>
+          </div>
         </div>
       )}
 
+      {tooltipInfo && <div className="fixed-tooltip" style={tooltipInfo.style}>{tooltipInfo.content}</div>}
+
       {participantPopover && (
         <div
-          style={{
-            position: "fixed",
-            ...participantPopover.style,
-            background: "#ffffff",
-            border: "1px solid var(--color-border)",
-            borderRadius: 12,
-            padding: "14px 16px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-            zIndex: 600,
-            minWidth: 220,
-          }}
+          style={{ position: "fixed", ...participantPopover.style, background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 20, padding: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", zIndex: 600, minWidth: 260 }}
           onMouseEnter={() => { if (popoverTimerRef.current) clearTimeout(popoverTimerRef.current); }}
           onMouseLeave={hideParticipantPopover}
+          className="animate-in fade-in zoom-in-95 duration-200"
         >
-          <p style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700 }}>{participantPopover.participant.name}</p>
-          <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--color-text-tertiary)" }}>
-            {draftCompany?.companyName}
-          </p>
-          <hr style={{ margin: "0 0 10px", border: "none", borderTop: "1px solid var(--color-border)" }} />
-          <button
-            type="button"
-            style={{ color: "var(--color-primary)", fontWeight: 600, cursor: "pointer", background: "none", border: "none" }}
-            onClick={() => {
-              setParticipantPopover(null);
-              navigate(`/participants?open=${participantPopover.participant.id}`);
-            }}
+          <div className="flex flex-col gap-1 mb-4">
+            <p className="text-lg font-black text-primary m-0">{participantPopover.participant.name}</p>
+            <p className="text-xs font-bold text-tertiary m-0 uppercase tracking-tight">{draftCompany?.companyName}</p>
+          </div>
+          
+          <div className="space-y-2 mb-5">
+            <div className="flex items-center gap-2 text-[13px] text-secondary">
+              <span className="w-14 text-[11px] font-black text-tertiary">연락처</span>
+              <span className="font-mono font-bold">{participantPopover.participant.phone || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[13px] text-secondary">
+              <span className="w-14 text-[11px] font-black text-tertiary">이메일</span>
+              <span className="font-medium truncate">{participantPopover.participant.email || "-"}</span>
+            </div>
+          </div>
+
+          <button 
+            type="button" 
+            className="w-full py-2.5 bg-brand-primary/10 text-brand-primary rounded-xl text-xs font-bold hover:bg-brand-primary/20 transition-all flex items-center justify-center gap-2"
+            onClick={() => { hideParticipantPopover(); navigate(`/participants?open=${participantPopover.participant.id}`); }}
           >
-            상세보기 →
+            상세 정보 보기 <ChevronRight size={14} strokeWidth={2.5} />
           </button>
         </div>
       )}
     </>
-  );
-}
-
-function X({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-    </svg>
   );
 }

@@ -54,10 +54,15 @@ export type DocumentSkill =
   | "능숙"
   | "전문가 수준";
 
+export type ParticipantTabKey = "ALL" | CourseType;
+export type InsuranceFilter = "ALL" | "가입" | "미가입";
+export type CompletionFilter = "ALL" | "수료" | "미수료";
+
 export interface ParticipantEnrollment {
   id: string;
   courseType: CourseType;
   subCourseName: string;
+  sessionId?: string; // Link to a specific session
   startDate: string;
   endDate: string;
   totalHours: number;
@@ -65,6 +70,8 @@ export interface ParticipantEnrollment {
   completionDate?: string;
   certificateNo?: string;
   applicationDate?: string;
+  isRetake?: boolean;
+  retakeReason?: string;
 }
 
 export interface ParticipantRecord {
@@ -85,6 +92,11 @@ export interface ParticipantRecord {
   workExperience?: WorkExperience;
   documentSkill?: DocumentSkill;
   enrollments: ParticipantEnrollment[];
+  newCompany?: {
+    companyName: string;
+    location: string;
+    representative: string;
+  };
 }
 
 export interface EmailTemplate {
@@ -127,3 +139,53 @@ export type CourseParticipantsMap = Record<
   string,
   Record<string, SubCourseWithParticipants>
 >;
+
+// Course Management Types
+export type AudienceOption =
+  | "재직자 (고용보험 가입)"
+  | "재직자 (고용보험 미가입)"
+  | "기업 대표"
+  | "임원"
+  | "미래인재";
+
+export interface CourseSession {
+  id: string;
+  startDate: string;
+  endDate: string;
+  totalHours: number;
+  targetOutcome: number;
+}
+
+export interface CourseDetail {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  durationDays: number;
+  totalHours: number;
+  targetOutcome: number;
+  sessions?: CourseSession[];
+}
+
+export interface CourseGroup {
+  id: string;
+  name: string;
+  audiences: AudienceOption[];
+  details: CourseDetail[];
+}
+
+export interface CourseGroupForm {
+  name: string;
+  audiences: AudienceOption[];
+  details: CourseDetail[];
+}
+
+export interface CourseDetailDraft {
+  name: string;
+  startDate: string;
+  endDate: string;
+  durationDays: string;
+  totalHours: string;
+  targetOutcome: string;
+  sessions: CourseSession[];
+}

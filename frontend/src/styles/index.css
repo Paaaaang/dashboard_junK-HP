@@ -13,22 +13,45 @@
 @import './responsive.css';
 
 @theme {
-  --color-primary-50: #ecfdf5;
-  --color-primary-100: #d1fae5;
-  --color-primary-200: #a7f3d0;
-  --color-primary-300: #6ee7b7;
-  --color-primary-400: #34d399;
-  --color-primary-500: #10b981;
-  --color-primary-600: #059669;
-  --color-primary-700: #047857;
-  --color-primary-800: #065f46;
-  --color-primary-900: #064e3b;
+  /* Brand Mapping */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-primary-active: var(--brand-primary-active);
 
-  --color-surface: #ffffff;
-  --color-background: #f8fafc;
+  
+  /* Semantic Palette */
+  --color-surface: var(--color-surface);
+  --color-surface-subtle: var(--color-surface-subtle);
+  --color-background: var(--color-page-bg);
+  --color-border: var(--color-border);
+  
+  /* Text Palette (Standardized shorter aliases) */
+  --color-primary: var(--color-text-primary);
+  --color-secondary: var(--color-text-secondary);
+  --color-tertiary: var(--color-text-tertiary);
+  
+  /* Legacy Text Palette (Keep for compatibility) */
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-tertiary: var(--color-text-tertiary);
+  
+  /* Success/Warning/Error Mapping */
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
 
-  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  /* Elevation */
+  --shadow-soft: var(--shadow-soft);
+  --shadow-glass: var(--shadow-glass);
+  
+  /* Z-Index Mapping */
+  --z-topbar: var(--z-topbar);
+  --z-sidebar: var(--z-sidebar);
+  --z-dropdown: var(--z-dropdown);
+  --z-modal: var(--z-modal);
+  --z-drawer: var(--z-drawer);
+  --z-popover: var(--z-popover);
 }
 
 * {

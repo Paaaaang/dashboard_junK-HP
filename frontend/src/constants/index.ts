@@ -74,9 +74,10 @@ export const mainNavigation: NavigationItem[] = [
 type EducationSubNavigationItem = Omit<NavigationItem, "icon">;
 
 export const educationSubNavigation: EducationSubNavigationItem[] = [
-  { to: "/companies", label: "기업 관리" },
-  { to: "/participants", label: "참여자 및 수료" },
-  { to: "/templates", label: "이메일 템플릿" },
+  { to: "/companies", label: "기업" },
+  { to: "/participants", label: "참여자" },
+  { to: "/courses", label: "교육 과정" },
+  { to: "/templates", label: "이메일" },
 ];
 
 // KPI 카드 데이터 (Placeholder - Now fetched from API)

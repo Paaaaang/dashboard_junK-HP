@@ -1,4 +1,4 @@
-import { X, Upload, PlusCircle, ChevronRight } from "lucide-react";
+import { X, Upload, UserPlus, ChevronRight } from "lucide-react";
 
 interface AddCompanyModalProps {
   onClose: () => void;
@@ -13,57 +13,60 @@ export function AddCompanyModal({
 }: AddCompanyModalProps) {
   return (
     <div
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-brand-dark/40 flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label="기업 추가 방식 선택"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
-      <div className="bg-white rounded-[32px] shadow-2xl flex flex-col w-full max-w-md overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
-          <h3 className="text-xl font-bold text-slate-900">기업 추가</h3>
+      <div className="absolute inset-0" onClick={onClose} />
+      
+      <div className="relative bg-surface rounded-[32px] shadow-2xl flex flex-col w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="px-8 py-6 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
+          <h3 className="text-xl font-bold text-primary flex items-center gap-2">기업 추가</h3>
           <button
             type="button"
-            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200"
+            className="p-2 hover:bg-surface-subtle rounded-full transition-colors text-tertiary"
             onClick={onClose}
             aria-label="닫기"
           >
-            <X className="w-5 h-5" />
+            <X size={20} strokeWidth={2.5} />
           </button>
         </div>
-        <div className="p-8 space-y-4">
+
+        <div className="p-8 grid grid-cols-1 gap-4">
           <button
             type="button"
-            className="flex items-center gap-4 p-6 border-2 border-slate-100 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50/50 group transition-all duration-200 text-left w-full"
-            onClick={onUploadClick}
-          >
-            <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-emerald-100 text-slate-500 group-hover:text-emerald-600 transition-all duration-200">
-              <Upload className="w-6 h-6" />
-            </div>
-            <div className="flex-1">
-              <span className="block text-lg font-bold text-slate-900">업로드</span>
-              <span className="block text-sm text-slate-500">엑셀 파일로 일괄 등록</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-all duration-200" />
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-4 p-6 border-2 border-slate-100 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50/50 group transition-all duration-200 text-left w-full"
+            className="flex items-center gap-5 p-6 rounded-2xl border-2 border-border hover:border-brand-primary hover:bg-brand-primary/10 transition-all text-left group w-full"
             onClick={onCreateDrawerClick}
           >
-            <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-emerald-100 text-slate-500 group-hover:text-emerald-600 transition-all duration-200">
-              <PlusCircle className="w-6 h-6" />
+            <div className="w-14 h-14 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary group-hover:scale-110 transition-transform">
+              <UserPlus size={28} strokeWidth={2.5} />
             </div>
             <div className="flex-1">
-              <span className="block text-lg font-bold text-slate-900">직접 입력</span>
-              <span className="block text-sm text-slate-500">
-                사이드 드로어에서 기업 정보를 입력
-              </span>
+              <p className="font-bold text-primary text-lg">직접 등록하기</p>
+              <p className="text-sm text-secondary mt-1">사이드 드로어에서 기업 정보를 입력하여 등록합니다.</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-all duration-200" />
+            <ChevronRight className="w-5 h-5 text-tertiary group-hover:text-brand-primary transition-all duration-200" strokeWidth={2.5} />
           </button>
+
+          <button
+            type="button"
+            className="flex items-center gap-5 p-6 rounded-2xl border-2 border-border hover:border-brand-primary hover:bg-brand-primary/10 transition-all text-left group w-full"
+            onClick={onUploadClick}
+          >
+            <div className="w-14 h-14 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary group-hover:scale-110 transition-transform">
+              <Upload size={28} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-primary text-lg">엑셀로 일괄 등록</p>
+              <p className="text-sm text-secondary mt-1">xlsx, xls 파일을 업로드하여 대량으로 등록합니다.</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-tertiary group-hover:text-brand-primary transition-all duration-200" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        <div className="px-8 py-5 bg-surface-subtle/50 text-center">
+          <p className="text-xs text-tertiary font-medium tracking-tight uppercase">Dashboard Company Management</p>
         </div>
       </div>
     </div>

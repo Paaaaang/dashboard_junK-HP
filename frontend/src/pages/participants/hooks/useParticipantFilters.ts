@@ -1,19 +1,15 @@
 import { useState, useMemo } from "react";
-import type { ParticipantRecord, CourseType, ParticipantEnrollment } from "../../../types/models";
+import type { 
+  ParticipantRecord, 
+  ParticipantEnrollment,
+  ParticipantTabKey,
+  InsuranceFilter,
+  CompletionFilter 
+} from "../../../types/models";
 import { useDebounce } from "../../../hooks/useDebounce";
 
-export type ParticipantTabKey = "ALL" | CourseType;
-export type InsuranceFilter = "ALL" | "가입" | "미가입";
-export type CompletionFilter = "ALL" | "수료" | "미수료";
-
-export interface ParticipantFilters {
-  activeTab: ParticipantTabKey;
-  completionFilter: CompletionFilter;
-  insuranceFilter: InsuranceFilter;
-  searchRaw: string;
-}
-
 function calcCompletionSummary(enrollments: ParticipantEnrollment[]) {
+  if (enrollments.length === 0) return { total: 0, completed: 0 };
   const total = enrollments.length;
   const completed = enrollments.filter((e) => e.status === "수료").length;
   return { total, completed };

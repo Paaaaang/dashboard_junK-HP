@@ -23,6 +23,7 @@ export function useCompanyDrawerState() {
     string | null
   >(null);
   const [addParticipantDraft, setAddParticipantDraft] = useState("");
+  const [addParticipantSessionId, setAddParticipantSessionId] = useState("");
 
   const enterEditMode = useCallback(() => {
     setEditModeSnapshot(draftCompany ? cloneCompany(draftCompany) : null);
@@ -39,6 +40,7 @@ export function useCompanyDrawerState() {
     setExpandedSubCourses(new Set());
     setAddParticipantSubCourseId(null);
     setAddParticipantDraft("");
+    setAddParticipantSessionId("");
   }, []);
 
   return {
@@ -68,6 +70,8 @@ export function useCompanyDrawerState() {
     setAddParticipantSubCourseId,
     addParticipantDraft,
     setAddParticipantDraft,
+    addParticipantSessionId,
+    setAddParticipantSessionId,
     enterEditMode,
     closeDrawer,
   };

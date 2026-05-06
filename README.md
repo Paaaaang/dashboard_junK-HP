@@ -1,13 +1,23 @@
-# Automation Dashboard
+# Dashboard KHP (K-하이테크 플랫폼 대시보드)
 
-완벽한 웹 기반 자동화 대시보드 개발 환경입니다.
+전남대학교 K-하이테크 플랫폼의 교육 과정과 참여 기업, 수강생 정보를 체계적으로 관리하고 분석하는 **전문가용 3-Tier 자동화 대시보드** 시스템입니다.
+
+## ✨ 주요 핵심 성과
+
+- **3-Tier 완벽 아키텍처**: Frontend (React) - Middleware (Express) - Database (PostgreSQL/Supabase) 구조로 설계되어 데이터 무결성과 보안을 보장합니다.
+- **고도화된 실시간 분석**: Recharts를 활용하여 고용보험 가입 분포, 월별 참여 추이, 우수 파트너 랭킹 등 실무 인사이트를 제공합니다.
+- **SOLID 아키텍처 (Frontend)**: 모든 거대 컴포넌트를 기능별 커스텀 훅과 서브 컴포넌트로 분해하여 유지보수성을 극대화했습니다.
+- **강력한 데이터 정합성**: 참여자 등록 시 새로운 기업을 동시에 생성하는 복합 작업을 **DB 트랜잭션**으로 처리하여 안전하게 관리합니다.
+- **성능 최적화**: 페이지별 Lazy Loading 및 대형 라이브러리 지연 로딩을 통해 초기 번들 크기를 400KB 이하로 최적화했습니다.
+
+---
 
 ## 🚀 빠른 시작
 
 ### 사전 요구사항
 - Node.js 18+ 
 - npm 또는 yarn
-- Docker & Docker Compose (데이터베이스 실행)
+- Docker & Docker Compose (PostgreSQL 및 Redis 구동용)
 
 ### 1단계: 의존성 설치
 
@@ -16,258 +26,87 @@
 npm install
 ```
 
-만약 `npm`/`node` 커맨드가 인식되지 않으면 Node.js 설치 또는 PATH 설정이 필요합니다.
-
 ### 2단계: 환경 설정
 
-```bash
-# 백엔드
-cp backend/.env.example backend/.env
+- **Backend**: `backend/.env` 파일에 `DATABASE_URL`(Supabase PostgreSQL 연결 문자열)을 설정하세요.
+- **Frontend**: `frontend/.env` 파일에 `VITE_API_URL=http://127.0.0.1:3001/api`를 설정하세요.
 
-# 프론트엔드
-cp frontend/.env.example frontend/.env
-```
-
-### 3단계: 데이터베이스 시작
+### 3단계: 인프라 서비스 시작
 
 ```bash
+# Docker를 통해 DB 및 Redis 시작
 npm run docker:up
 ```
 
-이 명령어는 다음을 실행합니다:
-- **PostgreSQL** (포트 5432)
-- **Redis** (포트 6379)
-- **pgAdmin** (포트 5050)
+### 4단계: 개발 서버 시작 (Hot Reload 지원)
 
-#### pgAdmin 접속
-- URL: http://localhost:5050/pgadmin
-- 이메일: khp@junkhp.com
-- 암호: khp_pgadmin
+두 개의 터미널을 열고 각각 실행하거나, 루트에서 통합 명령어를 사용하세요:
 
-### 4단계: 개발 서버 시작
-
-두 개의 터미널을 열고 각각 실행하세요:
-
-**터미널 1 - 백엔드:**
 ```bash
-npm run backend:dev
-# 또는
-npm --workspace=backend run dev
+# 통합 실행 (추천)
+npm run dev
 ```
 
-**터미널 2 - 프론트엔드:**
-```bash
-npm run frontend:dev
-# 또는
-npm --workspace=frontend run dev
-```
-
-그 후 자동으로 브라우저가 열립니다:
 - **프론트엔드**: http://localhost:3000
 - **백엔드 API**: http://localhost:3001/api
 
 ---
 
-## 📁 프로젝트 구조
+## 📁 프로젝트 구조 (SOLID Refactored)
 
 ```
 dashboard_junK-HP/
-├── backend/                    # Express.js + TypeScript 백엔드
+├── backend/                    # Express.js + Node-Postgres (pg)
 │   ├── src/
-│   │   ├── index.ts           # 애플리케이션 진입점
-│   │   ├── routes/            # API 라우트
-│   │   ├── controllers/       # 요청 핸들러
-│   │   ├── models/            # DB 모델 (Sequelize)
-│   │   ├── services/          # 비즈니스 로직
-│   │   ├── middleware/        # Express 미들웨어
-│   │   └── config/            # 설정 파일
-│   ├── dist/                  # 컴파일된 JS 출력
-│   ├── package.json
-│   └── tsconfig.json
+│   │   ├── index.ts           # REST API 엔드포인트 및 트랜잭션 로직
+│   │   └── db.ts              # PostgreSQL Connection Pool 설정
 │
-├── frontend/                   # React + TypeScript 프론트엔드
+├── frontend/                   # React + TypeScript + TailwindCSS
 │   ├── src/
-│   │   ├── main.tsx           # 애플리케이션 진입점
-│   │   ├── App.tsx            # 루트 컴포넌트
-│   │   ├── components/        # 재사용 가능한 컴포넌트
-│   │   ├── pages/             # 페이지 컴포넌트
-│   │   ├── hooks/             # 커스텀 React 훅
-│   │   ├── api/               # API 클라이언트
-│   │   ├── stores/            # Zustand 스토어
-│   │   ├── styles/            # CSS 디자인 시스템 (variables/base/buttons/...) 
-│   │   ├── types/             # TypeScript 타입 정의
-│   │   └── index.css          # 전역 스타일
-│   ├── public/                # 정적 파일
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
+│   │   ├── stores/            # Zustand 전역 상태 (API 연동 방식)
+│   │   ├── hooks/             # 도메인별 SOLID 커스텀 훅
+│   │   ├── pages/             # 페이지 컴포넌트 및 모듈별 섹션 분리
+│   │   │   ├── companies/     # 기업 관리 (Hooks/Sections/Modals 분리)
+│   │   │   └── participants/  # 참여자 관리 (Hooks/Modals 분리)
+│   │   └── api/               # Axios 기반 중앙 API 클라이언트
 │
-├── docker-compose.yml         # 데이터베이스 & 서비스 구성
-├── package.json              # 루트 워크스페이스 설정
-├── .gitignore
-└── README.md
+├── docker-compose.yml         # PostgreSQL 16 + Redis 구성
+└── plan.md                    # 통합 프로젝트 계획 및 달성 현황
 ```
 
 ---
 
-## 🛠 유용한 명령어
+## 🔑 기술 스택 상세
 
-### 개발
-```bash
-npm run dev              # 백엔드 + 프론트엔드 동시 실행
-npm run backend:dev      # 백엔드만
-npm run frontend:dev     # 프론트엔드만
-```
-
-### 빌드
-```bash
-npm run build            # 백엔드 + 프론트엔드 빌드
-npm run backend:build    # 백엔드만 빌드
-npm run frontend:build   # 프론트엔드만 빌드
-```
-
-### 린팅
-```bash
-npm run lint             # 코드 스타일 체크
-npm run lint:fix         # 자동으로 스타일 수정
-```
-
-### 데이터베이스
-```bash
-npm run docker:up        # 모든 서비스 시작
-npm run docker:down      # 모든 서비스 중지
-npm run docker:logs      # 로그 확인 (실시간)
-```
+| Layer | Technology | Key Features |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, TypeScript | SOLID 구조, Lazy Loading, TailwindCSS 4 |
+| **State** | Zustand | API-first State Management, Async Sync |
+| **Chart** | Recharts | Professional Data Visualization, Responsive |
+| **Backend** | Express, Node-TS | RESTful API, Transactional safety |
+| **Database** | PostgreSQL, Supabase | Relational Schema, RLS Security Hardening |
+| **Utility** | SheetJS (xlsx) | 3-Step Excel Batch Upload & Detailed Export |
 
 ---
 
-## 🔑 주요 기술 스택
+## 🧪 유효성 검증 및 상태 확인
 
-### 백엔드
-- **Express.js**: 웹 프레임워크
-- **TypeScript**: 타입 안정성
-- **PostgreSQL**: 관계형 데이터베이스
-- **Sequelize**: ORM
-- **Bull**: Job Queue (워크플로우 자동화)
-- **Redis**: 캐싱 & 메시지 큐
-
-### 프론트엔드
-- **React 18**: UI 라이브러리
-- **TypeScript**: 타입 안정성
-- **Vite**: 번들러 & 개발 서버
-- **React Router**: 라우팅
-- **Zustand**: 상태 관리
-- **Axios**: HTTP 클라이언트
-
----
-
-## 📝 환경 변수
-
-### 백엔드 (.env)
-```
-PORT=3001
-NODE_ENV=development
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=dashboard_khp_db
-DB_USER=dashboard_user
-DB_PASSWORD=dashboard_password_secure
-REDIS_HOST=localhost
-REDIS_PORT=6379
-FRONTEND_URL=http://localhost:3000
-```
-
-### 프론트엔드 (.env)
-```
-VITE_API_URL=http://localhost:3001/api
-VITE_APP_NAME=Automation Dashboard
-```
-
----
-
-## 🧪 유효성 검증
-
-개발 환경이 제대로 설정되었는지 확인하세요:
-
-1. **PostgreSQL 연결 확인**
+1. **백엔드/DB 헬스체크**
    ```bash
-   # pgAdmin에서 확인:  http://localhost:5050
+   curl http://127.0.0.1:3001/api/health
+   # 응답: {"status":"OK", "db":"Connected", ...}
    ```
 
-2. **Redis 연결 확인**
-   ```bash
-   docker exec dashboard_khp_redis redis-cli ping
-   # 응답: PONG
-   ```
-
-3. **백엔드 상태 확인**
-   ```bash
-   curl http://localhost:3001/api/health
-   # 응답: {"status":"OK","timestamp":"...","version":"1.0.0"}
-   ```
-
-4. **프론트엔드 로드 확인**
-   - 브라우저에서 http://localhost:3000 방문
-   - 대시보드 페이지가 로드되면 정상
+2. **프론트엔드 데이터 로드 확인**
+   - 대시보드 진입 시 Recharts 차트가 실제 DB 데이터를 바탕으로 부드럽게 애니메이션되며 렌더링되면 정상입니다.
 
 ---
 
 ## 🚨 문제 해결
 
-### 포트가 이미 사용 중인 경우
-```bash
-# Windows
-netstat -ano | findstr :3000
-# 프로세스 종료
-taskkill /PID <PID> /F
-
-
-### PowerShell에서 `npm.ps1` 실행이 차단되는 경우
-
-PowerShell 실행 정책(ExecutionPolicy) 때문에 `npm` 실행이 막히면, 아래처럼 `npm.cmd`로 실행할 수 있습니다.
-
-```bash
-npm.cmd -v
-npm.cmd install
-```
-# macOS/Linux
-lsof -i :3000
-kill -9 <PID>
-```
-
-### Docker 컨테이너 재설정
-```bash
-npm run docker:down
-docker system prune -a
-npm run docker:up
-```
-
-### 의존성 캐시 초기화
-```bash
-npm run docker:down
-rm -rf node_modules backend/node_modules frontend/node_modules
-npm install
-npm run docker:up
-```
+- **Network Error**: 로컬 환경에 따라 `localhost` 대신 `127.0.0.1`을 사용하세요. `api/client.ts`에 이미 최적화되어 있습니다.
+- **Port Conflict**: 3000(FE), 3001(BE), 5432(DB) 포트가 이미 사용 중인지 확인하세요.
 
 ---
 
-## 📚 다음 단계
-
-1. **인증 구현**: JWT 기반 인증 추가
-2. **데이터베이스 모델**: Sequelize 모델 생성
-3. **API 엔드포인트**: 워크플로우 CRUD 작성
-4. **프론트엔드 페이지**: 워크플로우 관리 UI
-5. **워크플로우 엔진**: Bull을 이용한 자동화 작업 처리
-6. **테스팅**: Jest를 이용한 유닛 테스트
-
----
-
-## 📞 지원
-
-질문이나 문제가 있으면 이슈를 등록해주세요.
-
----
-
-**Happy Coding! 🎉**
+**Happy Data-Driven Management! 📊**

@@ -139,18 +139,19 @@ export function DebugMode() {
           left: hoverInfo.rect.left,
           width: hoverInfo.rect.width,
           height: hoverInfo.rect.height,
-          border: "2px solid #3b82f6",
-          background: "rgba(59, 130, 246, 0.1)",
+          border: "2px solid var(--color-info)",
+          background: "var(--color-info-bg)",
+          opacity: 0.5,
           pointerEvents: "none",
           zIndex: 999998,
-          boxShadow: "0 0 10px rgba(59, 130, 246, 0.2)"
+          boxShadow: "0 0 10px rgba(var(--color-info), 0.2)"
         }}>
           <div style={{
             position: "absolute",
             top: -22,
             left: -2,
-            background: "#3b82f6",
-            color: "white",
+            background: "var(--color-info)",
+            color: "var(--color-text-inverse)",
             fontSize: "10px",
             padding: "2px 6px",
             borderRadius: "4px 4px 0 0",
@@ -160,7 +161,7 @@ export function DebugMode() {
             alignItems: "center",
             gap: "4px"
           }}>
-            <Layers size={10} />
+            <Layers size={10} strokeWidth={2.5} />
             {hoverInfo.name}{hoverInfo.className && `.${hoverInfo.className}`}
           </div>
         </div>
@@ -169,15 +170,15 @@ export function DebugMode() {
       {/* 컨트롤러 */}
       <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 999999, display: "flex", alignItems: "center", gap: 10 }}>
         {isEnabled && (
-          <div style={{ background: "#0f172a", color: "#38bdf8", padding: "6px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", border: "1px solid #334155" }}>
+          <div style={{ background: "var(--brand-dark)", color: "var(--color-info)", padding: "6px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: "800", border: "1px solid var(--color-border)" }}>
             CTRL + CLICK TO COPY STRUCTURE
           </div>
         )}
         <button
           onClick={() => setIsEnabled(!isEnabled)}
           style={{
-            background: isEnabled ? "#ef4444" : "#1e293b",
-            color: "white",
+            background: isEnabled ? "var(--color-error)" : "var(--brand-dark)",
+            color: "var(--color-text-inverse)",
             border: "none",
             width: 44,
             height: 44,
@@ -185,12 +186,12 @@ export function DebugMode() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 4px 15px rgba(0,0,0,0.4)",
+            boxShadow: "var(--shadow-floating)",
             cursor: "pointer",
             transition: "all 0.2s"
           }}
         >
-          {isEnabled ? <X size={20} /> : <Terminal size={20} />}
+          {isEnabled ? <X size={20} strokeWidth={2.5} /> : <Terminal size={20} strokeWidth={2.5} />}
         </button>
       </div>
 
@@ -212,14 +213,14 @@ export function DebugMode() {
           <div
             key={t.id}
             style={{
-              background: t.isError ? "#7f1d1d" : "#0f172a",
-              color: "#f8fafc",
+              background: t.isError ? "var(--color-error-text)" : "var(--brand-dark)",
+              color: "var(--color-text-inverse)",
               padding: "14px 28px",
               borderRadius: "16px",
               fontSize: "14px",
               fontWeight: "700",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
-              border: `1px solid ${t.isError ? "#ef4444" : "#334155"}`,
+              boxShadow: "var(--shadow-floating)",
+              border: `1px solid ${t.isError ? "var(--color-error)" : "var(--color-border)"}`,
               display: "flex",
               alignItems: "center",
               gap: 12,
@@ -227,7 +228,7 @@ export function DebugMode() {
               animation: "debugToastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards"
             }}
           >
-            {t.isError ? <AlertCircle size={18} color="#f87171" /> : <CheckCircle2 size={18} color="#10b981" />}
+            {t.isError ? <AlertCircle size={18} strokeWidth={2.5} color="var(--color-error)" /> : <CheckCircle2 size={18} strokeWidth={2.5} color="var(--brand-primary)" />}
             {t.message}
           </div>
         ))}

@@ -206,11 +206,11 @@
 }
 
 .row-selected {
-  background: #ecfdf5;
+  background: var(--brand-primary-soft);
 }
 
 .row-selected:hover {
-  background: #dcfce7;
+  background: #dcfce7; /* 이건 조금 더 밝은 색이라 일단 유지하거나 적절한 변수로 교체 가능 */
 }
 
 .table-sort-button {

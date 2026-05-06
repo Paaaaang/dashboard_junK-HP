@@ -57,23 +57,23 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
 
   return (
     <aside 
-      className={`relative flex flex-col bg-white border-r border-gray-100 shadow-soft transition-all duration-300 z-30 ${collapsed ? 'w-20' : 'w-64'}`}
+      className={`relative flex flex-col bg-surface border-r border-border shadow-soft transition-all duration-300 z-30 ${collapsed ? 'w-20' : 'w-64'}`}
       aria-label="주 메뉴"
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-border">
         {!collapsed && (
           <div className="flex items-center gap-3 overflow-hidden">
             <img src={junSymbolLogo} alt="Logo" className="w-8 h-8 object-contain" />
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-gray-800 leading-tight">전남대학교</span>
-              <span className="text-xs font-medium text-emerald-600 leading-tight">K-하이테크 플랫폼</span>
+              <span className="text-xs font-bold text-text-primary leading-tight">전남대학교</span>
+              <span className="text-xs font-medium text-brand-primary leading-tight">K-하이테크 플랫폼</span>
             </div>
           </div>
         )}
         <button
           type="button"
           onClick={onToggleCollapsed}
-          className={`p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors ${collapsed ? 'mx-auto' : ''}`}
+          className={`p-1.5 rounded-lg text-text-tertiary hover:text-brand-primary hover:bg-brand-primary/5 transition-colors ${collapsed ? 'mx-auto' : ''}`}
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
           {collapsed ? <PanelRightOpen size={20} /> : <PanelRightClose size={20} />}
@@ -88,8 +88,8 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                 isActive 
-                  ? 'bg-emerald-50 text-emerald-700 font-semibold' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-brand-primary/10 text-brand-primary font-semibold' 
+                  : 'text-text-secondary hover:bg-background hover:text-text-primary'
               } ${collapsed ? 'justify-center' : ''}`
             }
             title={collapsed ? dashboardItem.label : undefined}
@@ -106,8 +106,8 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             onClick={toggleEducationMenu}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
               isEducationActive 
-                ? 'text-emerald-700 font-semibold bg-emerald-50/50' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'text-brand-primary font-semibold bg-brand-primary/5' 
+                : 'text-text-secondary hover:bg-background hover:text-text-primary'
             } ${collapsed ? 'justify-center' : ''}`}
             title={collapsed ? '교육 과정 관리' : undefined}
             aria-expanded={collapsed ? flyoutOpen : educationOpen}
@@ -138,8 +138,8 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                     className={({ isActive }) =>
                       `flex items-center justify-between py-2 px-3 rounded-lg text-sm transition-colors ${
                         isActive 
-                          ? 'text-emerald-700 bg-emerald-50 font-medium' 
-                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'text-brand-primary bg-brand-primary/10 font-medium' 
+                          : 'text-text-secondary hover:text-text-primary hover:bg-background'
                       }`
                     }
                   >
@@ -156,7 +156,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           )}
 
           {collapsed && flyoutOpen && (
-            <div className="absolute left-full top-0 ml-2 w-48 bg-white rounded-xl shadow-glass border border-gray-100 py-2 z-50">
+            <div className="absolute left-full top-0 ml-2 w-48 bg-surface rounded-xl shadow-glass border border-border py-2 z-50">
               {educationSubNavigation.map((item) => (
                 <NavLink
                   key={item.to}
@@ -164,8 +164,8 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                   className={({ isActive }) =>
                     `block px-4 py-2 text-sm transition-colors ${
                       isActive 
-                        ? 'text-emerald-700 bg-emerald-50 font-medium' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'text-brand-primary bg-brand-primary/10 font-medium' 
+                        : 'text-text-secondary hover:bg-background hover:text-text-primary'
                     }`
                   }
                 >
@@ -187,8 +187,8 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? 'bg-emerald-50 text-emerald-700 font-semibold' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-brand-primary/10 text-brand-primary font-semibold' 
+                      : 'text-text-secondary hover:bg-background hover:text-text-primary'
                   } ${collapsed ? 'justify-center' : ''}`
                 }
                 title={collapsed ? item.label : undefined}
@@ -202,5 +202,6 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
         </div>
       </nav>
     </aside>
+
   );
 }

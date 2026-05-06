@@ -8,11 +8,11 @@ interface StatusBadgeProps {
 }
 
 const statusStyles: Record<StatusKind, string> = {
-  success: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  warning: 'bg-amber-50 text-amber-700 border-amber-100',
-  error: 'bg-rose-50 text-rose-700 border-rose-100',
-  info: 'bg-sky-50 text-sky-700 border-sky-100',
-  neutral: 'bg-slate-50 text-slate-600 border-slate-100',
+  success: 'bg-success/10 text-success border-success/20',
+  warning: 'bg-warning/10 text-warning border-warning/20',
+  error: 'bg-error/10 text-error border-error/20',
+  info: 'bg-info/10 text-info border-info/20',
+  neutral: 'bg-surface-subtle text-text-secondary border-border',
 };
 
 const statusIcons: Record<StatusKind, LucideIcon> = {

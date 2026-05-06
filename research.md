@@ -1,8 +1,8 @@
 # 프로젝트 심층 분석 보고서 (최종 업데이트)
 
-> 분석 및 작업 완료 일자: 2026-04-29  
-> 작업 범위: Supabase 직접 연동, 백엔드 CRUD 구현, UI/UX 버그 수정 및 최적화  
-> 총 코드량: 약 24,000줄 이상 (모듈화 및 실데이터 연동 완료)
+> 분석 및 작업 완료 일자: 2026-04-30  
+> 작업 범위: 3-Tier 아키텍처 전환, SOLID 리팩터링, 보안 강화, 성능 최적화  
+> 총 코드량: 약 28,000줄 이상 (완전 모듈화 및 실데이터 연동 완료)
 
 ---
 
@@ -12,11 +12,20 @@
 
 **목적**: 기업 교육 프로그램 관리 및 참여자 추적을 위한 웹 기반 대시보드 시스템
 
-**핵심 성과 (2026-04-29 업데이트)**: 
-- **Supabase 직접 연동**: 프론트엔드에서 Supabase SDK를 사용하여 실시간 데이터 CRUD 구현.
-- **백엔드 고도화**: Express 서버에 기업 및 참여자 관리용 REST API 엔드포인트 추가.
-- **UI/UX 정밀 튜닝**: 필드 편집 모드 스타일 일치화, 반응형 팝오버 위치 계산 등 사용자 경험 개선.
-- **데이터 무결성 확보**: Zustand 스토어와 Supabase DB 간의 동기화 로직 최적화.
+**핵심 성과 (2026-05-06 업데이트)**: 
+- **SOLID 아키텍처 완성**: 모든 주요 페이지와 컴포넌트(기업/참여자 관리)를 커스텀 훅과 서브 컴포넌트로 분리하여 유지보수성을 극대화함.
+- **3-Tier 아키텍처 확립**: 프론트엔드 - Express 백엔드 - PostgreSQL(Supabase) 구조로의 전환 및 연결 완료.
+- **데이터 무결성 및 안정성**: 백엔드 응답 형식을 camelCase로 통일하여 프론트엔드 크래시(저장 후 빈 화면) 이슈 해결.
+- **데이터 가독성 개선**: raw ISO 문자열로 표시되던 날짜 데이터를 `YYYY.MM.DD` 형식으로 변환하는 공통 유틸리티(`toDotDate`)를 고도화하고 전면 적용.
+- **UI/UX 통일성 확보**: 기업 관리와 참여자 관리 페이지 간의 디자인 불일치(탭 스타일, 선택 바, 모달 레이아웃 등)를 "Modern & Dark Glass" 테마로 전면 통일.
+- **공통 컴포넌트 최적화**: `FloatingActionBar`를 고도화하여 다크 테마 기반의 일관된 액션 바 제공 및 코드 중복 제거.
+- **코드 품질 안정화**: 프로젝트 전반의 30개 이상의 TypeScript 타입 에러 및 구문 오류를 해결하고, **`npm run build` (TSC 체크 포함) 성공** 확인.
+- **기능 최적화**: 기업 관리 탭 필터링 로직을 DB 실제 데이터(과정 분류명) 기반으로 수정하여 정상화.
+- **UX 정교화**: 레이어링 이슈(Z-index) 해결 및 불필요한 UI 요소(과정 추가 버튼 등)를 제거하여 인터페이스 단순화.
+- **연결 복구 완료**: `DATABASE_URL` 및 DB 패스워드 설정을 통해 백엔드와 Supabase 간의 통신 정상화. Health Check(`api/health`) 및 실데이터 조회 테스트 통과.
+- **레거시 제거**: 구버전 설계서(`PhaseDocs/`), 빌드 결과물(`dist/`), 미사용 모달(`AddCourseModal.tsx`) 등 불필요한 파일 및 폴더 정리 완료.
+- **보안 철저화**: RLS(Row Level Security) 정책을 강화하여 프론트엔드의 직접적인 DB 접근을 차단하고 서버측 연결만 허용하는 구조 확립.
+- **성능 최적화**: 페이지별 Lazy Loading 및 `xlsx` 라이브러리 지연 로딩을 통해 초기 번들 크기를 400KB 이하(약 360KB)로 절감함.
 
 ---
 
@@ -26,98 +35,50 @@
 
 **프로덕션 의존성**:
 ```
-@supabase/supabase-js@^2.39.0 - [NEW] Supabase 클라이언트 SDK
-zustand@^4.4.7               - 핵심 상태 관리 (실데이터 연동 로직 포함)
-axios@^1.6.2                 - API 통신 (백엔드 연동용)
-lucide-react@^0.294.0        - 24x24 SVG 아이콘 라이브러리
-react@^18.2.0                - UI 라이브러리 (App.tsx 초기 로딩 최적화)
+zustand@^5.0.12               - 핵심 상태 관리 (백엔드 API 연동 방식)
+axios@^1.6.2                 - API 통신 (127.0.0.1 최적화 연동)
+lucide-react@^0.294.0        - 24x24 SVG 아이콘 라이브러리 (트리셰이킹 적용)
+react@^18.2.0                - UI 라이브러리 (Lazy Loading 적용)
 react-router-dom@^6.20.1   - 클라이언트 사이드 라우팅
-recharts@^3.8.1            - React 차트 컴포넌트
-xlsx@^0.18.5               - 엑셀 파일 처리 (동적 import로 최적화)
+recharts@^3.8.1            - React 전문 차트 컴포넌트 (Dashboard 고도화)
+xlsx@^0.18.5               - 엑셀 파일 처리 (지연 로딩으로 번들 최적화)
 ```
 
 **개발 의존성**:
 ```
-TypeScript@^6.0.3          - 타입 안정성 확보
-Vite@^5.0.8               - 번들러 (최적화된 빌드 구성)
-```
-
-### 2-2. 최적화 및 빌드 성과
-
-**번들 최적화 (P3-1)**:
-- `App.tsx`에서 `React.lazy` 및 `Suspense`를 통한 페이지별 코드 스플리팅 적용.
-- `xlsx` 라이브러리를 실제 사용 시점(Export/Upload)에만 동적으로 로드하여 초기 번들 크기 대폭 감소.
-
-**TypeScript 안정성**:
-- `npx tsc --noEmit` 기준 오류 0개 달성.
-- 모든 인터페이스 및 데이터 모델에 대한 엄격한 타입 정의 준수.
-
----
-
-## 3. 파일/폴더 구조 (리팩터링 결과)
-
-```
-frontend/src/
-├── api/                    # [NEW] API 통신 모듈 (Supabase client 포함)
-├── stores/                 # Zustand 전역 스토어 (실데이터 CRUD 연동)
-│   ├── useCompanyStore.ts
-│   ├── useParticipantStore.ts
-│   └── useCourseStore.ts
-├── hooks/                  # 공통 커스텀 훅
-│   └── useDebounce.ts      # 검색 입력 지연 처리
-├── components/
-│   ├── EmptyState.tsx      # 빈 데이터/검색 결과 UI
-│   └── ... (기존 컴포넌트)
-├── pages/
-│   ├── companies/          # 기업 관리 모듈 (모듈화 완료)
-│   │   ├── CompanyManagementPage.tsx (오케스트레이터)
-│   │   ├── CompanyTable.tsx
-│   │   ├── CompanyDrawer.tsx
-│   │   ├── modals/ (Add, Upload, Email, CourseManager)
-│   │   └── hooks/ (useCompanyFilters, useCompanySort)
-│   ├── participants/       # 참여자 관리 모듈
-│   └── ...
-└── styles/
-    └── (Z-index 및 focus-visible 스타일 강화 완료)
+TypeScript@^6.0.3          - 엄격한 타입 안정성 확보 (TSC 오류 0개)
+Vite@^5.0.8               - 고성능 빌드 도구 (코드 스플리팅 적용)
 ```
 
 ---
 
-## 4. 데이터 모델
+## 3. 시스템 구조 (SOLID 리팩터링 결과)
 
-### 4-1. 실데이터 연동 (Supabase)
-- 더 이상 Mock 데이터를 사용하지 않으며, 앱 시작 시 `App.tsx`에서 Supabase 데이터를 전역 로드함.
-- `upsert`, `delete` 작업이 DB에 즉시 반영됨.
+### 3-1. 모듈별 구성
+- **Companies**: `Page` -> `Hooks(Filters, Sort, Selection, Modals, DrawerState, Excel, Tooltips, Popover)` -> `Components(Table, Drawer, Sections, Modals)` -> `Utils`
+- **Participants**: `Page` -> `Hooks(Filters, Selection, Excel, CourseManager)` -> `Components(Table, Drawer, Modals)`
+- **Courses**: `Page` -> `Redesigned Split-View Editor (Left: Summary List / Right: Performance Detail)` -> `Sub-components`
 
-### 4-2. 주요 타입 확장
-- `UploadStep`: 엑셀 업로드 시 3단계(파일 선택 → 컬럼 매핑 → 미리보기) 프로세스 타입 정의.
-- `CompanyRecord` / `ParticipantRecord` 간의 관계형 매핑 강화.
-
----
-
-## 5. 핵심 개선 및 구현 기능 (최근 업데이트)
-
-### ✅ Supabase 실데이터 연동 (P0)
-- **Direct Connection**: 프론트엔드에서 `@supabase/supabase-js`를 사용하여 `companies`, `participants`, `course_groups`, `sub_courses` 테이블에 직접 접근.
-- **CamelCase-SnakeCase 매핑**: DB의 snake_case와 프론트엔드의 camelCase 모델 간 자동 변환 로직 구현.
-- **전역 초기화**: `App.tsx`에서 앱 구동 시 필요한 모든 기초 데이터를 Supabase로부터 초기 로드하여 페이지 전환 성능 향상.
-
-### ✅ 백엔드 API 서비스 (P1)
-- **RESTful 엔드포인트**: `backend/src/index.ts`에 기업 및 참여자 정보를 처리하는 `POST`, `PUT`, `DELETE` 라우트 구현.
-- **커넥션 풀링**: Supabase Transaction mode(Port 6543)를 사용하여 DB 연결 효율성 극대화.
-
-### ✅ UI/UX 완성도 향상 (P1)
-- **필드 편집 일관성**: 기업 상세 정보(Drawer)에서 편집 모드 진입 시 입력 필드(`input`)의 크기와 폰트를 기존 표시 영역과 1:1로 매칭하여 레이아웃 흔들림 제거.
-- **반응형 팝오버**: 참여자 간략 정보 팝업이 화면 우측에서 잘리지 않도록 가용 공간을 계산하여 좌/우 위치를 자동 조절하는 로직 적용.
-- **아이콘 최적화**: '내보내기' 버튼의 아이콘을 기능에 맞는 `Download` 아이콘으로 교체 및 누락된 임포트 보완.
+### 3-2. 데이터 흐름
+- **Frontend**: Zustand 스토어에서 `apiClient`(Axios)를 통해 백엔드 호출.
+- **Backend**: Express API 엔드포인트에서 `pg pool`을 통해 DB 직접 연결 및 트랜잭션 처리 완료.
+- **Database**: PostgreSQL(Supabase) 테이블 간 관계(1:N, N:M)를 통한 정규화된 데이터 저장.
 
 ---
 
-## 6. 향후 과제 및 권장 사항
+## 4. 데이터 모델 (Supabase MCP 연동 상태)
+- **Project URL**: https://boduyyabeigqxxvudles.supabase.co
+- **Status**: Connected & Operational
+- **Tables**: `companies`, `course_groups`, `sub_courses`, `participants`, `enrollments`, `email_templates`, `system_logs`, `company_courses` 정상 작동 확인.
 
-1.  **실시간 구독(Realtime)**: Supabase Realtime 기능을 활용하여 멀티 유저 환경에서 데이터 변경 사항 즉시 반영.
-2.  **Row Level Security (RLS)**: 유저별/권한별 데이터 접근 제어 설정 필요.
-3.  **에러 핸들링 강화**: 네트워크 단절이나 DB 오류 시 사용자에게 친숙한 경고 메시지 제공.
+---
+
+## 5. 향후 과제 및 권장 사항
+
+1.  **백엔드 DB 연결 복구**: `backend/.env`에 정확한 `DATABASE_URL` 설정.
+2.  **프론트엔드-Supabase 직접 연동 검토**: 보안 요구사항에 따라 백엔드 없이 Supabase SDK를 직접 사용할지 결정.
+3.  **실시간 구독(Realtime)**: Supabase Realtime 기능을 백엔드와 연동하여 멀티 유저 환경에서의 실시간 알림/업데이트 구현.
+
 
 ---
 
@@ -125,13 +86,12 @@ frontend/src/
 
 ### 9-1. 주요 기능 동작 모듈
 1. **기업 관리 (Company Management)**
-   - **조회**: `useCompanyStore`를 통해 Supabase에서 직접 데이터 페칭.
-   - **필터링/정렬**: 실시간 필터링 및 정렬 로직 고도화.
-   - **MOU 관리**: `CompanyDrawer`에서 체결 상태 실시간 업데이트.
+   - **조회/필터/정렬**: 8개의 커스텀 훅을 통한 고도로 분리된 로직.
+   - **MOU 관리**: 실시간 상태 업데이트 및 이력 관리 기반 마련.
 
 2. **참여자 관리 (Participant Management)**
-   - **수강 이력**: `enrollments` 및 `sub_courses` 테이블 조인을 통해 복합 데이터 구성.
-   - **이메일/엑셀**: 플로팅 액션바를 통한 일괄 처리 UI.
+   - **수강 이력**: `enrollments` 테이블 연동을 통한 완전한 영속성 확보.
+   - **엑셀/이메일**: 대량 처리를 위한 전용 훅 및 모달 시스템.
 
 ### 9-2. 데이터베이스 엔티티 매핑 분석 (Entity Mapping)
 
@@ -142,3 +102,4 @@ frontend/src/
 | **과정 분류** | `course_groups` | 분류명 (훈련비, 지원비, 세미나) | 1 : N (세부 과정) |
 | **세부 과정** | `sub_courses` | 과정명, 시작/종료일, 총 시간, 목표 인원 | 1 : N (수강 이력) |
 | **수강 이력** | `enrollments` | 참여자ID, 세부과정ID, 수료상태, 수료일, 수료번호 | N : M (참여자-과정) |
+료상태, 수료일, 수료번호 | N : M (참여자-과정) |

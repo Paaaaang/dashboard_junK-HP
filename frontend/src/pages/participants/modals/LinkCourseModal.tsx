@@ -1,90 +1,10 @@
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { useState } from "react";
+import { X, ChevronDown, Check } from "lucide-react";
 import { ParticipantRecord, ParticipantEnrollment, CourseType } from "../../../types/models";
-
-const COURSE_TYPES: CourseType[] = [
-  "훈련비과정",
-  "지원비과정",
-  "공유개방 세미나",
-];
-
-const COURSE_CATALOG: Record<
-  CourseType,
-  Array<{ name: string; startDate: string; endDate: string; hours: number }>
-> = {
-  훈련비과정: [
-    {
-      name: "스마트팩토리 실무",
-      startDate: "2026-04-14",
-      endDate: "2026-04-16",
-      hours: 16,
-    },
-    {
-      name: "고급 CAD 실습",
-      startDate: "2026-05-06",
-      endDate: "2026-05-08",
-      hours: 20,
-    },
-    {
-      name: "IoT 기초",
-      startDate: "2026-05-18",
-      endDate: "2026-05-19",
-      hours: 12,
-    },
-    {
-      name: "의료기기 품질관리 기초 및 실무",
-      startDate: "2026-05-12",
-      endDate: "2026-05-14",
-      hours: 24,
-    },
-  ],
-  지원비과정: [
-    {
-      name: "품질관리 고도화",
-      startDate: "2026-04-21",
-      endDate: "2026-04-23",
-      hours: 20,
-    },
-    {
-      name: "생산성 향상",
-      startDate: "2026-05-07",
-      endDate: "2026-05-08",
-      hours: 12,
-    },
-    {
-      name: "ERP 활용",
-      startDate: "2026-05-20",
-      endDate: "2026-05-22",
-      hours: 18,
-    },
-  ],
-  "공유개방 세미나": [
-    {
-      name: "AI 현장 적용 세미나",
-      startDate: "2026-04-05",
-      endDate: "2026-04-05",
-      hours: 8,
-    },
-    {
-      name: "스마트제조 트렌드",
-      startDate: "2026-04-19",
-      endDate: "2026-04-19",
-      hours: 8,
-    },
-    {
-      name: "디지털 전환 전략",
-      startDate: "2026-05-10",
-      endDate: "2026-05-10",
-      hours: 8,
-    },
-  ],
-};
-
-let _seq = 0;
-function uid(prefix: string) {
-  _seq += 1;
-  return `${prefix}-${Date.now()}-${_seq}`;
-}
+import { useCourseStore } from "../../../stores";
+import { Calendar, RangeValue } from "../../../components/ui/Calendar";
+import { format } from "date-fns";
+import { toDotDate } from "../../companies/utils/companyUtils";
 
 interface LinkCourseModalProps {
   participant: ParticipantRecord;
@@ -97,142 +17,163 @@ export function LinkCourseModal({
   onClose,
   onLink,
 }: LinkCourseModalProps) {
-  const [selectedType, setSelectedType] = useState<CourseType>("훈련비과정");
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [applicationDate, setApplicationDate] = useState("");
-
-  const enrolledNames = new Set(
-    participant.enrollments.map((e) => e.subCourseName),
-  );
-  const availableCourses = COURSE_CATALOG[selectedType].filter(
-    (c) => !enrolledNames.has(c.name),
-  );
-
-  useEffect(() => {
-    setSelectedCourse("");
-  }, [selectedType]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
+  const { courseGroups } = useCourseStore();
+  
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [applicationDate, setApplicationDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  const selectedGroup = courseGroups.find(g => g.id === selectedGroupId);
+  const selectedSubCourse = selectedGroup?.details.find(d => d.id === selectedCourseId);
+  const sessions = selectedSubCourse?.sessions || [];
+  
   const handleLink = () => {
-    if (!selectedCourse) return;
-    const course = COURSE_CATALOG[selectedType].find(
-      (c) => c.name === selectedCourse,
-    );
-    if (!course) return;
-    const enrollment: ParticipantEnrollment = {
-      id: uid("enr"),
-      courseType: selectedType,
-      subCourseName: course.name,
-      startDate: course.startDate,
-      endDate: course.endDate,
-      totalHours: course.hours,
+    if (!selectedGroupId || !selectedCourseId) return;
+    
+    const group = courseGroups.find(g => g.id === selectedGroupId);
+    const sub = group?.details.find(d => d.id === selectedCourseId);
+    
+    if (!group || !sub) return;
+
+    // Use session info if selected, otherwise fallback to sub-course default
+    const session = sub.sessions?.find(s => s.id === selectedSessionId);
+    
+    const newEnr: ParticipantEnrollment = {
+      id: `enr-${Date.now()}`,
+      courseType: group.name as CourseType,
+      subCourseName: sub.name,
+      sessionId: selectedSessionId || undefined,
+      startDate: session?.startDate || sub.startDate,
+      endDate: session?.endDate || sub.endDate,
+      totalHours: session?.totalHours || sub.totalHours,
       status: "미수료",
-      applicationDate: applicationDate || new Date().toISOString().slice(0, 10),
+      applicationDate: applicationDate
     };
-    onLink(participant.id, enrollment);
+
+    onLink(participant.id, newEnr);
+  };
+
+  const appDateValue: RangeValue = {
+    start: applicationDate ? new Date(applicationDate) : null,
+    end: applicationDate ? new Date(applicationDate) : null
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="bg-white rounded-[32px] shadow-2xl flex flex-col w-full max-w-md max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
-      >
-        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
-          <h3 className="text-xl font-bold text-slate-900 truncate mr-4">과정 연결 — {participant.name}</h3>
-          <button
-            type="button"
-            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200"
-            onClick={onClose}
-            aria-label="닫기"
-          >
-            <X size={16} />
+    <div className="fixed inset-0 bg-brand-dark/40 flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200">
+      <div className="bg-surface rounded-[32px] shadow-2xl flex flex-col w-full max-w-[480px] overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="px-8 py-6 border-b border-border flex justify-between items-center bg-surface sticky top-0">
+          <div className="flex flex-col gap-0.5">
+            <h3 className="text-xl font-bold text-primary">교육 과정 연결</h3>
+            <p className="text-xs text-tertiary font-medium">{participant.name} 참여자</p>
+          </div>
+          <button type="button" className="p-2 text-tertiary hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-all" onClick={onClose}>
+            <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-8 space-y-6">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">과정 구분</label>
-            <select
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value as CourseType)}
-            >
-              {COURSE_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">세부 과정</label>
-            {availableCourses.length === 0 ? (
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                <p className="text-sm text-slate-400 italic">
-                  이 유형의 연결 가능한 과정이 없습니다<br/>
-                  <span className="text-xs mt-1 block">(이미 모두 등록됨)</span>
-                </p>
-              </div>
-            ) : (
-              <select
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200"
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
+            <label className="text-xs font-black text-tertiary uppercase tracking-widest ml-1">과정 구분 선택</label>
+            <div className="relative">
+              <select 
+                className="w-full px-5 py-3 bg-surface border border-border rounded-2xl text-sm font-bold text-secondary focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                value={selectedGroupId}
+                onChange={(e) => { setSelectedGroupId(e.target.value); setSelectedCourseId(""); }}
               >
-                <option value="">과정을 선택하세요</option>
-                {availableCourses.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name}
-                  </option>
+                <option value="">과정 그룹을 선택하세요</option>
+                {courseGroups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
-            )}
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-tertiary pointer-events-none" size={16} strokeWidth={2.5} />
+            </div>
           </div>
 
-          {selectedCourse && (
-            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-              <p className="text-xs text-emerald-700 leading-relaxed">
-                <span className="font-bold mr-1">※ 안내:</span>
-                이미 등록된 과정은 목록에서 제외됩니다.
-              </p>
+          {selectedGroupId && (
+            <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-tertiary uppercase tracking-widest ml-1">세부 과정 선택</label>
+                <div className="grid gap-2 max-h-[180px] overflow-y-auto custom-scrollbar p-1">
+                  {selectedGroup?.details.map(d => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => { setSelectedCourseId(d.id); setSelectedSessionId(""); }}
+                      className={`w-full text-left px-5 py-3 rounded-2xl border transition-all flex items-center justify-between group ${
+                        selectedCourseId === d.id 
+                          ? "bg-brand-primary/10 border-brand-primary text-brand-primary" 
+                          : "bg-surface border-border text-secondary hover:border-brand-primary hover:bg-brand-primary/5"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-black">{d.name}</span>
+                        <span className={`text-[10px] font-bold ${selectedCourseId === d.id ? "text-brand-primary/70" : "text-tertiary"}`}>
+                          기본 기간: {toDotDate(d.startDate)} ~ {toDotDate(d.endDate)}
+                        </span>
+                      </div>
+                      {selectedCourseId === d.id && <Check size={16} strokeWidth={3} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedCourseId && sessions.length > 0 && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                  <label className="text-xs font-black text-brand-primary uppercase tracking-widest ml-1 flex items-center gap-2">
+                    회차 선택 <span className="text-[10px] bg-brand-primary/10 px-1.5 py-0.5 rounded-full">{sessions.length}개 회차 있음</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {sessions.map((session, idx) => (
+                      <button
+                        key={session.id}
+                        type="button"
+                        onClick={() => setSelectedSessionId(session.id)}
+                        className={`flex-1 min-w-[120px] px-4 py-3 rounded-xl border-2 transition-all text-center group ${
+                          selectedSessionId === session.id
+                            ? "bg-brand-primary border-brand-primary text-white shadow-md"
+                            : "bg-surface border-border text-secondary hover:border-brand-primary/30"
+                        }`}
+                      >
+                        <p className={`text-[11px] font-black uppercase tracking-tighter ${selectedSessionId === session.id ? "text-white/80" : "text-tertiary"}`}>
+                          {idx + 1}회차
+                        </p>
+                        <p className="text-xs font-bold mt-0.5">
+                          {toDotDate(session.startDate)}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700">신청일 (선택)</label>
-            <input
-              type="date"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200"
-              value={applicationDate}
-              onChange={(e) => setApplicationDate(e.target.value)}
+          <div className="space-y-2 pt-2 border-t border-border">
+            <label className="text-xs font-black text-tertiary uppercase tracking-widest ml-1">신청일 (폼 접수일)</label>
+            <Calendar 
+              isSingleDate
+              value={appDateValue}
+              onChange={(val) => setApplicationDate(val?.start ? format(val.start, "yyyy-MM-dd") : "")}
             />
           </div>
         </div>
 
-        <div className="px-8 py-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
-          <button type="button" className="px-6 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-all duration-200" onClick={onClose}>
+        <div className="px-8 py-6 border-t border-border flex gap-3 bg-surface-subtle/50">
+          <button 
+            type="button" 
+            className="flex-1 py-3 text-sm font-bold text-secondary bg-surface border border-border hover:bg-surface-subtle rounded-2xl transition-all" 
+            onClick={onClose}
+          >
             취소
           </button>
-          <button
-            type="button"
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:shadow-none"
-            disabled={!selectedCourse}
+          <button 
+            type="button" 
+            className="flex-[2] py-3 text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-2xl shadow-lg shadow-brand-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
+            disabled={!selectedCourseId}
             onClick={handleLink}
           >
-            연결
+            과정 연결 완료
           </button>
         </div>
       </div>
