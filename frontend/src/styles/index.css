@@ -1,9 +1,12 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
 @import './variables.css';
+@import './tokens.css';
 @import './base.css';
 @import './sidebar.css';
 @import './top-rail.css';
 @import './buttons.css';
+@import './components.css';
 @import './cards.css';
 @import './tables.css';
 @import './modal.css';
@@ -12,40 +15,65 @@
 @import './debug.css';
 @import './responsive.css';
 
+/*
+ * Tailwind v4 Theme Lock
+ * Allowed colors: master tokens + structural semantics.
+ * Forbidden: Tailwind default palette (blue-*, red-*, gray-*, etc.).
+ *
+ * To add a new color token, it MUST be defined in tokens.css first.
+ */
 @theme {
-  /* Brand Mapping */
+  /* ── Master Brand Colors ───────────────────────────── */
+  /* --color-primary now = #0891B2 (cyan) via tokens.css override */
+  --color-primary: var(--color-primary);       /* bg-primary / text-primary  */
+  --color-cta: var(--color-cta);               /* bg-cta / text-cta          */
+  --color-background: var(--color-background); /* bg-background              */
+  --color-text: var(--color-text);             /* bg-text / text-text        */
+
+  /* ── Brand Utilities ───────────────────────────────── */
   --color-brand-primary: var(--brand-primary);
   --color-brand-primary-hover: var(--brand-primary-hover);
   --color-brand-primary-active: var(--brand-primary-active);
+  --color-brand-primary-soft: var(--brand-primary-soft);
+  --color-brand-dark: var(--brand-dark);
 
-  
-  /* Semantic Palette */
-  --color-surface: var(--color-surface);
-  --color-surface-subtle: var(--color-surface-subtle);
-  --color-background: var(--color-page-bg);
-  --color-border: var(--color-border);
-  
-  /* Text Palette (Standardized shorter aliases) */
-  --color-primary: var(--color-text-primary);
+  /* ── Text Hierarchy (preserved for backward compat) ── */
+  /* text-secondary / text-tertiary still mean "gray text hierarchy" */
   --color-secondary: var(--color-text-secondary);
   --color-tertiary: var(--color-text-tertiary);
-  
-  /* Legacy Text Palette (Keep for compatibility) */
   --color-text-primary: var(--color-text-primary);
   --color-text-secondary: var(--color-text-secondary);
   --color-text-tertiary: var(--color-text-tertiary);
-  
-  /* Success/Warning/Error Mapping */
-  --color-success: var(--color-success);
-  --color-warning: var(--color-warning);
-  --color-error: var(--color-error);
-  --color-info: var(--color-info);
+  --color-text-inverse: var(--color-text-inverse);
+  --color-text-disabled: var(--color-text-disabled);
 
-  /* Elevation */
+  /* ── Structural Surface/Border ─────────────────────── */
+  --color-surface: var(--color-surface);
+  --color-surface-subtle: var(--color-surface-subtle);
+  --color-surface-active: var(--color-surface-active);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  /* ── Status Colors ─────────────────────────────────── */
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-error: var(--color-error);
+  --color-error-bg: var(--color-error-bg);
+  --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
+
+  /* ── Shadow Tokens (master spec) ───────────────────── */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
   --shadow-soft: var(--shadow-soft);
   --shadow-glass: var(--shadow-glass);
-  
-  /* Z-Index Mapping */
+  --shadow-floating: var(--shadow-floating);
+
+  /* ── Z-Index Scale ─────────────────────────────────── */
   --z-topbar: var(--z-topbar);
   --z-sidebar: var(--z-sidebar);
   --z-dropdown: var(--z-dropdown);
@@ -66,16 +94,19 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Noto Sans KR', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
   line-height: 1.55;
   font-size: 14px;
   letter-spacing: -0.01em;
-  color: #111827;
-  background-color: #f7f8fa;
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
 }
 
 button,

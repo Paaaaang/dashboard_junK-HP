@@ -1,0 +1,135 @@
+/*
+ * Master Component Specs
+ * Source: design-system/khp-dashboard/MASTER.md
+ *
+ * Rules:
+ * - All colors via var(--*) — no hardcoded hex
+ * - Hover transitions 150-300ms
+ * - cursor:pointer on all interactive elements
+ * - Focus states must be visible
+ */
+
+/* ── Card ─────────────────────────────────────────────── */
+.card {
+  background: var(--color-background);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card--static {
+  cursor: default;
+}
+
+.card--static:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Input (semantic) ─────────────────────────────────── */
+.input {
+  padding: var(--space-md) 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  transition: border-color 200ms ease;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.2);
+}
+
+/* ── Form components ─────────────────────────────────── */
+.form-group {
+  display: grid;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: block;
+}
+
+.form-input {
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  transition: all 200ms ease;
+  width: 100%;
+}
+
+.form-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+.form-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-error-text);
+  background: var(--color-error-bg);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+/* ── Modal (master spec) ─────────────────────────────── */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 500px;
+  width: 90%;
+}
+
+/* ── Status Badge variants ───────────────────────────── */
+/* Base class .status-badge is in cards.css */
+.status-badge--success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.status-badge--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.status-badge--error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.status-badge--info {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.status-badge--neutral {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}

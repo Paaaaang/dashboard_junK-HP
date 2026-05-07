@@ -1,0 +1,64 @@
+/*
+ * Master Design System Tokens
+ * Source: design-system/khp-dashboard/MASTER.md
+ * Import order: after variables.css so these override brand variables.
+ *
+ * Single source of truth for all colors, spacing, and shadow values.
+ * Component CSS must use var(--*) references — no hardcoded hex.
+ */
+
+:root {
+  /* ── Master Color Palette ───────────────────────────── */
+  --color-primary:    #0891B2;   /* Cyan 600  — brand primary */
+  --color-cta:        #22C55E;   /* Green 500 — CTA / accent */
+  --color-background: #ECFEFF;   /* Cyan 50   — page background */
+  --color-text:       #164E63;   /* Cyan 900  — primary text */
+
+  /* Master secondary (#22D3EE) intentionally not set as --color-secondary
+   * to preserve the existing text-hierarchy utility (text-secondary = gray).
+   * Use var(--color-primary-soft) or bg-primary/20 for light-cyan fills. */
+  --color-primary-hover:  #0e7490;
+  --color-primary-active: #155e75;
+  --color-primary-soft:   #cffafe;
+
+  /* Align all brand-* variables to master primary (cyan replaces emerald) */
+  --brand-primary:        var(--color-primary);
+  --brand-primary-hover:  var(--color-primary-hover);
+  --brand-primary-active: var(--color-primary-active);
+  --brand-primary-soft:   var(--color-primary-soft);
+  --brand-dark:           var(--color-text);
+  --brand-dark-hover:     var(--color-primary);
+  --brand-cyan:           var(--color-primary);
+  --brand-cyan-soft:      var(--color-background);
+  --brand-cyan-text:      var(--color-text);
+
+  /* CTA semantic overrides */
+  --color-cta-hover:  #16a34a;
+  --color-cta-active: #15803d;
+  --color-primary-disabled: rgba(8, 145, 178, 0.3);
+
+  /* Page background → master background */
+  --color-page-bg: var(--color-background);
+
+  /* ── Spacing Tokens ─────────────────────────────────── */
+  --space-xs:  0.25rem;   /*  4px */
+  --space-sm:  0.5rem;    /*  8px */
+  --space-md:  1rem;      /* 16px */
+  --space-lg:  1.5rem;    /* 24px */
+  --space-xl:  2rem;      /* 32px */
+  --space-2xl: 3rem;      /* 48px */
+  --space-3xl: 4rem;      /* 64px */
+
+  /* ── Shadow Tokens (master spec) ───────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+  /* Shadow aliases → master tokens */
+  --shadow-subtle:  var(--shadow-sm);
+  --shadow-soft:    var(--shadow-md);
+  --shadow-glass:   var(--shadow-lg);
+  --shadow-floating: var(--shadow-xl);
+  --shadow-card:    var(--shadow-sm);
+}
