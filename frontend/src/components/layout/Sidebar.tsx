@@ -20,7 +20,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
   const [educationOpen, setEducationOpen] = useState(true);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const educationGroupRef = useRef<HTMLDivElement | null>(null);
-  
+
   const dashboardItem = mainNavigation[0];
   const automationMenuItems = mainNavigation.slice(1);
 
@@ -56,24 +56,28 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
   };
 
   return (
-    <aside 
-      className={`relative flex flex-col bg-surface border-r border-border shadow-soft transition-all duration-300 z-30 ${collapsed ? 'w-20' : 'w-64'}`}
+    <aside
+      className={`relative flex flex-col border-r transition-all duration-300 z-30 ${collapsed ? 'w-20' : 'w-64'}`}
+      style={{ background: "var(--color-surface)", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
       aria-label="주 메뉴"
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-border">
+      <div className="flex items-center justify-between h-16 px-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         {!collapsed && (
           <div className="flex items-center gap-3 overflow-hidden">
             <img src={junSymbolLogo} alt="Logo" className="w-8 h-8 object-contain" />
             <div className="flex flex-col">
               <span className="text-xs font-bold text-text-primary leading-tight">전남대학교</span>
-              <span className="text-xs font-medium text-brand-primary leading-tight">K-하이테크 플랫폼</span>
+              <span className="text-xs font-medium leading-tight" style={{ color: "var(--color-primary)" }}>K-하이테크 플랫폼</span>
             </div>
           </div>
         )}
         <button
           type="button"
           onClick={onToggleCollapsed}
-          className={`p-1.5 rounded-lg text-text-tertiary hover:text-brand-primary hover:bg-brand-primary/5 transition-colors ${collapsed ? 'mx-auto' : ''}`}
+          className={`p-1.5 rounded-lg text-tertiary transition-colors cursor-pointer ${collapsed ? 'mx-auto' : ''}`}
+          style={{ transition: "color 200ms, background 200ms" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-primary)"; (e.currentTarget as HTMLElement).style.background = "rgba(8,145,178,0.05)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ""; (e.currentTarget as HTMLElement).style.background = ""; }}
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
           {collapsed ? <PanelRightOpen size={20} /> : <PanelRightClose size={20} />}
@@ -85,12 +89,10 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           <NavLink
             to={dashboardItem.to}
             end={dashboardItem.to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                isActive 
-                  ? 'bg-brand-primary/10 text-brand-primary font-semibold' 
-                  : 'text-text-secondary hover:bg-background hover:text-text-primary'
-              } ${collapsed ? 'justify-center' : ''}`
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+            style={({ isActive }) => isActive
+              ? { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)", fontWeight: 600 }
+              : { color: "var(--color-text-secondary)" }
             }
             title={collapsed ? dashboardItem.label : undefined}
             aria-label={dashboardItem.label}
@@ -104,11 +106,11 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           <button
             type="button"
             onClick={toggleEducationMenu}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
-              isEducationActive 
-                ? 'text-brand-primary font-semibold bg-brand-primary/5' 
-                : 'text-text-secondary hover:bg-background hover:text-text-primary'
-            } ${collapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+            style={isEducationActive
+              ? { color: "var(--color-primary)", fontWeight: 600, background: "rgba(8,145,178,0.05)" }
+              : { color: "var(--color-text-secondary)" }
+            }
             title={collapsed ? '교육 과정 관리' : undefined}
             aria-expanded={collapsed ? flyoutOpen : educationOpen}
           >
@@ -117,30 +119,26 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
               {!collapsed && <span>교육 과정 관리</span>}
             </div>
             {!collapsed && (
-              <ChevronDown 
-                size={16} 
-                className={`transition-transform duration-200 ${educationOpen ? 'rotate-180' : ''}`} 
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${educationOpen ? 'rotate-180' : ''}`}
               />
             )}
           </button>
 
           {!collapsed && (
-            <div 
-              className={`overflow-hidden transition-all duration-300 ${
-                educationOpen ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'
-              }`}
+            <div
+              className={`overflow-hidden transition-all duration-300 ${educationOpen ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}
             >
               <div className="flex flex-col gap-1 pl-10 pr-2">
                 {educationSubNavigation.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    className={({ isActive }) =>
-                      `flex items-center justify-between py-2 px-3 rounded-lg text-sm transition-colors ${
-                        isActive 
-                          ? 'text-brand-primary bg-brand-primary/10 font-medium' 
-                          : 'text-text-secondary hover:text-text-primary hover:bg-background'
-                      }`
+                    className="flex items-center justify-between py-2 px-3 rounded-lg text-sm transition-colors cursor-pointer"
+                    style={({ isActive }) => isActive
+                      ? { color: "var(--color-primary)", background: "rgba(8,145,178,0.1)", fontWeight: 500 }
+                      : { color: "var(--color-text-secondary)" }
                     }
                   >
                     {({ isActive }) => (
@@ -156,17 +154,18 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           )}
 
           {collapsed && flyoutOpen && (
-            <div className="absolute left-full top-0 ml-2 w-48 bg-surface rounded-xl shadow-glass border border-border py-2 z-50">
+            <div
+              className="absolute left-full top-0 ml-2 w-48 rounded-xl py-2 z-50"
+              style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-lg)", border: "1px solid var(--color-border)" }}
+            >
               {educationSubNavigation.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={({ isActive }) =>
-                    `block px-4 py-2 text-sm transition-colors ${
-                      isActive 
-                        ? 'text-brand-primary bg-brand-primary/10 font-medium' 
-                        : 'text-text-secondary hover:bg-background hover:text-text-primary'
-                    }`
+                  className="block px-4 py-2 text-sm transition-colors cursor-pointer"
+                  style={({ isActive }) => isActive
+                    ? { color: "var(--color-primary)", background: "rgba(8,145,178,0.1)", fontWeight: 500 }
+                    : { color: "var(--color-text-secondary)" }
                   }
                 >
                   {item.label}
@@ -184,12 +183,10 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                 key={item.to}
                 to={item.to}
                 end={item.to === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-brand-primary/10 text-brand-primary font-semibold' 
-                      : 'text-text-secondary hover:bg-background hover:text-text-primary'
-                  } ${collapsed ? 'justify-center' : ''}`
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${collapsed ? 'justify-center' : ''}`}
+                style={({ isActive }) => isActive
+                  ? { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)", fontWeight: 600 }
+                  : { color: "var(--color-text-secondary)" }
                 }
                 title={collapsed ? item.label : undefined}
                 aria-label={item.label}
@@ -202,6 +199,5 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
         </div>
       </nav>
     </aside>
-
   );
 }

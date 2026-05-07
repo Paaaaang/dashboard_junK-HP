@@ -302,7 +302,7 @@ export const Calendar = ({
             left: `${portalPos.left}px`,
             zIndex: 9999 
           }}
-          className="p-4 bg-surface border border-border rounded-[24px] shadow-2xl w-[320px] max-h-[calc(100vh-16px)] overflow-auto animate-in fade-in slide-in-from-top-2 duration-200"
+          className="p-4 bg-surface border border-border rounded-[24px] shadow-xl w-[320px] max-h-[calc(100vh-16px)] overflow-auto animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <div className="flex justify-between items-center mb-4 px-1">
             <h2 className="text-sm font-bold text-text-primary">
