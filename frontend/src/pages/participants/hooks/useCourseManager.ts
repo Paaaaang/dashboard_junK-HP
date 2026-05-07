@@ -161,13 +161,15 @@ export function useCourseManager() {
       durationDays: String(detail.durationDays),
       totalHours: String(detail.totalHours),
       targetOutcome: String(detail.targetOutcome),
-      sessions: detail.sessions || [{
-        id: createLocalId("session"),
-        startDate: detail.startDate,
-        endDate: detail.endDate,
-        totalHours: detail.totalHours,
-        targetOutcome: detail.targetOutcome
-      }]
+      sessions: (detail.sessions && detail.sessions.length > 0) 
+        ? detail.sessions 
+        : [{
+            id: createLocalId("session"),
+            startDate: detail.startDate,
+            endDate: detail.endDate,
+            totalHours: detail.totalHours,
+            targetOutcome: detail.targetOutcome
+          }]
     });
   };
 
@@ -242,7 +244,7 @@ export function useCourseManager() {
     return true;
   };
 
-  const saveCourseGroup = () => {
+  const saveCourseGroup = async () => {
     const trimmedName = managerGroupForm.name.trim();
     if (!trimmedName) {
       setManagerError("과정 구분 이름을 입력해 주세요.");
@@ -265,61 +267,76 @@ export function useCourseManager() {
       details: managerGroupForm.details.map(d => ({ ...d })),
     };
 
-    if (managerSelectedGroupId) {
-      const oldGroup = courseGroups.find(g => g.id === managerSelectedGroupId);
-      if (!oldGroup) return;
+    try {
+      if (managerSelectedGroupId) {
+        const oldGroup = courseGroups.find(g => g.id === managerSelectedGroupId);
+        if (!oldGroup) return;
 
-      const removedDetailNames = oldGroup.details
-        .map(d => d.name)
-        .filter(name => !nextGroup.details.some(d => d.name.toLowerCase() === name.toLowerCase()));
+        const removedDetailNames = oldGroup.details
+          .map(d => d.name)
+          .filter(name => !nextGroup.details.some(d => d.name.toLowerCase() === name.toLowerCase()));
 
-      updateCourseGroup(nextGroup);
+        await updateCourseGroup(nextGroup);
 
-      const currRaw = useCompanyStore.getState().companies;
-      const nextRaw = currRaw.map(company => {
-        let matched = false;
-        const nextParticipations = company.participations.map(p => {
-          if (p.courseType !== oldGroup.name) return p;
-          matched = true;
-          const nextProgramNames = p.programNames.filter(name => !removedDetailNames.includes(name));
-          return {
-            ...p,
-            courseType: nextGroup.name,
-            programNames: nextProgramNames,
-            enabled: nextProgramNames.length > 0 ? p.enabled : false,
-            status: nextProgramNames.length > 0 ? p.status : ("미참여" as const),
-          };
-        });
-        if (!matched) {
-          nextParticipations.push({
-            courseType: nextGroup.name,
-            enabled: false,
-            programNames: [],
-            status: "미참여" as const,
+        const currRaw = useCompanyStore.getState().companies;
+        const nextRaw = currRaw.map(company => {
+          let matched = false;
+          const nextParticipations = company.participations.map(p => {
+            if (p.courseType !== oldGroup.name) return p;
+            matched = true;
+            const nextProgramNames = p.programNames.filter(name => !removedDetailNames.includes(name));
+            return {
+              ...p,
+              courseType: nextGroup.name,
+              programNames: nextProgramNames,
+              enabled: nextProgramNames.length > 0 ? p.enabled : false,
+              status: nextProgramNames.length > 0 ? p.status : ("미참여" as const),
+            };
           });
+          if (!matched) {
+            nextParticipations.push({
+              courseType: nextGroup.name,
+              enabled: false,
+              programNames: [],
+              status: "미참여" as const,
+            });
+          }
+          return { ...company, participations: nextParticipations };
+        });
+        setGlobalCompanies(nextRaw);
+        
+        // After save and re-fetch, find the updated group to sync the form
+        const updatedGroup = useCourseStore.getState().courseGroups.find(g => g.name === trimmedName);
+        if (updatedGroup) {
+          setManagerSelectedGroupId(updatedGroup.id);
+          setManagerGroupForm(cloneGroupToForm(updatedGroup));
         }
-        return { ...company, participations: nextParticipations };
-      });
-      setGlobalCompanies(nextRaw);
 
-      setManagerGroupForm(cloneGroupToForm(nextGroup));
-      setManagerMessage("과정 구분이 저장되었습니다.");
-      setManagerError("");
-    } else {
-      addCourseGroup(nextGroup);
-      const currRaw = useCompanyStore.getState().companies;
-      const nextRaw = currRaw.map(company => ({
-        ...company,
-        participations: [
-          ...company.participations,
-          { courseType: nextGroup.name, enabled: false, programNames: [], status: "미참여" as const }
-        ]
-      }));
-      setGlobalCompanies(nextRaw);
-      setManagerSelectedGroupId(nextGroup.id);
-      setManagerGroupForm(cloneGroupToForm(nextGroup));
-      setManagerMessage("새 과정 구분이 추가되었습니다.");
-      setManagerError("");
+        setManagerMessage("과정 구분이 저장되었습니다.");
+        setManagerError("");
+      } else {
+        await addCourseGroup(nextGroup);
+        const currRaw = useCompanyStore.getState().companies;
+        const nextRaw = currRaw.map(company => ({
+          ...company,
+          participations: [
+            ...company.participations,
+            { courseType: nextGroup.name, enabled: false, programNames: [], status: "미참여" as const }
+          ]
+        }));
+        setGlobalCompanies(nextRaw);
+        
+        const updatedGroup = useCourseStore.getState().courseGroups.find(g => g.name === trimmedName);
+        if (updatedGroup) {
+          setManagerSelectedGroupId(updatedGroup.id);
+          setManagerGroupForm(cloneGroupToForm(updatedGroup));
+        }
+
+        setManagerMessage("새 과정 구분이 추가되었습니다.");
+        setManagerError("");
+      }
+    } catch (err: any) {
+      // Error handled by store
     }
   };
 

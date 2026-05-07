@@ -58,6 +58,7 @@ This file tracks the relationship between components and their usage to ensure s
   - `AddParticipantChoiceModal`: Consolidated entry point for adding participants.
   - `AddParticipantModal`: Inline enterprise registration support.
   - `LinkCourseModal`: Synchronized with real-time database courses.
+  - `BulkEmailModal`: Multi-recipient email sending via Naver SMTP.
 
 ## Completed Migrations
 - [x] Unify `index.css` and move to `styles/`.
@@ -68,3 +69,4 @@ This file tracks the relationship between components and their usage to ensure s
 - [x] Replace inline error alerts with professional Toast system.
 - [x] Consolidate participant action buttons.
 - [x] Secure database with RLS hardening.
+- [x] Implement Naver SMTP-based Email Sending System.

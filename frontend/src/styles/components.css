@@ -1,17 +1,6 @@
-/*
- * Master Component Specs
- * Source: design-system/khp-dashboard/MASTER.md
- *
- * Rules:
- * - All colors via var(--*) — no hardcoded hex
- * - Hover transitions 150-300ms
- * - cursor:pointer on all interactive elements
- * - Focus states must be visible
- */
-
 /* ── Card ─────────────────────────────────────────────── */
 .card {
-  background: var(--color-background);
+  background: var(--color-surface);
   border-radius: 12px;
   padding: var(--space-lg);
   box-shadow: var(--shadow-md);
@@ -46,9 +35,9 @@
 }
 
 .input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--brand-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.2);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
 /* ── Form components ─────────────────────────────────── */
@@ -78,9 +67,9 @@
 }
 
 .form-input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--brand-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
 .form-error {

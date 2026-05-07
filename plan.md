@@ -86,46 +86,61 @@
 
 ---
 
-### [P0-9] 과정 구분/세부 프로그램/참여자 과정 연결 버그 (UX Blocker)
+### [P0-9] 과정 구분/세부 프로그램 삭제 버그 (UX Blocker)
 
-**현재 상태**: 진행 필요. 참여자 과정 연결 플로우에서 세부 과정/회차 연결이 저장되지 않거나 표시되지 않는 문제가 발생.
+**현재 상태**: 완료됨. 
 
 **증상**:
 - 과정 구분(세부 프로그램 구성 목록)에서 삭제 UI는 존재하나, 사용자 체감상 “삭제가 실제로 반영되지 않음”.
-- 참여자 선택 → 과정 연결 선택 → 과정 구분 선택 → 세부 과정 선택 → 회차 선택 → 완료 흐름에서,
-  - 회차 선택/연결이 동작하지 않음
-  - 연결 추가가 저장 후 유지되지 않음(새로고침/재진입 시 사라짐)
 
 **원인 가설/점검 포인트**:
 1. **삭제 반영(세부 프로그램)**
    - 삭제는 폼 상태에서만 제거되고, 최종 저장(적용) 시점에만 DB 동기화되는 구조인지 확인.
    - 저장 동작(적용 버튼)이 실제로 `updateCourseGroup`를 호출하는지, 호출 후 `fetchCourseGroups`로 재동기화가 필요한지 점검.
-2. **참여자 과정 연결(회차) 저장 누락**
+
+**작업 목표**:
+1. [x] **세부 프로그램 구성 목록 삭제 확인 팝업 추가**
+   - 삭제 클릭 → 확인 모달 → 확인 시 삭제 처리
+2. [x] **세부 프로그램 삭제가 DB에 실제 반영되도록 보장**
+   - 삭제 후 “적용/저장” 없이는 DB 반영이 안 되는 구조라면 UX를 명확히(토스트/배지/상태)하거나, 삭제 시 즉시 API 반영(단건 삭제)로 전환
+   - 삭제 후 `fetchCourseGroups()` 재호출로 화면/스토어 재동기화
+3. [x] **회귀 테스트**
+   - 세부 프로그램 삭제 → 저장/새로고침 후 유지 확인
+
+**관련 파일(예상)**:
+- `frontend/src/pages/education/CourseManagementPage.tsx`
+- `frontend/src/stores/useCourseStore.ts`
+
+---
+
+### [P0-10] 참여자 과정 연결 및 회차 저장 누락 버그 (UX Blocker)
+
+**현재 상태**: 완료됨. 참여자 과정 연결 플로우에서 세부 과정/회차 연결이 정상 작동 및 유지됨.
+
+**증상**:
+- 참여자 선택 → 과정 연결 선택 → 과정 구분 선택 → 세부 과정 선택 → 회차 선택 → 완료 흐름에서,
+  - 회차 선택/연결이 동작하지 않음
+  - 연결 추가가 저장 후 유지되지 않음(새로고침/재진입 시 사라짐)
+
+**원인 가설/점검 포인트**:
+1. **참여자 과정 연결(회차) 저장 누락**
    - 현재 백엔드 enrollments 저장 스키마가 `sessionId`를 보존하지 않는지 확인(회차 연결이 영속화되지 않으면 UI에서 사라짐).
    - API가 `subCourseName`(이름) 기준으로 매핑하고 있어 동일명 충돌/오매칭 가능성 점검.
 
 **작업 목표**:
-1. [ ] **세부 프로그램 구성 목록 삭제 확인 팝업 추가**
-   - 삭제 클릭 → 확인 모달 → 확인 시 삭제 처리
-2. [ ] **세부 프로그램 삭제가 DB에 실제 반영되도록 보장**
-   - 삭제 후 “적용/저장” 없이는 DB 반영이 안 되는 구조라면 UX를 명확히(토스트/배지/상태)하거나, 삭제 시 즉시 API 반영(단건 삭제)로 전환
-   - 삭제 후 `fetchCourseGroups()` 재호출로 화면/스토어 재동기화
-3. [ ] **참여자 과정 연결 플로우 복구 (세부 과정 + 회차 연결)**
+1. [x] **참여자 과정 연결 플로우 복구 (세부 과정 + 회차 연결)**
    - 세부 과정 선택 시 회차가 정상 노출되도록 데이터 로딩/상태 점검
    - 회차가 존재하는 세부 과정의 경우, 회차 선택을 필수로 할지 정책 확정
-4. [ ] **DB/백엔드 스키마 점검 및 보완(필요 시 설계 변경)**
+2. [x] **DB/백엔드 스키마 점검 및 보완(필요 시 설계 변경)**
    - `enrollments`에 `session_id`(예: `sub_course_sessions.id` FK) 저장 가능하도록 확장 여부 검토
    - 참여자 조회 시 `session_id`를 포함해 반환(회차 표시/연결 유지)
    - 저장 요청에서 `subCourseId`/`sessionId` 기반으로 매핑하도록 API 개선(이름 기반 매핑 제거)
-5. [ ] **회귀 테스트**
-   - 세부 프로그램 삭제 → 저장/새로고침 후 유지 확인
+3. [x] **회귀 테스트**
    - 참여자 과정 연결(회차 포함) → 저장/새로고침/재진입 후 유지 확인
 
 **관련 파일(예상)**:
-- `frontend/src/pages/education/CourseManagementPage.tsx`
 - `frontend/src/pages/participants/modals/LinkCourseModal.tsx`
 - `frontend/src/pages/participants/ParticipantDrawer.tsx`
-- `frontend/src/stores/useCourseStore.ts`
 - `backend/src/index.ts` (participants/enrollments 저장·조회, sub-course sessions)
 
 ### [P0-1] 이모지 아이콘 제거 (`no-emoji-icons` Critical 위반)
@@ -211,6 +226,8 @@
 ### [P1-10] 전역 상태 동기화
 
 **현재 상태**: 완료됨. 기업 관리의 참여자 데이터를 전역 참여자 스토어와 연동 완료.
+
+
 
 ---
 
@@ -372,3 +389,255 @@
 ### [P3-4] 참여자 관리 페이지 파일 분리
 
 **현재 상태**: 완료됨. (SOLID 아키텍처 적용)
+
+---
+[P4]
+```markdown
+# Task: 이메일 발송 시스템 구현 (네이버 SMTP 기반)
+
+## Context
+
+KHP Dashboard에 교육 신청 안내 메일을 발송하는 시스템을 구현합니다. 설계는 완료되었고, 아래 계획을 **순서대로** 구현해주세요.
+
+**기술 스택**
+- 백엔드: Node.js + TypeScript, Express, nodemailer
+- 프론트엔드: React + TypeScript + Tailwind (Layout-only) + CSS Variables
+- DB: 기존 `backend/src/db.ts` 스키마 확장
+- 디자인: 기존 `master.md` 디자인 시스템 + A-2 전략 (색상/그림자/컴포넌트는 CSS 클래스, Tailwind는 layout만)
+
+**중요 제약**
+- 네이버 SMTP는 일일 발송 한도 + 분당 rate limit 존재 → 청크/인터벌 필수
+- 25MB는 메일 전체 크기 (Base64 후) → raw 파일은 18MB 권장
+- 일괄 발송은 **반드시 비동기**로 처리 (동기 시 API 타임아웃)
+- 발송 API는 **관리자 인증 필수** (스팸 도구화 방지)
+
+---
+
+## 사전 확인 사항 (구현 시작 전 사용자에게 반드시 질문)
+
+다음 5가지가 결정되어야 구현 가능합니다. 답변을 받기 전까지 코드 작성 금지.
+
+1. 발송 계정: 단일 운영 계정만 사용하는가?
+2. 첨부파일 저장: 로컬 파일시스템(`backend/uploads/email-attachments/`)으로 진행해도 되는가?
+3. 발송 큐: 별도 큐 라이브러리(BullMQ) 없이 메모리 기반 단순 큐로 진행해도 되는가?
+4. 일괄 발송 청크: 10통씩, 1.5초 인터벌로 시작해도 되는가?
+5. 로그 보존: `email_logs` 6개월 / 첨부파일 30일로 진행해도 되는가?
+
+---
+
+## Phase 0: 환경 준비
+
+- [ ] `.env.example`에 다음 추가
+  ```
+  NAVER_EMAIL=
+  NAVER_APP_PASSWORD=
+  NAVER_SMTP_HOST=smtp.naver.com
+  NAVER_SMTP_PORT=465
+  EMAIL_DEV_MODE=true   # true면 모든 발송이 NAVER_EMAIL로만 강제 (실수 방지)
+  ```
+- [ ] `.env`가 `.gitignore`에 있는지 확인
+- [ ] README에 네이버 메일 설정 안내 추가 (POP3/SMTP 활성화, 2단계 인증, 앱 비밀번호 발급)
+
+---
+
+## Phase 1: 백엔드 - 데이터 모델
+
+`backend/src/db.ts` 확장:
+
+- [ ] **`email_templates` 확장**
+  - `attachments` (JSON): `[{ id, filename, originalName, size, mimeType, path }]`
+  - `created_at`, `updated_at`
+
+- [ ] **`email_logs` 신규**
+  ```
+  id (PK)
+  job_id (FK to email_jobs, nullable)
+  template_id (FK, nullable)
+  sender_email
+  recipient_email
+  subject
+  body_rendered
+  status: 'pending' | 'sent' | 'failed'
+  error_message (nullable)
+  attachments_meta (JSON)
+  sent_at (nullable)
+  created_at
+  ```
+
+- [ ] **`email_jobs` 신규**
+  ```
+  id (PK, UUID)
+  template_id (FK)
+  total_count
+  sent_count
+  failed_count
+  status: 'queued' | 'running' | 'completed' | 'failed'
+  created_by
+  created_at
+  completed_at (nullable)
+  ```
+
+---
+
+## Phase 2: 백엔드 - 메일 서비스
+
+### 2-1. `backend/src/services/mailService.ts`
+
+```typescript
+export async function sendEmail(options: SendOptions): Promise<SendResult>
+export function renderTemplate(template: string, vars: Record<string, string>): {
+  rendered: string;
+  unresolvedVars: string[];
+}
+export function validateAttachments(files: AttachmentInput[]): ValidationResult
+```
+
+요구사항:
+- nodemailer SMTP (smtp.naver.com:465, secure:true, pool:true)
+- `EMAIL_DEV_MODE=true`이면 모든 수신자를 `NAVER_EMAIL`로 강제 + subject에 `[DEV]` 프리픽스
+- 재시도: 일시적 실패 시 최대 3회 지수 백오프 (1s, 2s, 4s)
+- 첨부파일 검증:
+  - MIME 화이트리스트 (pdf, hwp, docx, xlsx, pptx, png, jpg, zip 등 / 실행파일 차단)
+  - 전체 크기(Base64 후) ≤ 25MB
+  - 한글 파일명 RFC 2047 인코딩
+- 변수 치환: `{{varName}}` 패턴, 미치환 변수 감지
+
+### 2-2. `backend/src/services/emailQueue.ts`
+
+메모리 기반 단순 큐:
+- `enqueueBatch(templateId, recipients, variables): jobId` — 즉시 jobId 반환
+- 백그라운드에서 청크 단위 발송 (10통씩, 1.5초 인터벌)
+- 각 발송 결과를 `email_logs`에 기록
+- `email_jobs.sent_count` / `failed_count` 실시간 업데이트
+- `getJobStatus(jobId)` 제공
+
+---
+
+## Phase 3: 백엔드 - API 엔드포인트
+
+`backend/src/routes/emails.ts` 신규 생성, `index.ts`에 등록.
+
+모든 엔드포인트에 **관리자 인증 미들웨어** + **rate limiting** 적용 (발송 API 분당 5회, 일괄 발송 분당 1회).
+
+- [ ] `POST /api/v1/emails/preview` — 변수 치환 미리보기 (발송 X)
+- [ ] `POST /api/v1/emails/test` — 단일 테스트 발송 (동기)
+- [ ] `POST /api/v1/emails/send` — 일괄 발송 (즉시 `{ jobId }` 반환, 202)
+- [ ] `GET /api/v1/emails/jobs/:jobId` — 진행 상황 조회
+- [ ] `GET /api/v1/emails/logs` — 이력 조회 (페이징, 필터)
+- [ ] `POST /api/v1/emails/templates/:id/attachments` — 업로드 (multer)
+- [ ] `DELETE /api/v1/emails/templates/:id/attachments/:attachmentId`
+
+---
+
+## Phase 4: 프론트엔드 - 타입 & Store
+
+### 4-1. `frontend/src/types/models.ts`
+
+```typescript
+interface AttachmentMeta {
+  id: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+}
+
+interface EmailTemplate {
+  // 기존 필드 +
+  attachments: AttachmentMeta[];
+}
+
+interface EmailLog { /* DB 스키마 대응 */ }
+interface EmailJob { /* DB 스키마 대응 */ }
+interface SendResult { success: boolean; recipient: string; error?: string; }
+```
+
+### 4-2. `useTemplateStore.ts`
+- `attachments` 필드 관리 (추가/삭제, 낙관적 업데이트)
+
+---
+
+## Phase 5: 프론트엔드 - TemplateEditor
+
+`frontend/src/pages/TemplateEditor.tsx` 수정:
+
+- [ ] **첨부파일 섹션** (`components/email/AttachmentUploader.tsx` 신규)
+  - 드래그 앤 드롭, 파일 목록, 전체 크기 표시
+  - 18MB 권장 / 25MB 한도 경고
+  - 차단된 확장자 즉시 안내
+
+- [ ] **미리보기 강화**
+  - 샘플/선택 참여자 데이터로 변수 치환
+  - 미치환 변수는 빨간 배경 하이라이트
+
+- [ ] **테스트 발송 버튼 + 모달**
+  - 수신 이메일 입력 (기본값: 로그인 사용자)
+  - 미리보기 → 발송 → 결과 토스트
+
+---
+
+## Phase 6: 프론트엔드 - 일괄 발송 (ParticipantsPage)
+
+`frontend/src/pages/participants/ParticipantsPage.tsx` 수정:
+
+- [ ] **선택 → 발송 흐름**
+  - 체크박스 다중 선택 → "메일 발송" 버튼 활성화
+  - 템플릿 선택 → 변수 자동 매핑
+
+- [ ] **발송 확인 모달** (`components/email/SendConfirmModal.tsx` 신규)
+  - 수신자 수, 템플릿명, 첨부파일 목록 명시
+  - **"테스트 발송(본인)"** 과 **"실제 발송(N명)"** 색상 구분
+    - 테스트: `.btn-secondary` (회색 계열)
+    - 실제: `.btn-cta` (CTA 그린) + 수신자 수 강조
+  - 실제 발송은 한 번 더 확인 ("정말 N명에게 발송하시겠습니까?")
+
+- [ ] **진행률 UI**
+  - jobId 폴링 (2초 간격)
+  - 진행 바 + "23/50 발송 완료"
+  - 완료 후 성공/실패 요약 + 실패 건 재발송 버튼
+
+- [ ] **발송 이력 페이지** (`pages/EmailLogsPage.tsx` 신규)
+  - 라우트: `/emails/logs`
+  - 필터: 날짜 범위, 템플릿, 상태
+  - 행 클릭 시 상세(에러 메시지)
+
+---
+
+## Phase 7: 검증
+
+### 기능 테스트
+- [ ] 테스트 발송 → 본인 네이버 계정 수신
+- [ ] 첨부파일 1MB / 10MB / 25MB 경계 테스트
+- [ ] 한글 파일명 정상 수신
+- [ ] 변수 치환, 미치환 경고 표시
+- [ ] 일괄 발송 10명 진행률 실시간 업데이트
+- [ ] 일부 실패 시 재발송 동작
+- [ ] 발송 이력 조회/필터링
+
+### 보안/실패 테스트
+- [ ] 비인증 호출 → 401
+- [ ] Rate limit 초과 → 429
+- [ ] `.exe` 첨부 시도 → 차단
+- [ ] 25MB 초과 → 차단
+- [ ] `EMAIL_DEV_MODE=true` 시 모든 메일이 본인에게만 발송
+
+---
+
+## 작업 진행 방식
+
+1. **Phase 0의 사전 확인 사항 5가지**부터 사용자에게 질문
+2. 답변 받은 후 Phase 0 → Phase 7 순서대로 진행
+3. 각 Phase 완료 시:
+   - 변경 파일 목록 보고
+   - 다음 Phase로 넘어가기 전 확인 요청
+4. 기존 `CompanyManagementPage`의 디자인 패턴을 참고
+
+## 절대 하지 말아야 할 것
+
+- 동기식 일괄 발송 구현
+- 인증 미들웨어 없는 발송 API
+- `bg-blue-500`, `shadow-lg` 같은 Tailwind 색상/그림자 utility 사용
+- 환경변수 하드코딩
+- 한 Phase가 완료되지 않은 상태에서 다음 Phase 진행
+- 사용자가 5가지 사전 확인 사항에 답하기 전에 코드 작성 시작
+```

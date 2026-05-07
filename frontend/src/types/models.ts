@@ -62,6 +62,7 @@ export interface ParticipantEnrollment {
   id: string;
   courseType: CourseType;
   subCourseName: string;
+  subCourseId?: string;
   sessionId?: string; // Link to a specific session
   startDate: string;
   endDate: string;
@@ -105,6 +106,18 @@ export interface EmailTemplate {
   audience: InsuranceTarget;
   subject: string;
   body: string;
+  attachments?: any[];
+}
+
+export interface EmailLog {
+  id: string;
+  templateId?: string;
+  templateName?: string;
+  recipientEmail: string;
+  subject: string;
+  status: "SENT" | "FAILED";
+  errorMessage?: string;
+  sentAt: string;
 }
 
 export interface HeatPoint {

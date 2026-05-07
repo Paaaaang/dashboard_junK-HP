@@ -7,9 +7,9 @@ and has deep Tailwind utility dependencies throughout its structure.
 
 - **DO NOT** refactor layout or structure
 - **DO** use only master design tokens for colors and shadows:
-  - `bg-primary` / `text-primary` → Cyan `#0891B2`
+  - `bg-brand-primary` / `text-brand-primary` → Emerald `#10b981`
   - `bg-cta` / `text-cta` → Green `#22C55E`
-  - `bg-background` → Cyan 50 `#ECFEFF`
+  - `bg-background` → Page BG `#f8fafc`
   - `shadow-sm / shadow-md / shadow-lg / shadow-xl` → master shadow tokens
 - **DO NOT** add arbitrary color values (`bg-[#...]`, `text-blue-500`, etc.)
 - **DO NOT** use default Tailwind shadow classes outside the master set (`shadow-2xl`, `shadow-inner`, etc.)

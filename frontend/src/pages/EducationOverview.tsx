@@ -17,7 +17,7 @@ export function EducationOverviewPage() {
       count: companies.length,
       unit: "개 기업",
       accentColor: "var(--color-primary)",
-      accentBg: "rgba(8,145,178,0.1)",
+      accentBg: "rgba(16, 185, 129, 0.1)",
     },
     {
       to: "/participants",
@@ -96,7 +96,7 @@ export function EducationOverviewPage() {
         {/* Banner */}
         <div
           className="mt-12 rounded-[40px] p-10 text-white overflow-hidden relative"
-          style={{ background: "var(--color-text)", boxShadow: "0 25px 60px rgba(22,78,99,0.25)" }}
+          style={{ background: "var(--brand-dark)", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}
         >
           <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
             <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -112,11 +112,11 @@ export function EducationOverviewPage() {
             </p>
             <div className="flex gap-4">
               <div className="px-6 py-4 rounded-[24px] border" style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", borderColor: "rgba(255,255,255,0.1)" }}>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5" style={{ color: "var(--color-secondary)", opacity: 0.9 }}>MOU Signed</p>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5" style={{ color: "rgba(255,255,255,0.7)" }}>MOU Signed</p>
                 <p className="text-2xl font-black">{companies.filter(c => c.mouSigned).length} <span className="text-sm font-bold ml-0.5" style={{ opacity: 0.6 }}>개 기업</span></p>
               </div>
               <div className="px-6 py-4 rounded-[24px] border" style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", borderColor: "rgba(255,255,255,0.1)" }}>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5" style={{ color: "var(--color-secondary)", opacity: 0.9 }}>Total Enrollments</p>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5" style={{ color: "rgba(255,255,255,0.7)" }}>Total Enrollments</p>
                 <p className="text-2xl font-black">{participants.reduce((acc, p) => acc + p.enrollments.length, 0)} <span className="text-sm font-bold ml-0.5" style={{ opacity: 0.6 }}>건</span></p>
               </div>
             </div>

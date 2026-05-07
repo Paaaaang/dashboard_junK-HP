@@ -43,6 +43,7 @@ export function LinkCourseModal({
       id: `enr-${Date.now()}`,
       courseType: group.name as CourseType,
       subCourseName: sub.name,
+      subCourseId: sub.id,
       sessionId: selectedSessionId || undefined,
       startDate: session?.startDate || sub.startDate,
       endDate: session?.endDate || sub.endDate,
@@ -61,7 +62,7 @@ export function LinkCourseModal({
 
   return (
     <div className="fixed inset-0 bg-brand-dark/40 flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200">
-      <div className="bg-surface rounded-[32px] shadow-2xl flex flex-col w-full max-w-[480px] overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="bg-surface rounded-[32px] flex flex-col w-full max-w-[480px] overflow-hidden animate-in zoom-in-95 duration-300" style={{ boxShadow: "var(--shadow-xl)" }}>
         <div className="px-8 py-6 border-b border-border flex justify-between items-center bg-surface sticky top-0">
           <div className="flex flex-col gap-0.5">
             <h3 className="text-xl font-bold text-primary">교육 과정 연결</h3>
@@ -74,7 +75,7 @@ export function LinkCourseModal({
 
         <div className="flex-1 overflow-y-auto p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-black text-tertiary uppercase tracking-widest ml-1">과정 구분 선택</label>
+            <label className="form-label ml-1">과정 구분 선택</label>
             <div className="relative">
               <select 
                 className="w-full px-5 py-3 bg-surface border border-border rounded-2xl text-sm font-bold text-secondary focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
@@ -93,7 +94,7 @@ export function LinkCourseModal({
           {selectedGroupId && (
             <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
               <div className="space-y-2">
-                <label className="text-xs font-black text-tertiary uppercase tracking-widest ml-1">세부 과정 선택</label>
+                <label className="form-label ml-1">세부 과정 선택</label>
                 <div className="grid gap-2 max-h-[180px] overflow-y-auto custom-scrollbar p-1">
                   {selectedGroup?.details.map(d => (
                     <button
@@ -120,7 +121,7 @@ export function LinkCourseModal({
 
               {selectedCourseId && sessions.length > 0 && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                  <label className="text-xs font-black text-brand-primary uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <label className="form-label ml-1 flex items-center gap-2" style={{ color: "var(--brand-primary)" }}>
                     회차 선택 <span className="text-[10px] bg-brand-primary/10 px-1.5 py-0.5 rounded-full">{sessions.length}개 회차 있음</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -150,7 +151,7 @@ export function LinkCourseModal({
           )}
 
           <div className="space-y-2 pt-2 border-t border-border">
-            <label className="text-xs font-black text-tertiary uppercase tracking-widest ml-1">신청일 (폼 접수일)</label>
+            <label className="form-label ml-1">신청일 (폼 접수일)</label>
             <Calendar 
               isSingleDate
               value={appDateValue}

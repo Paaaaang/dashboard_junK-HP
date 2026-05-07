@@ -14,7 +14,7 @@ interface CourseStore {
   clearError: () => void;
   }
 
-  export const useCourseStore = create<CourseStore>((set) => ({
+  export const useCourseStore = create<CourseStore>((set, get) => ({
   courseGroups: [],
   isLoading: false,
   error: null,
@@ -60,7 +60,7 @@ interface CourseStore {
               durationDays,
               totalHours: d.totalHours || 0,
               targetOutcome: d.targetOutcome || 0,
-              sessions: d.sessions || []
+              sessions: (d.sessions || []).filter((s: any) => s !== null)
             };
           })
       }));
@@ -78,15 +78,36 @@ interface CourseStore {
     try {
       const response = await apiClient.post('v1/course-groups', {
         name: group.name,
-        description: "" // Add description field if needed in UI
+        description: "" 
       });
-      const newGroup = { ...group, id: response.data.id };
+      const groupId = response.data.id;
+      
+      // Add sub-courses (details)
+      const finalDetails = [];
+      for (const d of group.details) {
+        const res = await apiClient.post('v1/sub-courses', {
+          groupId: groupId,
+          name: d.name,
+          startDate: d.startDate || null,
+          endDate: d.endDate || null,
+          totalHours: d.totalHours,
+          targetOutcome: d.targetOutcome,
+          sessions: d.sessions || []
+        });
+        finalDetails.push({ ...d, id: res.data.id, sessions: res.data.sessions || [] });
+      }
+
+      const newGroup = { ...group, id: groupId, details: finalDetails };
       set((state) => ({ 
         courseGroups: [...state.courseGroups, newGroup],
         isLoading: false 
       }));
+      
+      // Force a re-fetch to ensure everything is perfectly synced
+      await get().fetchCourseGroups();
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
     }
   },
 
@@ -102,10 +123,12 @@ interface CourseStore {
       // 2. Sync sub-courses (details)
       const existingSubCoursesRes = await apiClient.get('v1/sub-courses');
       const existingSubCourses = existingSubCoursesRes.data || [];
-      const currentDetailIds = group.details.map(d => d.id);
+      const currentDetailIds = group.details.map(d => String(d.id));
 
-      // Find sub-courses to delete
-      const toDelete = existingSubCourses.filter((sc: any) => sc.groupId === group.id && !currentDetailIds.includes(sc.id));
+      // Find sub-courses to delete (only for this group)
+      const toDelete = existingSubCourses.filter((sc: any) => 
+        String(sc.groupId) === String(group.id) && !currentDetailIds.includes(String(sc.id))
+      );
       for (const sc of toDelete) {
         await apiClient.delete(`v1/sub-courses/${sc.id}`);
       }
@@ -113,7 +136,7 @@ interface CourseStore {
       // Add or update sub-courses
       const finalDetails = [];
       for (const d of group.details) {
-        if (d.id.startsWith("detail-") || d.id.startsWith("local-")) {
+        if (typeof d.id === 'string' && (d.id.startsWith("detail-") || d.id.startsWith("local-"))) {
           // Create new sub-course
           const res = await apiClient.post('v1/sub-courses', {
             groupId: group.id,
@@ -124,10 +147,10 @@ interface CourseStore {
             targetOutcome: d.targetOutcome,
             sessions: d.sessions || []
           });
-          finalDetails.push({ ...d, id: res.data.id });
+          finalDetails.push({ ...d, id: res.data.id, sessions: res.data.sessions || [] });
         } else {
           // Update existing
-          await apiClient.put(`v1/sub-courses/${d.id}`, {
+          const res = await apiClient.put(`v1/sub-courses/${d.id}`, {
             groupId: group.id,
             name: d.name,
             startDate: d.startDate || null,
@@ -136,7 +159,7 @@ interface CourseStore {
             targetOutcome: d.targetOutcome,
             sessions: d.sessions || []
           });
-          finalDetails.push(d);
+          finalDetails.push({ ...d, sessions: res.data.sessions || [] });
         }
       }
       
@@ -146,6 +169,9 @@ interface CourseStore {
         courseGroups: state.courseGroups.map((g) => g.id === group.id ? finalGroup : g),
         isLoading: false
       }));
+
+      // Force a re-fetch to ensure the UI is perfectly synced with the database
+      await get().fetchCourseGroups();
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });
       throw err;

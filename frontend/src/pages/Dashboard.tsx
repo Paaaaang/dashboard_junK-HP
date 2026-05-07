@@ -30,11 +30,11 @@ import { useStatsStore } from '../stores/useStatsStore';
 import { useToastStore } from '../stores/useToastStore';
 
 const CHART_COLORS = [
-  'var(--color-primary)',
-  'rgba(8, 145, 178, 0.75)',
-  'rgba(8, 145, 178, 0.55)',
-  'rgba(8, 145, 178, 0.35)',
-  'rgba(8, 145, 178, 0.15)'
+  'var(--brand-primary)',
+  'rgba(16, 185, 129, 0.75)',
+  'rgba(16, 185, 129, 0.55)',
+  'rgba(16, 185, 129, 0.35)',
+  'rgba(16, 185, 129, 0.15)'
 ];
 
 export function Dashboard() {
@@ -62,7 +62,7 @@ export function Dashboard() {
       <div className="flex items-center justify-center h-full">
         <div
           className="w-10 h-10 border-4 rounded-full animate-spin"
-          style={{ borderColor: "rgba(8,145,178,0.2)", borderTopColor: "var(--color-primary)" }}
+          style={{ borderColor: "rgba(16, 185, 129, 0.2)", borderTopColor: "var(--brand-primary)" }}
         />
       </div>
     );
@@ -104,13 +104,13 @@ export function Dashboard() {
               key={idx}
               className="rounded-3xl p-6 border cursor-default transition-all group"
               style={{ background: "var(--color-surface)", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-lg)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(8,145,178,0.2)"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-lg)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(16, 185, 129, 0.2)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-sm)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)"; }}
             >
               <div className="flex justify-between items-start mb-6">
                 <div
                   className="p-4 rounded-2xl transition-all"
-                  style={{ background: "rgba(8,145,178,0.1)", color: "var(--color-primary)" }}
+                  style={{ background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }}
                 >
                   <Icon className="w-7 h-7" strokeWidth={2.5} />
                 </div>
@@ -154,7 +154,7 @@ export function Dashboard() {
               <p className="text-[11px] text-tertiary font-black mt-0.5 uppercase tracking-widest">Monthly Participation Trend</p>
             </div>
             <div className="p-2 rounded-xl" style={{ background: "var(--color-background)" }}>
-              <TrendingUp size={18} strokeWidth={2.5} style={{ color: "var(--color-primary)" }} />
+              <TrendingUp size={18} strokeWidth={2.5} style={{ color: "var(--brand-primary)" }} />
             </div>
           </div>
           <div className="h-[300px] w-full">
@@ -162,15 +162,15 @@ export function Dashboard() {
               <AreaChart data={charts?.monthlyParticipation || []}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--brand-primary)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--brand-primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-tertiary)', fontSize: 11, fontWeight: 700 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-tertiary)', fontSize: 11, fontWeight: 700 }} />
                 <Tooltip contentStyle={{ borderRadius: 16, border: 'none', boxShadow: 'var(--shadow-lg)', padding: '12px 16px' }} itemStyle={{ fontWeight: 800, color: 'var(--color-text-primary)' }} />
-                <Area type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" />
+                <Area type="monotone" dataKey="value" stroke="var(--brand-primary)" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -210,8 +210,8 @@ export function Dashboard() {
               <h3 className="text-lg font-black text-text-primary tracking-tight">과정별 참여 기업 분포</h3>
               <p className="text-xs text-tertiary font-bold mt-0.5 uppercase tracking-wide">Course Participation by Companies</p>
             </div>
-            <div className="p-2 rounded-xl" style={{ background: "rgba(8,145,178,0.1)" }}>
-              <Users size={18} style={{ color: "var(--color-primary)" }} />
+            <div className="p-2 rounded-xl" style={{ background: "rgba(16, 185, 129, 0.1)" }}>
+              <Users size={18} style={{ color: "var(--brand-primary)" }} />
             </div>
           </div>
           <div className="h-[250px] w-full">
@@ -221,9 +221,9 @@ export function Dashboard() {
                 <XAxis type="number" axisLine={false} tickLine={false} hide />
                 <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-secondary)', fontSize: 13, fontWeight: 800 }} width={120} />
                 <Tooltip cursor={{ fill: 'var(--color-surface-subtle)' }} contentStyle={{ borderRadius: 16, border: 'none', boxShadow: 'var(--shadow-lg)' }} />
-                <Bar dataKey="value" fill="var(--color-primary)" radius={[0, 12, 12, 0]} barSize={32}>
+                <Bar dataKey="value" fill="var(--brand-primary)" radius={[0, 12, 12, 0]} barSize={32}>
                   {(charts?.courseCompanies || []).map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--color-primary)' : 'rgba(8,145,178,0.65)'} />
+                    <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--brand-primary)' : 'rgba(16, 185, 129, 0.65)'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -292,7 +292,7 @@ export function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-text-secondary truncate" style={{ transition: "color 200ms" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--color-primary)"}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--brand-primary)"}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = ""}
                   >{comp.name}</p>
                   <p className="text-[10px] text-tertiary font-bold uppercase">{comp.value}건 참여 중</p>
@@ -300,7 +300,7 @@ export function Dashboard() {
                 <div className="w-12 h-1 rounded-full overflow-hidden" style={{ background: "var(--color-background)" }}>
                   <div
                     className="h-full"
-                    style={{ background: "var(--color-primary)", width: `${(comp.value / (charts?.topCompanies[0]?.value || 1)) * 100}%` }}
+                    style={{ background: "var(--brand-primary)", width: `${(comp.value / (charts?.topCompanies[0]?.value || 1)) * 100}%` }}
                   />
                 </div>
               </div>
@@ -334,14 +334,14 @@ export function Dashboard() {
                 <div
                   key={idx}
                   className="flex flex-col gap-3 p-5 rounded-[24px] border transition-all group cursor-default"
-                  style={{ background: "rgba(236,254,255,0.5)", borderColor: "var(--color-border)" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(8,145,178,0.05)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(8,145,178,0.2)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(236,254,255,0.5)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)"; }}
+                  style={{ background: "var(--color-surface-subtle)", borderColor: "var(--color-border)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(16, 185, 129, 0.05)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(16, 185, 129, 0.2)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-subtle)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)"; }}
                 >
                   <div className="flex items-center justify-between">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
-                      style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", color: isDelete ? "rgba(239,68,68,0.4)" : isCompany ? "rgba(8,145,178,0.4)" : "rgba(2,132,199,0.4)" }}
+                      style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", color: isDelete ? "rgba(239,68,68,0.4)" : isCompany ? "rgba(16, 185, 129, 0.6)" : "rgba(2,132,199,0.4)" }}
                     >
                       {isCompany ? <Building2 size={20} /> : <UserCheck size={20} />}
                     </div>
@@ -351,7 +351,7 @@ export function Dashboard() {
                         ? { background: "var(--color-error-bg)", color: "var(--color-error)" }
                         : isUpdate
                         ? { background: "var(--color-warning-bg)", color: "var(--color-warning)" }
-                        : { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)" }
+                        : { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }
                       }
                     >
                       {activity.type}

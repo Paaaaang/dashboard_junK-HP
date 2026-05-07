@@ -67,7 +67,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             <img src={junSymbolLogo} alt="Logo" className="w-8 h-8 object-contain" />
             <div className="flex flex-col">
               <span className="text-xs font-bold text-text-primary leading-tight">전남대학교</span>
-              <span className="text-xs font-medium leading-tight" style={{ color: "var(--color-primary)" }}>K-하이테크 플랫폼</span>
+              <span className="text-xs font-medium leading-tight" style={{ color: "var(--brand-primary)" }}>K-하이테크 플랫폼</span>
             </div>
           </div>
         )}
@@ -76,7 +76,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           onClick={onToggleCollapsed}
           className={`p-1.5 rounded-lg text-tertiary transition-colors cursor-pointer ${collapsed ? 'mx-auto' : ''}`}
           style={{ transition: "color 200ms, background 200ms" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-primary)"; (e.currentTarget as HTMLElement).style.background = "rgba(8,145,178,0.05)"; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--brand-primary)"; (e.currentTarget as HTMLElement).style.background = "rgba(16, 185, 129, 0.05)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ""; (e.currentTarget as HTMLElement).style.background = ""; }}
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
@@ -91,7 +91,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             end={dashboardItem.to === '/'}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${collapsed ? 'justify-center' : ''}`}
             style={({ isActive }) => isActive
-              ? { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)", fontWeight: 600 }
+              ? { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)", fontWeight: 600 }
               : { color: "var(--color-text-secondary)" }
             }
             title={collapsed ? dashboardItem.label : undefined}
@@ -108,7 +108,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
             onClick={toggleEducationMenu}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer ${collapsed ? 'justify-center' : ''}`}
             style={isEducationActive
-              ? { color: "var(--color-primary)", fontWeight: 600, background: "rgba(8,145,178,0.05)" }
+              ? { color: "var(--brand-primary)", fontWeight: 600, background: "rgba(16, 185, 129, 0.05)" }
               : { color: "var(--color-text-secondary)" }
             }
             title={collapsed ? '교육 과정 관리' : undefined}
@@ -137,7 +137,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                     to={item.to}
                     className="flex items-center justify-between py-2 px-3 rounded-lg text-sm transition-colors cursor-pointer"
                     style={({ isActive }) => isActive
-                      ? { color: "var(--color-primary)", background: "rgba(8,145,178,0.1)", fontWeight: 500 }
+                      ? { color: "var(--brand-primary)", background: "rgba(16, 185, 129, 0.1)", fontWeight: 500 }
                       : { color: "var(--color-text-secondary)" }
                     }
                   >
@@ -164,7 +164,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                   to={item.to}
                   className="block px-4 py-2 text-sm transition-colors cursor-pointer"
                   style={({ isActive }) => isActive
-                    ? { color: "var(--color-primary)", background: "rgba(8,145,178,0.1)", fontWeight: 500 }
+                    ? { color: "var(--brand-primary)", background: "rgba(16, 185, 129, 0.1)", fontWeight: 500 }
                     : { color: "var(--color-text-secondary)" }
                   }
                 >
@@ -185,7 +185,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                 end={item.to === '/'}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${collapsed ? 'justify-center' : ''}`}
                 style={({ isActive }) => isActive
-                  ? { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)", fontWeight: 600 }
+                  ? { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)", fontWeight: 600 }
                   : { color: "var(--color-text-secondary)" }
                 }
                 title={collapsed ? item.label : undefined}

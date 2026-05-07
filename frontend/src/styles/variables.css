@@ -8,14 +8,19 @@
   
   --brand-dark: #000000;       /* Deep Forest Green (Sidebar/Header) */
   --brand-dark-hover: #047857;
+
+  /* Data-Dense Cyan Palette (Alternative) */
+  --brand-cyan: #0891b2;       /* Cyan 600 */
+  --brand-cyan-soft: #ecfeff;  /* Cyan 50 */
+  --brand-cyan-text: #164e63;  /* Cyan 900 */
   
   /* Page & Surface Colors */
   --color-page-bg: #f8fafc;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f1f5f9;
-  --color-surface-active: #e0f2fe;
-  --color-border: #cbd5e1;
-  --color-border-strong: #94a3b8;
+  --color-surface-subtle: #f8fafc;
+  --color-surface-active: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
 
   /* Text Colors */
   --color-text-primary: #0f172a;
@@ -23,6 +28,11 @@
   --color-text-tertiary: #64748b;
   --color-text-disabled: #cbd5e1;
   --color-text-inverse: #ffffff;
+
+  /* Typography (Audit Recommendations) */
+  --font-body: 'Fira Sans', 'Noto Sans KR', 'Pretendard', sans-serif;
+  --font-heading: 'Fira Code', 'Fira Sans', 'Noto Sans KR', sans-serif;
+  --font-mono: 'Fira Code', monospace;
 
   /* Semantic Aliases */
   --color-primary: var(--brand-primary);
@@ -34,9 +44,9 @@
   --color-sidebar: var(--brand-dark);
   --color-sidebar-hover: var(--brand-dark-hover);
   
-  --color-cta: var(--brand-primary);
-  --color-cta-hover: var(--brand-primary-hover);
-  --color-cta-active: var(--brand-primary-active);
+  --color-cta: #22c55e; /* Vibrant Green */
+  --color-cta-hover: #16a34a;
+  --color-cta-active: #15803d;
   
   /* Success (Green) */
   --color-success: #10b981;

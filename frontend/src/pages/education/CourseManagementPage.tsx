@@ -139,7 +139,7 @@ export function CourseManagementPage() {
                   type="button"
                   className="w-full flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
                   style={isSelected
-                    ? { background: "var(--color-primary)", color: "#fff", boxShadow: "var(--shadow-md)" }
+                    ? { background: "var(--brand-primary)", color: "#fff", boxShadow: "var(--shadow-md)" }
                     : { color: "var(--color-text-secondary)" }
                   }
                   onClick={() => { selectGroupForManager(group.id); setSelectedDetailId(null); }}
@@ -170,7 +170,7 @@ export function CourseManagementPage() {
                         }}
                         className="text-[12px] font-bold py-1.5 px-3 rounded-xl border border-transparent truncate cursor-pointer transition-colors"
                         style={selectedDetailId === detail.id
-                          ? { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)", fontWeight: 900 }
+                          ? { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)", fontWeight: 900 }
                           : { color: "var(--color-text-tertiary)" }
                         }
                         onMouseEnter={e => { if (selectedDetailId !== detail.id) (e.currentTarget as HTMLElement).style.background = "var(--color-surface-subtle)"; }}
@@ -214,7 +214,7 @@ export function CourseManagementPage() {
               style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-subtle)" }}
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl" style={{ background: "rgba(8,145,178,0.1)", color: "var(--color-primary)" }}>
+                <div className="p-2 rounded-xl" style={{ background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }}>
                   <Settings2 size={18} strokeWidth={2.5} />
                 </div>
                 <h4 className="text-lg font-black text-primary tracking-tight">과정 구분 설정</h4>
@@ -264,7 +264,7 @@ export function CourseManagementPage() {
                           key={option}
                           className="flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-colors"
                           style={isChecked
-                            ? { background: "var(--color-primary)", borderColor: "var(--color-primary)", color: "#fff" }
+                            ? { background: "var(--brand-primary)", borderColor: "var(--brand-primary)", color: "#fff" }
                             : { background: "var(--color-surface)", borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }
                           }
                         >
@@ -301,7 +301,7 @@ export function CourseManagementPage() {
                   {managerGroupForm.details.length === 0 ? (
                     <div
                       className="w-full py-12 text-center rounded-3xl border border-dashed"
-                      style={{ background: "rgba(8,145,178,0.03)", borderColor: "var(--color-border)" }}
+                      style={{ background: "rgba(16, 185, 129, 0.03)", borderColor: "var(--color-border)" }}
                     >
                       <p className="text-tertiary text-sm font-bold italic">등록된 세부 과정이 없습니다.</p>
                     </div>
@@ -315,7 +315,7 @@ export function CourseManagementPage() {
                         key={detail.id}
                         className="min-w-[260px] p-5 rounded-3xl border cursor-pointer group relative shrink-0 transition-colors"
                         style={isDetailSelected
-                          ? { background: "var(--color-primary)", borderColor: "var(--color-primary)", color: "#fff", boxShadow: "var(--shadow-xl)" }
+                          ? { background: "var(--brand-primary)", borderColor: "var(--brand-primary)", color: "#fff", boxShadow: "var(--shadow-xl)" }
                           : { background: "var(--color-surface)", borderColor: "var(--color-border)" }
                         }
                         onClick={() => {
@@ -331,7 +331,7 @@ export function CourseManagementPage() {
                             className="px-2 py-0.5 rounded-lg text-[10px] font-black"
                             style={isDetailSelected
                               ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
-                              : { background: "rgba(8,145,178,0.1)", color: "var(--color-primary)" }
+                              : { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }
                             }
                           >
                             {rate}%
@@ -492,7 +492,7 @@ export function CourseManagementPage() {
                                         <input
                                           type="number"
                                           className="form-input text-center"
-                                          style={{ width: 64, padding: "6px 8px", fontSize: 13, borderColor: "rgba(8,145,178,0.3)", color: "var(--color-primary)" }}
+                                          style={{ width: 64, padding: "6px 8px", fontSize: 13, borderColor: "rgba(16, 185, 129, 0.3)", color: "var(--brand-primary)" }}
                                           value={session.targetOutcome}
                                           onChange={(e) => updateSession(idx, { targetOutcome: Number(e.target.value) })}
                                         />
@@ -514,7 +514,7 @@ export function CourseManagementPage() {
                                         <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--color-surface-subtle)" }}>
                                           <div
                                             className="h-full"
-                                            style={{ width: `${Math.min(100, rate)}%`, background: "var(--color-primary)" }}
+                                            style={{ width: `${Math.min(100, rate)}%`, background: "var(--brand-primary)" }}
                                           />
                                         </div>
                                       </div>
@@ -551,7 +551,9 @@ export function CourseManagementPage() {
                           type="button"
                           className="btn btn-primary flex-1 h-14 gap-3 text-base rounded-3xl"
                           onClick={() => {
-                            if (applyDetailDraft()) setSelectedDetailId(null);
+                            if (applyDetailDraft()) {
+                              addToast("세부 프로그램 구성이 임시 적용되었습니다. 상단의 '변경 사항 전체 저장'을 눌러주세요.", "info");
+                            }
                           }}
                         >
                           <Check size={22} strokeWidth={3} style={{ color: "var(--color-cta)" }} />
@@ -581,7 +583,7 @@ export function CourseManagementPage() {
                   <h4 className="text-xl font-black text-primary tracking-tight">세부 프로그램 정보를 구성해 주세요</h4>
                   <p className="text-[13px] text-tertiary font-medium leading-relaxed max-w-xs mx-auto">
                     상단 탭에서 구분 그룹을 선택하거나<br />
-                    <span className="font-bold" style={{ color: "var(--color-primary)" }}>'프로그램 추가'</span> 버튼을 눌러 새로운 과정을 설계할 수 있습니다.
+                    <span className="font-bold" style={{ color: "var(--brand-primary)" }}>'프로그램 추가'</span> 버튼을 눌러 새로운 과정을 설계할 수 있습니다.
                   </p>
                 </div>
               </div>

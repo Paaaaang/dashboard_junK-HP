@@ -4,14 +4,14 @@ export function TopRail() {
   return (
     <header
       className="h-16 backdrop-blur-md border-b flex items-center justify-between px-6 sticky top-0 z-20 transition-all duration-300"
-      style={{ background: "rgba(236,254,255,0.85)", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
+      style={{ background: "rgba(255,255,255,0.85)", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
     >
       <div className="flex-1 flex items-center" />
       <div className="flex items-center gap-4">
         <button
           className="p-2 rounded-full relative cursor-pointer transition-colors"
           style={{ color: "var(--color-text-tertiary)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-primary)"; (e.currentTarget as HTMLElement).style.background = "rgba(8,145,178,0.05)"; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--brand-primary)"; (e.currentTarget as HTMLElement).style.background = "rgba(16, 185, 129, 0.05)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-text-tertiary)"; (e.currentTarget as HTMLElement).style.background = ""; }}
           aria-label="알림"
         >
@@ -23,7 +23,7 @@ export function TopRail() {
         </button>
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
-          style={{ background: "rgba(8,145,178,0.1)", color: "var(--color-primary)" }}
+          style={{ background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }}
         >
           A
         </div>

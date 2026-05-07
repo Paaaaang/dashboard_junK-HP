@@ -24,11 +24,10 @@
  */
 @theme {
   /* ── Master Brand Colors ───────────────────────────── */
-  /* --color-primary now = #0891B2 (cyan) via tokens.css override */
-  --color-primary: var(--color-primary);       /* bg-primary / text-primary  */
+  --color-primary: var(--color-text-primary);  /* bg-primary / text-primary  */
   --color-cta: var(--color-cta);               /* bg-cta / text-cta          */
-  --color-background: var(--color-background); /* bg-background              */
-  --color-text: var(--color-text);             /* bg-text / text-text        */
+  --color-background: var(--color-page-bg);    /* bg-background              */
+  --color-text: var(--color-text-primary);     /* bg-text / text-text        */
 
   /* ── Brand Utilities ───────────────────────────────── */
   --color-brand-primary: var(--brand-primary);

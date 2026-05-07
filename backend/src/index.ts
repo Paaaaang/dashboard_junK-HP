@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import pool, { query } from './db';
+import { sendMail, replacePlaceholders } from './services/mailService';
 
 dotenv.config();
 
@@ -416,6 +417,8 @@ app.get('/api/v1/participants', async (req: Request, res: Response) => {
                 'id', e.id,
                 'courseType', cg.name,
                 'subCourseName', sc.name,
+                'subCourseId', sc.id,
+                'sessionId', e.session_id,
                 'startDate', sc.start_date,
                 'endDate', sc.end_date,
                 'totalHours', sc.total_hours,
@@ -496,19 +499,23 @@ app.post('/api/v1/participants', async (req: Request, res: Response) => {
 
     const savedEnrollments = [];
     for (const enr of enrollments) {
-      const scRes = await client.query('SELECT id FROM sub_courses WHERE name = $1', [enr.subCourseName]);
-      if (scRes.rowCount && scRes.rowCount > 0) {
+      let scId = enr.subCourseId;
+      if (!scId) {
+        const scRes = await client.query('SELECT id FROM sub_courses WHERE name = $1', [enr.subCourseName]);
+        if (scRes.rowCount && scRes.rowCount > 0) scId = scRes.rows[0].id;
+      }
+      if (scId) {
         const enrResult = await client.query(
-          `INSERT INTO enrollments (participant_id, sub_course_id, status, completion_date, certificate_no, application_date)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-          [participant.id, scRes.rows[0].id, enr.status || '미수료', enr.completionDate, enr.certificateNo, enr.applicationDate]
+          `INSERT INTO enrollments (participant_id, sub_course_id, status, completion_date, certificate_no, application_date, session_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [participant.id, scId, enr.status || '미수료', enr.completionDate, enr.certificateNo, enr.applicationDate, enr.sessionId || null]
         );
         savedEnrollments.push(enrResult.rows[0]);
         
         // Also ensure company is linked to this course in company_courses
         await client.query(
           'INSERT INTO company_courses (company_id, sub_course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [targetCompanyId, scRes.rows[0].id]
+          [targetCompanyId, scId]
         );
       }
     }
@@ -549,19 +556,22 @@ app.put('/api/v1/participants/:id', async (req: Request, res: Response) => {
     await client.query('DELETE FROM enrollments WHERE participant_id = $1', [id]);
     const savedEnrollments = [];
     for (const enr of enrollments) {
-      const scRes = await client.query('SELECT id FROM sub_courses WHERE name = $1', [enr.subCourseName]);
-      if (scRes.rowCount && scRes.rowCount > 0) {
-        const subId = scRes.rows[0].id;
+      let scId = enr.subCourseId;
+      if (!scId) {
+        const scRes = await client.query('SELECT id FROM sub_courses WHERE name = $1', [enr.subCourseName]);
+        if (scRes.rowCount && scRes.rowCount > 0) scId = scRes.rows[0].id;
+      }
+      if (scId) {
         const enrResult = await client.query(
-          `INSERT INTO enrollments (participant_id, sub_course_id, status, completion_date, certificate_no, application_date)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-          [id, subId, enr.status, enr.completionDate, enr.certificateNo, enr.applicationDate]
+          `INSERT INTO enrollments (participant_id, sub_course_id, status, completion_date, certificate_no, application_date, session_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [id, scId, enr.status, enr.completionDate, enr.certificateNo, enr.applicationDate, enr.sessionId || null]
         );
         savedEnrollments.push(enrResult.rows[0]);
         
         await client.query(
           'INSERT INTO company_courses (company_id, sub_course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [companyId, subId]
+          [companyId, scId]
         );
       }
     }
@@ -845,6 +855,113 @@ app.delete('/api/v1/templates/:id', async (req: Request, res: Response) => {
   try {
     await query('DELETE FROM email_templates WHERE id = $1', [id]);
     res.status(204).send();
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Email Sending API ---
+app.post('/api/v1/emails/send', async (req: Request, res: Response) => {
+  const { templateId, participantIds = [], recipientEmails = [], customData = {} } = req.body;
+  
+  try {
+    // 1. Fetch template
+    const tempRes = await query('SELECT * FROM email_templates WHERE id = $1', [templateId]);
+    if (tempRes.rowCount === 0) return res.status(404).json({ error: 'Template not found' });
+    const template = tempRes.rows[0];
+
+    const results = [];
+
+    // 2. Handle participants
+    if (participantIds.length > 0) {
+      const partsRes = await query('SELECT * FROM participants WHERE id = ANY($1)', [participantIds]);
+      for (const participant of partsRes.rows) {
+        const data = {
+          name: participant.name,
+          position: participant.position,
+          email: participant.email,
+          ...customData
+        };
+        
+        const subject = replacePlaceholders(template.subject, data);
+        const body = replacePlaceholders(template.body, data);
+        
+        try {
+          await sendMail({
+            to: participant.email,
+            subject,
+            text: body,
+            attachments: template.attachments
+          });
+          
+          await query(
+            'INSERT INTO email_logs (template_id, recipient_email, subject, status) VALUES ($1, $2, $3, $4)',
+            [templateId, participant.email, subject, 'SENT']
+          );
+          results.push({ email: participant.email, status: 'SENT' });
+        } catch (err: any) {
+          await query(
+            'INSERT INTO email_logs (template_id, recipient_email, subject, status, error_message) VALUES ($1, $2, $3, $4, $5)',
+            [templateId, participant.email, subject, 'FAILED', err.message]
+          );
+          results.push({ email: participant.email, status: 'FAILED', error: err.message });
+        }
+      }
+    }
+
+    // 3. Handle additional recipients
+    for (const email of recipientEmails) {
+      const subject = replacePlaceholders(template.subject, customData);
+      const body = replacePlaceholders(template.body, customData);
+      
+      try {
+        await sendMail({
+          to: email,
+          subject,
+          text: body,
+          attachments: template.attachments
+        });
+        
+        await query(
+          'INSERT INTO email_logs (template_id, recipient_email, subject, status) VALUES ($1, $2, $3, $4)',
+          [templateId, email, subject, 'SENT']
+        );
+        results.push({ email, status: 'SENT' });
+      } catch (err: any) {
+        await query(
+          'INSERT INTO email_logs (template_id, recipient_email, subject, status, error_message) VALUES ($1, $2, $3, $4, $5)',
+          [templateId, email, subject, 'FAILED', err.message]
+        );
+        results.push({ email, status: 'FAILED', error: err.message });
+      }
+    }
+
+    res.json({ message: 'Email processing complete', results });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/v1/emails/test', async (req: Request, res: Response) => {
+  const { to, subject, body, attachments = [] } = req.body;
+  try {
+    const result = await sendMail({ to, subject, text: body, attachments });
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/v1/emails/logs', async (req: Request, res: Response) => {
+  try {
+    const result = await query(`
+      SELECT el.*, et.name as template_name
+      FROM email_logs el
+      LEFT JOIN email_templates et ON et.id = el.template_id
+      ORDER BY el.sent_at DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

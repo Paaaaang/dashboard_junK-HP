@@ -1,16 +1,12 @@
 export function applyTemplateVariables(
   text: string,
-  values: Record<'companyName' | 'courseName' | 'deadline' | 'contactPhone' | 'managerName', string>,
+  values: Record<string, string>,
 ) {
-  return text
-    .split('{{companyName}}')
-    .join(values.companyName)
-    .split('{{courseName}}')
-    .join(values.courseName)
-    .split('{{deadline}}')
-    .join(values.deadline)
-    .split('{{contactPhone}}')
-    .join(values.contactPhone)
-    .split('{{managerName}}')
-    .join(values.managerName);
+  let result = text;
+  Object.entries(values).forEach(([key, value]) => {
+    // Both {{key}} and key formats handled
+    const placeholder = key.startsWith("{{") ? key : `{{${key}}}`;
+    result = result.split(placeholder).join(value || "");
+  });
+  return result;
 }

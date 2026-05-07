@@ -269,10 +269,13 @@ export function ParticipantDrawer({
                         <EnrollmentRow 
                           key={e.id} 
                           enrollment={e} 
-                          onUpdate={(id, updates) => setDraft({ 
-                            ...draft, 
-                            enrollments: draft.enrollments.map(x => x.id === id ? { ...x, ...updates } : x) 
-                          })}
+                          onUpdate={(id, updates) => {
+                            setDraft({ 
+                              ...draft, 
+                              enrollments: draft.enrollments.map(x => x.id === id ? { ...x, ...updates } : x) 
+                            });
+                            setIsEditMode(true);
+                          }}
                         />
                       ))}
                     </div>
@@ -317,6 +320,7 @@ export function ParticipantDrawer({
           onClose={() => setShowLinkModal(false)}
           onLink={(_, enr) => {
             setDraft({ ...draft, enrollments: [...draft.enrollments, enr] });
+            setIsEditMode(true);
             setShowLinkModal(false);
           }}
         />
