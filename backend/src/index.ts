@@ -3,7 +3,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import pool, { query } from './db';
-import { sendMail, replacePlaceholders } from './services/mailService';
+import emailRoutes from './routes/emails';
+import settingsRoutes from './routes/settings';
 
 dotenv.config();
 
@@ -15,6 +16,10 @@ app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/v1/emails', emailRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 // Health check route
 app.get('/api/health', async (req: Request, res: Response) => {
@@ -855,113 +860,6 @@ app.delete('/api/v1/templates/:id', async (req: Request, res: Response) => {
   try {
     await query('DELETE FROM email_templates WHERE id = $1', [id]);
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// --- Email Sending API ---
-app.post('/api/v1/emails/send', async (req: Request, res: Response) => {
-  const { templateId, participantIds = [], recipientEmails = [], customData = {} } = req.body;
-  
-  try {
-    // 1. Fetch template
-    const tempRes = await query('SELECT * FROM email_templates WHERE id = $1', [templateId]);
-    if (tempRes.rowCount === 0) return res.status(404).json({ error: 'Template not found' });
-    const template = tempRes.rows[0];
-
-    const results = [];
-
-    // 2. Handle participants
-    if (participantIds.length > 0) {
-      const partsRes = await query('SELECT * FROM participants WHERE id = ANY($1)', [participantIds]);
-      for (const participant of partsRes.rows) {
-        const data = {
-          name: participant.name,
-          position: participant.position,
-          email: participant.email,
-          ...customData
-        };
-        
-        const subject = replacePlaceholders(template.subject, data);
-        const body = replacePlaceholders(template.body, data);
-        
-        try {
-          await sendMail({
-            to: participant.email,
-            subject,
-            text: body,
-            attachments: template.attachments
-          });
-          
-          await query(
-            'INSERT INTO email_logs (template_id, recipient_email, subject, status) VALUES ($1, $2, $3, $4)',
-            [templateId, participant.email, subject, 'SENT']
-          );
-          results.push({ email: participant.email, status: 'SENT' });
-        } catch (err: any) {
-          await query(
-            'INSERT INTO email_logs (template_id, recipient_email, subject, status, error_message) VALUES ($1, $2, $3, $4, $5)',
-            [templateId, participant.email, subject, 'FAILED', err.message]
-          );
-          results.push({ email: participant.email, status: 'FAILED', error: err.message });
-        }
-      }
-    }
-
-    // 3. Handle additional recipients
-    for (const email of recipientEmails) {
-      const subject = replacePlaceholders(template.subject, customData);
-      const body = replacePlaceholders(template.body, customData);
-      
-      try {
-        await sendMail({
-          to: email,
-          subject,
-          text: body,
-          attachments: template.attachments
-        });
-        
-        await query(
-          'INSERT INTO email_logs (template_id, recipient_email, subject, status) VALUES ($1, $2, $3, $4)',
-          [templateId, email, subject, 'SENT']
-        );
-        results.push({ email, status: 'SENT' });
-      } catch (err: any) {
-        await query(
-          'INSERT INTO email_logs (template_id, recipient_email, subject, status, error_message) VALUES ($1, $2, $3, $4, $5)',
-          [templateId, email, subject, 'FAILED', err.message]
-        );
-        results.push({ email, status: 'FAILED', error: err.message });
-      }
-    }
-
-    res.json({ message: 'Email processing complete', results });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/v1/emails/test', async (req: Request, res: Response) => {
-  const { to, subject, body, attachments = [] } = req.body;
-  try {
-    const result = await sendMail({ to, subject, text: body, attachments });
-    res.json(result);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/v1/emails/logs', async (req: Request, res: Response) => {
-  try {
-    const result = await query(`
-      SELECT el.*, et.name as template_name
-      FROM email_logs el
-      LEFT JOIN email_templates et ON et.id = el.template_id
-      ORDER BY el.sent_at DESC
-      LIMIT 100
-    `);
-    res.json(result.rows);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

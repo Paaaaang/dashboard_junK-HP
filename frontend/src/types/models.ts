@@ -100,24 +100,51 @@ export interface ParticipantRecord {
   };
 }
 
+export interface AttachmentMeta {
+  id: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+  path?: string;
+}
+
 export interface EmailTemplate {
   id: string;
   name: string;
   audience: InsuranceTarget;
   subject: string;
   body: string;
-  attachments?: any[];
+  attachments?: AttachmentMeta[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EmailLog {
   id: string;
+  jobId?: string;
   templateId?: string;
   templateName?: string;
+  senderEmail: string;
   recipientEmail: string;
   subject: string;
-  status: "SENT" | "FAILED";
+  bodyRendered?: string;
+  status: "sent" | "failed" | "pending";
   errorMessage?: string;
-  sentAt: string;
+  sentAt?: string;
+  createdAt: string;
+}
+
+export interface EmailJob {
+  id: string;
+  templateId: string;
+  totalCount: number;
+  sentCount: number;
+  failedCount: number;
+  status: "queued" | "running" | "completed" | "failed";
+  createdBy?: string;
+  createdAt: string;
+  completedAt?: string;
 }
 
 export interface HeatPoint {

@@ -1,28 +1,40 @@
 import { create } from "zustand";
 import apiClient from "../api/client";
-import type { EmailTemplate, EmailLog } from "../types/models";
+import type { EmailTemplate, EmailLog, EmailJob, AttachmentMeta } from "../types/models";
+
+interface SendRecipient {
+  email: string;
+  variables: Record<string, string>;
+}
 
 interface TemplateStore {
   templates: EmailTemplate[];
   logs: EmailLog[];
+  activeJob: EmailJob | null;
   isLoading: boolean;
   error: string | null;
   fetchTemplates: () => Promise<void>;
   upsertTemplate: (template: EmailTemplate) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
-  sendEmails: (templateId: string, participantIds?: string[], recipientEmails?: string[], customData?: any) => Promise<any>;
+  sendBatch: (templateId: string, recipients: SendRecipient[]) => Promise<{ jobId: string }>;
+  fetchJobStatus: (jobId: string) => Promise<EmailJob>;
   testEmail: (to: string, subject: string, body: string, attachments?: any[]) => Promise<any>;
-  fetchLogs: () => Promise<void>;
+  uploadAttachment: (templateId: string, file: File) => Promise<AttachmentMeta>;
+  deleteAttachment: (templateId: string, attachmentId: string) => Promise<void>;
+  fetchLogs: (params?: any) => Promise<void>;
   clearError: () => void;
+  setActiveJob: (job: EmailJob | null) => void;
 }
 
-export const useTemplateStore = create<TemplateStore>((set) => ({
+export const useTemplateStore = create<TemplateStore>((set, get) => ({
   templates: [],
   logs: [],
+  activeJob: null,
   isLoading: false,
   error: null,
 
   clearError: () => set({ error: null }),
+  setActiveJob: (job) => set({ activeJob: job }),
 
   fetchTemplates: async () => {
     set({ isLoading: true, error: null });
@@ -40,10 +52,10 @@ export const useTemplateStore = create<TemplateStore>((set) => ({
       const isNew = !template.id || template.id.startsWith('tpl-');
       
       let response;
-      if (isNew && template.id?.startsWith('tpl-')) {
-        response = await apiClient.post('v1/templates', { ...template, id: undefined });
-      } else if (isNew) {
-        response = await apiClient.post('v1/templates', template);
+      if (isNew) {
+        // Remove temporary ID for backend
+        const { id, ...data } = template;
+        response = await apiClient.post('v1/templates', data);
       } else {
         response = await apiClient.put(`v1/templates/${template.id}`, template);
       }
@@ -75,14 +87,13 @@ export const useTemplateStore = create<TemplateStore>((set) => ({
     }
   },
 
-  sendEmails: async (templateId, participantIds, recipientEmails, customData) => {
+  sendBatch: async (templateId, recipients) => {
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.post('v1/emails/send', {
         templateId,
-        participantIds,
-        recipientEmails,
-        customData
+        recipients,
+        createdBy: 'admin' // Could be dynamic if auth is implemented
       });
       set({ isLoading: false });
       return response.data;
@@ -90,6 +101,20 @@ export const useTemplateStore = create<TemplateStore>((set) => ({
       const errorMsg = err.response?.data?.error || err.message;
       set({ error: errorMsg, isLoading: false });
       throw new Error(errorMsg);
+    }
+  },
+
+  fetchJobStatus: async (jobId) => {
+    try {
+      const response = await apiClient.get(`v1/emails/jobs/${jobId}`);
+      const job = response.data;
+      if (get().activeJob?.id === jobId) {
+        set({ activeJob: job });
+      }
+      return job;
+    } catch (err: any) {
+      console.error('Error fetching job status:', err);
+      throw err;
     }
   },
 
@@ -106,10 +131,53 @@ export const useTemplateStore = create<TemplateStore>((set) => ({
     }
   },
 
-  fetchLogs: async () => {
+  uploadAttachment: async (templateId, file) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.get('v1/emails/logs');
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post(`v1/emails/templates/${templateId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const newAttachment = response.data;
+      
+      set(state => ({
+        templates: state.templates.map(t => 
+          t.id === templateId 
+            ? { ...t, attachments: [...(t.attachments || []), newAttachment] }
+            : t
+        ),
+        isLoading: false
+      }));
+      return newAttachment;
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  deleteAttachment: async (templateId, attachmentId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.delete(`v1/emails/templates/${templateId}/attachments/${attachmentId}`);
+      set(state => ({
+        templates: state.templates.map(t => 
+          t.id === templateId 
+            ? { ...t, attachments: (t.attachments || []).filter(a => a.id !== attachmentId) }
+            : t
+        ),
+        isLoading: false
+      }));
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  fetchLogs: async (params) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.get('v1/emails/logs', { params });
       set({ logs: response.data, isLoading: false });
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });

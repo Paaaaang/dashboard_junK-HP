@@ -77,7 +77,7 @@ export const educationSubNavigation: EducationSubNavigationItem[] = [
   { to: "/companies", label: "기업" },
   { to: "/participants", label: "참여자" },
   { to: "/courses", label: "교육 과정" },
-  { to: "/templates", label: "이메일" },
+  { to: "/templates", label: "이메일 시스템 관리" },
 ];
 
 // KPI 카드 데이터 (Placeholder - Now fetched from API)
@@ -124,6 +124,7 @@ export const initialTemplates: EmailTemplate[] = [
     audience: "INSURED",
     subject: "[전남대학교] {{courseName}} 신청서 안내",
     body: "안녕하세요 {{companyName}} 담당자님.\n\n{{courseName}} 참여를 위한 신청서 양식을 첨부드립니다.\n제출기한: {{deadline}}\n\n문의: {{contactPhone}}",
+    attachments: [],
   },
   {
     id: "tpl-2",
@@ -131,6 +132,7 @@ export const initialTemplates: EmailTemplate[] = [
     audience: "UNINSURED",
     subject: "[전남대학교] {{courseName}} 수강 대상 안내",
     body: "안녕하세요 {{companyName}} 담당자님.\n\n해당 과정은 고용보험 가입자만 참여 가능합니다.\n추후 대상 확대 시 재안내드리겠습니다.\n\n문의: {{contactPhone}}",
+    attachments: [],
   },
 ];
 

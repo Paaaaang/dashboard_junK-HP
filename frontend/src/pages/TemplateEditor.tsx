@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { Mail, Paperclip, Trash2, Send, X, AlertCircle, Clock } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Mail, Paperclip, Send, X, AlertCircle, Clock, Plus as PlusIcon } from "lucide-react";
 import { templateVariables } from "../constants";
 import { PageHeader } from "../components";
 import { applyTemplateVariables } from "../utils/templateVariables";
 import { useTemplateStore } from "../stores/useTemplateStore";
 import { useToastStore } from "../stores/useToastStore";
-import type { EmailTemplate, InsuranceTarget } from "../types/models";
+import { AttachmentUploader } from "../components/email/AttachmentUploader";
+import type { EmailTemplate, InsuranceTarget, AttachmentMeta } from "../types/models";
 import { toDotDate } from "./companies/utils/companyUtils";
 
 export function TemplateEditorPage() {
@@ -18,7 +19,9 @@ export function TemplateEditorPage() {
     upsertTemplate, 
     testEmail,
     fetchLogs,
-    clearError 
+    clearError,
+    uploadAttachment,
+    deleteAttachment
   } = useTemplateStore();
   const { addToast } = useToastStore();
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -91,9 +94,32 @@ export function TemplateEditorPage() {
       setShowTestModal(false);
       fetchLogs();
     } catch (err: any) {
-      addToast(`발송 실패: ${err.message}`, "error");
+      // Toast added via store error or local catch
     } finally {
       setIsTestSending(false);
+    }
+  }
+
+  async function handleUpload(file: File) {
+    if (!draftTemplate || draftTemplate.id.startsWith('tpl-')) {
+      addToast("먼저 템플릿을 저장한 후 파일을 업로드할 수 있습니다.", "error");
+      return;
+    }
+    try {
+      await uploadAttachment(draftTemplate.id, file);
+      addToast("파일이 업로드되었습니다.", "success");
+    } catch (err: any) {
+      // Error handled by store
+    }
+  }
+
+  async function handleDeleteAttachment(attachmentId: string) {
+    if (!draftTemplate) return;
+    try {
+      await deleteAttachment(draftTemplate.id, attachmentId);
+      addToast("파일이 삭제되었습니다.", "success");
+    } catch (err: any) {
+      // Error handled by store
     }
   }
 
@@ -105,14 +131,54 @@ export function TemplateEditorPage() {
     }) : null);
   }
 
-  const previewBody = draftTemplate ? applyTemplateVariables(draftTemplate.body, {
+  const mockData = useMemo(() => ({
     name: "박소영",
     companyName: "한빛테크",
     courseName: "스마트팩토리 실무 과정",
     deadline: "2026-05-02",
     contactPhone: "062-710-2896",
     managerName: "김관리",
-  }) : "";
+  }), []);
+
+  const previewSubject = useMemo(() => 
+    draftTemplate ? applyTemplateVariables(draftTemplate.subject, mockData) : "", 
+  [draftTemplate, mockData]);
+
+  const unresolvedVars = useMemo(() => {
+    if (!draftTemplate) return [];
+    const textToCheck = draftTemplate.subject + " " + draftTemplate.body;
+    const parts = textToCheck.split(/({{[a-zA-Z0-9_]+}})/g);
+    const vars = new Set<string>();
+    parts.forEach(part => {
+      if (part.startsWith('{{') && part.endsWith('}}')) {
+        const varName = part.slice(2, -2);
+        if (!Object.keys(mockData).includes(varName)) {
+          vars.add(varName);
+        }
+      }
+    });
+    return Array.from(vars);
+  }, [draftTemplate, mockData]);
+
+  // Function to highlight unresolved variables in preview
+  const renderBodyWithHighlights = (text: string) => {
+    const parts = text.split(/({{[a-zA-Z0-9_]+}})/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('{{') && part.endsWith('}}')) {
+        const varName = part.slice(2, -2);
+        const isResolved = Object.keys(mockData).includes(varName);
+        return (
+          <span 
+            key={i} 
+            className={`px-1 rounded ${isResolved ? 'bg-brand-primary/10 text-brand-primary' : 'bg-error/20 text-error font-black shadow-[0_0_0_1px_rgba(255,0,0,0.3)]'}`}
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
 
   if (isLoading && templates.length === 0) {
     return (
@@ -120,6 +186,20 @@ export function TemplateEditorPage() {
         <div className="w-10 h-10 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  function createNewTemplate() {
+    const newId = `tpl-${Date.now()}`;
+    const newTemplate: EmailTemplate = {
+      id: newId,
+      name: "새 템플릿",
+      audience: "ALL",
+      subject: "새 메일 제목",
+      body: "본문 내용을 입력하세요.",
+      attachments: []
+    };
+    setActiveTemplateId(newId);
+    setDraftTemplate(newTemplate);
   }
 
   return (
@@ -150,8 +230,11 @@ export function TemplateEditorPage() {
             <aside className="template-list" aria-label="템플릿 목록">
               <div className="px-3 mb-4 flex items-center justify-between">
                 <span className="text-[10px] font-black text-disabled uppercase tracking-widest">저장된 템플릿</span>
-                <button className="p-1 text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-all">
-                  <Plus size={14} strokeWidth={3} />
+                <button 
+                  onClick={createNewTemplate}
+                  className="p-1 text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-all"
+                >
+                  <PlusIcon size={14} strokeWidth={3} />
                 </button>
               </div>
               {templates.map((template) => (
@@ -174,7 +257,10 @@ export function TemplateEditorPage() {
                       {template.audience === "INSURED" ? "가입자" : template.audience === "UNINSURED" ? "미가입자" : "전체"}
                     </span>
                     {template.attachments && template.attachments.length > 0 && (
-                      <Paperclip size={10} className="text-disabled" />
+                      <div className="flex items-center gap-1">
+                        <Paperclip size={10} className="text-disabled" />
+                        <span className="text-[10px] text-disabled font-bold">{template.attachments.length}</span>
+                      </div>
                     )}
                   </div>
                 </button>
@@ -234,36 +320,12 @@ export function TemplateEditorPage() {
                         />
                       </label>
 
-                      <div className="space-y-2">
-                        <span className="text-xs font-bold text-tertiary uppercase tracking-wider flex items-center gap-2">
-                          <Paperclip size={14} /> 첨부 파일
-                        </span>
-                        <div className="p-4 bg-surface-subtle border border-border border-dashed rounded-2xl min-h-[80px] flex flex-col items-center justify-center gap-2">
-                          {draftTemplate.attachments && draftTemplate.attachments.length > 0 ? (
-                            <div className="w-full space-y-2">
-                              {draftTemplate.attachments.map((file, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-2 bg-surface rounded-lg border border-border/50">
-                                  <div className="flex items-center gap-2">
-                                    <Paperclip size={12} className="text-brand-primary" />
-                                    <span className="text-xs font-medium text-secondary">{file.filename}</span>
-                                  </div>
-                                  <button 
-                                    onClick={() => setDraftTemplate(prev => prev ? ({
-                                      ...prev,
-                                      attachments: prev.attachments?.filter((_, i) => i !== idx)
-                                    }) : null)}
-                                    className="p-1 text-error hover:bg-error/10 rounded-md transition-all"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-disabled italic">첨부된 파일이 없습니다. (드래그 앤 드롭 준비 중)</p>
-                          )}
-                        </div>
-                      </div>
+                      <AttachmentUploader 
+                        attachments={draftTemplate.attachments || []}
+                        onUpload={handleUpload}
+                        onDelete={handleDeleteAttachment}
+                        isLoading={isLoading}
+                      />
                     </div>
 
                     <div className="p-6 bg-surface border border-border/50 rounded-[24px] space-y-4 shadow-sm">
@@ -304,19 +366,38 @@ export function TemplateEditorPage() {
                           <span className="text-[10px] font-bold text-success">실시간 렌더링 중</span>
                         </div>
                       </div>
-                      <div className="bg-surface rounded-2xl p-6 border border-brand-primary/10 shadow-lg min-h-[400px]">
+                      
+                      {unresolvedVars.length > 0 && (
+                        <div className="flex items-center gap-2 p-3 bg-error/10 text-error rounded-xl border border-error/20">
+                          <AlertCircle size={16} className="shrink-0" />
+                          <span className="text-xs font-bold leading-tight">해결되지 않은 변수가 있습니다: {unresolvedVars.map((v: string) => `{{${v}}}`).join(', ')}. 그대로 발송 시 오류가 발생할 수 있습니다.</span>
+                        </div>
+                      )}
+
+                      <div className="bg-surface rounded-2xl p-6 border border-brand-primary/10 shadow-lg min-h-[400px] flex flex-col">
                         <div className="pb-4 mb-6 border-b border-border/50 space-y-1">
                           <p className="text-[10px] font-bold text-tertiary uppercase">수신: 박소영 (한빛테크)</p>
                           <p className="text-sm font-bold text-primary">
-                            제목: {applyTemplateVariables(draftTemplate.subject, {
-                              name: "박소영",
-                              companyName: "한빛테크"
-                            })}
+                            제목: {previewSubject}
                           </p>
                         </div>
-                        <pre className="text-sm text-secondary font-medium whitespace-pre-wrap leading-relaxed font-sans">
-                          {previewBody}
-                        </pre>
+                        <div className="text-sm text-secondary font-medium whitespace-pre-wrap leading-relaxed font-sans flex-1 overflow-auto custom-scrollbar">
+                          {renderBodyWithHighlights(draftTemplate.body)}
+                        </div>
+                        
+                        {(draftTemplate.attachments?.length || 0) > 0 && (
+                          <div className="mt-6 pt-4 border-t border-border/30">
+                            <p className="text-[10px] font-bold text-tertiary uppercase mb-2">첨부파일 ({draftTemplate.attachments?.length})</p>
+                            <div className="flex flex-wrap gap-2">
+                              {draftTemplate.attachments?.map((att: AttachmentMeta) => (
+                                <div key={att.id} className="flex items-center gap-1.5 px-2 py-1 bg-surface-subtle rounded border border-border/50 text-[10px] font-bold text-secondary">
+                                  <Paperclip size={10} />
+                                  {att.originalName}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -374,16 +455,17 @@ export function TemplateEditorPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-xs font-bold text-secondary">
                           <Clock size={12} className="text-disabled" />
-                          {toDotDate(log.sentAt)} {new Date(log.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {log.sentAt ? `${toDotDate(log.sentAt)} ${new Date(log.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : toDotDate(log.createdAt)}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-xs font-black text-primary uppercase">{log.templateName || "직접 발송"}</td>
                       <td className="px-6 py-4 text-xs font-mono font-bold text-secondary tracking-tight">{log.recipientEmail}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                          log.status === "SENT" ? "bg-success/10 text-success" : "bg-error/10 text-error"
+                          log.status === "sent" ? "bg-success/10 text-success" : 
+                          log.status === "failed" ? "bg-error/10 text-error" : "bg-warning/10 text-warning"
                         }`}>
-                          {log.status === "SENT" ? "성공" : "실패"}
+                          {log.status === "sent" ? "성공" : log.status === "failed" ? "실패" : "대기"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -393,7 +475,7 @@ export function TemplateEditorPage() {
                             {log.errorMessage}
                           </div>
                         ) : (
-                          <span className="text-[10px] font-bold text-tertiary">정상 발송됨</span>
+                          <span className="text-[10px] font-bold text-tertiary">{log.status === "sent" ? "정상 발송됨" : "-"}</span>
                         )}
                       </td>
                     </tr>
@@ -455,14 +537,5 @@ export function TemplateEditorPage() {
         </div>
       )}
     </>
-  );
-}
-
-function Plus({ size, strokeWidth }: { size: number, strokeWidth?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"></line>
-      <line x1="5" y1="12" x2="19" y2="12"></line>
-    </svg>
   );
 }

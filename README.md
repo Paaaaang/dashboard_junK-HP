@@ -31,6 +31,13 @@ npm install
 - **Backend**: `backend/.env` 파일에 `DATABASE_URL`(Supabase PostgreSQL 연결 문자열)을 설정하세요.
 - **Frontend**: `frontend/.env` 파일에 `VITE_API_URL=http://127.0.0.1:3001/api`를 설정하세요.
 
+### 📧 이메일 발송 설정 (네이버 SMTP)
+이메일 기능을 사용하려면 다음 설정이 필요합니다:
+1. 네이버 메일 로그인 > 환경 설정 > **POP3/IMAP 설정** > 'IMAP/SMTP 사용'을 **사용함**으로 변경
+2. 네이버 계정 보안 설정 > **2단계 인증** 사용 설정
+3. **애플리케이션 비밀번호** 발급 (기기 종류: 기타)
+4. 발급된 비밀번호를 `backend/.env`의 `NAVER_APP_PASSWORD`에 입력
+
 ### 3단계: 인프라 서비스 시작
 
 ```bash
