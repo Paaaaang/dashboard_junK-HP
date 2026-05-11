@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import apiClient from "../api/client";
+import { supabase } from "../api/supabase";
 
 export interface DashboardSummaryCard {
   label: string;
@@ -48,10 +49,11 @@ interface StatsStore {
   isLoading: boolean;
   error: string | null;
   fetchStats: () => Promise<void>;
+  subscribeToStats: () => () => void;
   clearError: () => void;
 }
 
-export const useStatsStore = create<StatsStore>((set) => ({
+export const useStatsStore = create<StatsStore>((set, get) => ({
   summary: [],
   charts: null,
   recentActivity: [],
@@ -73,5 +75,36 @@ export const useStatsStore = create<StatsStore>((set) => ({
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });
     }
+  },
+
+  subscribeToStats: () => {
+    // Listen to changes in major tables to refresh dashboard stats
+    const channel = supabase
+      .channel('public:stats')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'companies' },
+        () => get().fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'participants' },
+        () => get().fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'enrollments' },
+        () => get().fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'system_logs' },
+        () => get().fetchStats()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 }));

@@ -90,7 +90,8 @@ async function processQueue(jobId: string) {
       const sendOptions: SendOptions = {
         to: recipient.email,
         subject: subject || template.name,
-        text: body,
+        text: body.replace(/<[^>]*>?/gm, ''),
+        html: body,
         attachments: template.attachments // Template attachments are passed here
       };
 

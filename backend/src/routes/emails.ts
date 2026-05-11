@@ -62,7 +62,8 @@ router.post('/test', adminAuth, async (req: Request, res: Response) => {
     const result = await sendEmail({
       to,
       subject,
-      text: body,
+      text: body.replace(/<[^>]*>?/gm, ''),
+      html: body,
       attachments
     });
     

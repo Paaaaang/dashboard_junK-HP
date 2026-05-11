@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import apiClient from "../api/client";
+import { supabase } from "../api/supabase";
 import type { CompanyRecord } from "../types/models";
 
 interface CompanyStore {
@@ -11,10 +12,11 @@ interface CompanyStore {
   upsertCompany: (company: CompanyRecord) => Promise<void>;
   batchUpsertCompanies: (companies: CompanyRecord[]) => Promise<void>;
   deleteCompanies: (ids: string[]) => Promise<void>;
+  subscribeToCompanies: () => () => void;
   clearError: () => void;
 }
 
-export const useCompanyStore = create<CompanyStore>((set, _get) => ({
+export const useCompanyStore = create<CompanyStore>((set, get) => ({
   companies: [],
   isLoading: false,
   error: null,
@@ -86,9 +88,6 @@ export const useCompanyStore = create<CompanyStore>((set, _get) => ({
   deleteCompanies: async (ids) => {
     set({ isLoading: true, error: null });
     try {
-      // If the backend supports batch delete, use it. Otherwise, loop.
-      // Currently the backend has DELETE /api/v1/companies/:id
-      // We'll use Promise.all for now, or update backend to support batch delete.
       await Promise.all(ids.map(id => apiClient.delete(`v1/companies/${id}`)));
 
       set((state) => ({
@@ -99,6 +98,23 @@ export const useCompanyStore = create<CompanyStore>((set, _get) => ({
       set({ error: err.response?.data?.error || err.message, isLoading: false });
       throw err;
     }
+  },
+
+  subscribeToCompanies: () => {
+    const channel = supabase
+      .channel('public:companies')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'companies' },
+        () => {
+          get().fetchCompanies();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 }));
 

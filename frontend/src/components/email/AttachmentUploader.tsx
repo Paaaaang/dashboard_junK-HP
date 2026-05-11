@@ -21,7 +21,6 @@ export function AttachmentUploader({
   const totalSize = attachments.reduce((sum, att) => sum + att.size, 0);
   const totalSizeMB = totalSize / (1024 * 1024);
   const sizeLimitMB = 25;
-  const recommendedLimitMB = 18;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -45,79 +44,69 @@ export function AttachmentUploader({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs font-bold text-tertiary uppercase tracking-wider flex items-center gap-2">
-          <Paperclip size={14} /> 첨부 파일 ({attachments.length})
-        </span>
-        <span className={`text-[10px] font-bold ${totalSizeMB > recommendedLimitMB ? 'text-warning' : 'text-disabled'}`}>
-          총 용량: {totalSizeMB.toFixed(2)}MB / {sizeLimitMB}MB
-        </span>
-      </div>
-
-      <div 
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`
-          relative p-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all
-          ${isDragging ? 'border-brand-primary bg-brand-primary/5' : 'border-border/50 bg-surface-subtle hover:border-brand-primary/30'}
-          ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
-      >
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileSelect} 
-          className="hidden" 
-          multiple 
-        />
-        <UploadCloud size={24} className={isDragging ? 'text-brand-primary' : 'text-disabled'} />
-        <p className="text-xs font-bold text-secondary">
-          {isDragging ? '여기에 놓으세요' : '파일을 드래그하거나 클릭하여 업로드'}
-        </p>
-        <p className="text-[10px] text-disabled italic text-center">
-          최대 {sizeLimitMB}MB (18MB 이하 권장)<br/>
-          실행 파일(.exe, .bat 등)은 업로드가 차단됩니다.
-        </p>
-      </div>
-
-      {totalSizeMB > recommendedLimitMB && totalSizeMB <= sizeLimitMB && (
-        <div className="flex items-center gap-2 p-2 bg-warning/10 text-warning rounded-lg border border-warning/20">
-          <AlertCircle size={14} />
-          <span className="text-[10px] font-bold">권장 용량(18MB)을 초과했습니다. 발송 성공률이 낮아질 수 있습니다.</span>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Compact Upload Trigger */}
+        <div 
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`
+            h-9 px-4 border-2 border-dashed rounded-xl flex items-center gap-2 cursor-pointer transition-all
+            ${isDragging ? 'border-brand-primary bg-brand-primary/5' : 'border-border/40 bg-surface-subtle hover:border-brand-primary/40'}
+            ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
+        >
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileSelect} 
+            className="hidden" 
+            multiple 
+          />
+          <UploadCloud size={14} className={isDragging ? 'text-brand-primary' : 'text-tertiary'} />
+          <span className="text-[11px] font-black text-secondary">
+            {isDragging ? '여기에 드롭' : '파일 추가'}
+          </span>
         </div>
-      )}
 
-      {totalSizeMB > sizeLimitMB && (
-        <div className="flex items-center gap-2 p-2 bg-error/10 text-error rounded-lg border border-error/20">
-          <AlertCircle size={14} />
-          <span className="text-[10px] font-bold">제한 용량(25MB)을 초과했습니다. 일부 파일을 삭제해야 발송이 가능합니다.</span>
-        </div>
-      )}
-
-      {attachments.length > 0 && (
-        <div className="grid grid-cols-1 gap-2">
+        {/* Attachment List (Inline) */}
+        <div className="flex flex-wrap items-center gap-1.5 flex-1">
           {attachments.map((att) => (
-            <div key={att.id} className="flex items-center justify-between p-3 bg-surface rounded-xl border border-border/50 group hover:border-brand-primary/30 transition-all">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="p-1.5 bg-brand-primary/10 text-brand-primary rounded-lg">
-                  <Paperclip size={14} />
-                </div>
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-xs font-bold text-primary truncate">{att.originalName}</span>
-                  <span className="text-[10px] text-disabled font-medium">{(att.size / 1024).toFixed(1)} KB</span>
-                </div>
-              </div>
+            <div key={att.id} className="group flex items-center gap-2 px-2.5 py-1 bg-surface border border-border/60 rounded-lg shadow-sm hover:border-brand-primary/30 transition-all">
+              <Paperclip size={10} className="text-tertiary" />
+              <span className="text-[10px] font-bold text-primary max-w-[120px] truncate">{att.originalName}</span>
+              <span className="text-[9px] text-disabled font-medium">{(att.size / 1024).toFixed(0)}K</span>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(att.id); }}
-                className="p-1.5 text-error hover:bg-error/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                className="p-1 text-disabled hover:text-error hover:bg-error/5 rounded-md transition-all ml-1"
+                title="삭제"
               >
-                <Trash2 size={16} />
+                <Trash2 size={12} />
               </button>
             </div>
           ))}
+          
+          {attachments.length === 0 && (
+            <span className="text-[10px] font-bold text-disabled italic ml-1">첨부된 파일이 없습니다.</span>
+          )}
+        </div>
+
+        {/* Capacity Info */}
+        {attachments.length > 0 && (
+          <div className="ml-auto px-2 py-1 bg-surface-subtle/50 rounded-lg border border-border/30">
+            <span className={`text-[9px] font-black uppercase tracking-tighter ${totalSizeMB > 18 ? 'text-warning' : 'text-disabled'}`}>
+              {totalSizeMB.toFixed(1)} / {sizeLimitMB}MB
+            </span>
+          </div>
+        )}
+      </div>
+
+      {totalSizeMB > sizeLimitMB && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-error/5 text-error rounded-lg border border-error/10 animate-pulse">
+          <AlertCircle size={12} />
+          <span className="text-[9px] font-black uppercase tracking-wider">용량 초과! 발송 불가 (25MB 제한)</span>
         </div>
       )}
     </div>

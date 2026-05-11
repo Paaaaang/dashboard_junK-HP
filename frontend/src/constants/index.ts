@@ -136,13 +136,18 @@ export const initialTemplates: EmailTemplate[] = [
   },
 ];
 
-export const templateVariables = [
-  "{{companyName}}",
-  "{{courseName}}",
-  "{{deadline}}",
-  "{{contactPhone}}",
-  "{{managerName}}",
+export const templateVariableMetadata = [
+  { key: "name", label: "수신자명", description: "참여자 또는 담당자의 이름" },
+  { key: "companyName", label: "기업명", description: "참여자가 소속된 기업 명칭" },
+  { key: "courseName", label: "과정구분", description: "교육의 대분류 (예: 지원비과정)" },
+  { key: "subCourseName", label: "세부과정명", description: "실제 교육 프로그램 명칭" },
+  { key: "courseDate", label: "교육일정", description: "교육이 진행되는 날짜 또는 회차" },
+  { key: "deadline", label: "제출기한", description: "신청서 또는 서류 제출 마감일" },
+  { key: "contactPhone", label: "문의처", description: "교육 운영 담당자 연락처" },
+  { key: "managerName", label: "관리자명", description: "메일을 발송하는 운영자 이름" },
 ];
+
+export const templateVariables = templateVariableMetadata.map(v => `{{${v.key}}}`);
 
 // 유틸리티 함수
 export function createEmptyCompany(): CompanyRecord {

@@ -229,48 +229,40 @@
 
 
 
+### [P1-13] 고도화된 이메일 에디터 UX (Rich Text & Precision)
+
+**현재 상태**: 완료됨 (2026-05-11).
+
+**작업 내용**:
+- [x] **플로팅 툴바 시각적 선명도 개선**: `scale` 트랜스폼 제거 및 네이티브 CSS 패딩/아이콘 최적화를 통해 흐림(Blurry) 현상 완벽 해결.
+- [x] **Caret-Synced 포지셔닝**: 텍스트 선택 시작 지점의 정확한 좌표를 계산하여 툴바를 배치하고, 에디터 스크롤 시 툴바가 선택 영역을 실시간으로 추적하도록 구현.
+- [x] **서식 토글(Toggle) 및 중복 방지**: 동일 서식 재클릭 시 취소 기능, 중복 태그 삽입 방지 로직, 멀티라인(개행) 포함 서식 렌더링 지원.
+- [x] **전문 단축키 통합**: Ctrl+B(굵게), Ctrl+I(기울임), Ctrl+U(밑줄), Ctrl+S(저장), Ctrl+Z/Y(실행취소/다시실행) 완벽 지원.
+
+---
+
+## [NEW] 내일 진행할 핵심 작업 (2026-05-12 예정)
+
+**작업 목표**:
+1. [x] **대시보드 실시간 연동 (Realtime)**: Supabase Realtime을 활용하여 다중 사용자 환경에서 데이터 변경 시 화면 새로고침 없이 즉각 반영되도록 개선.
+2. [x] **인증 및 보안 (Auth)**: JWT 기반 로그인 및 API 엔드포인트 보호, 프론트엔드 라우터 가드 적용.
+3. [x] **데이터 백업 및 스냅샷**: `enrollments`, `email_logs` 등 중요 데이터의 자동화된 백업 파이프라인 구축. (백업 스크립트 `npm run backup` 구현 완료)
+
 ---
 
 ### [P1-12] 이메일 발송 시스템 — 네이버 SMTP 기반 외부메일 연동
 
-**현재 상태**: 설계 완료. 상세 구현 계획 수립 완료. 구현 단계 시작 준비 중.
+**현재 상태**: 완료됨 (2026-05-11).
 
 **작업 목표**:
-1. [ ] **백엔드 SMTP 메일 서비스 모듈** 구현
-   - `nodemailer` 라이브러리 추가 및 네이버 SMTP 설정 (smtp.naver.com:465)
-   - 환경변수 설정: `NAVER_EMAIL`, `NAVER_APP_PASSWORD`
-   - 첨부파일 처리 로직 (최대 25MB)
-   - 메일 서비스 파일: `backend/src/services/mailService.ts`
-
-2. [ ] **EmailTemplate 모델 확장**
-   - DB 스키마에 `attachments` 필드 추가
-   - `createdAt`, `updatedAt` 타임스탐프 추가 (필요시)
-
-3. [ ] **메일 발송 API 엔드포인트** 구현
-   - `POST /api/v1/emails/send` - 단일/복수 발송
-   - `POST /api/v1/emails/test` - 테스트 발송
-   - `GET /api/v1/emails/logs` - 발송 이력 조회
-   - `email_logs` 테이블에 발송 기록 저장
-
-4. [ ] **TemplateEditor 테스트 발송 UI** 추가
-   - "테스트 발송" 버튼 + 모달
-   - 수신 이메일 입력 + 첨부파일 업로드 기능
-
-5. [ ] **첨부파일 관리 섹션** 추가
-   - TemplateEditor에 드래그 앤 드롭 UI
-   - 파일 크기/형식 검증 (프론트엔드)
-
-6. [ ] **참여자 일괄 발송 기능** 구현
-   - ParticipantsPage에서 체크박스 선택 → "메일 발송" 버튼
-   - 템플릿 선택 + 변수 입력 + 발송 모달
-   - 수신 그룹: 회사 담당자, 교육 참여자, 외부 이해관계자
-
-7. [ ] **Template Store 업데이트**
-   - `attachments` 필드 상태 관리
-
-8. [ ] **타입 정의 확장**
-   - `EmailTemplate.attachments` 필드
-   - `EmailLog` 인터페이스 정의
+1. [x] **백엔드 SMTP 메일 서비스 모듈** 구현
+2. [x] **EmailTemplate 모델 확장**
+3. [x] **메일 발송 API 엔드포인트** 구현
+4. [x] **TemplateEditor 테스트 발송 UI** 추가
+5. [x] **첨부파일 관리 섹션** 추가
+6. [x] **참여자 일괄 발송 기능** 구현
+7. [x] **Template Store 업데이트**
+8. [x] **타입 정의 확장**
 
 **설계 상세**:
 - **발송 형식**: Plain Text 유지 (HTML 미지원)
@@ -289,12 +281,12 @@
 - `frontend/src/types/models.ts` - 타입 정의
 
 **Verification**:
-- [ ] `POST /api/v1/emails/test` 호출 → 테스트 메일 수신 확인 (Naver 계정)
-- [ ] 첨부파일 포함 발송 테스트
-- [ ] 복수 수신자 일괄 발송 테스트
-- [ ] 템플릿 에디터에서 첨부파일 업로드 → 저장 확인
-- [ ] 참여자 선택 → 일괄 발송 → 로그 조회
-- [ ] 변수 치환 정상 작동 (회사명, 참여자명 등)
+- [x] `POST /api/v1/emails/test` 호출 → 테스트 메일 수신 확인 (Naver 계정)
+- [x] 첨부파일 포함 발송 테스트
+- [x] 복수 수신자 일괄 발송 테스트
+- [x] 템플릿 에디터에서 첨부파일 업로드 → 저장 확인
+- [x] 참여자 선택 → 일괄 발송 → 로그 조회
+- [x] 변수 치환 정상 작동 (회사명, 참여자명 등)
 
 ---
 
@@ -390,254 +382,3 @@
 
 **현재 상태**: 완료됨. (SOLID 아키텍처 적용)
 
----
-[P4]
-```markdown
-# Task: 이메일 발송 시스템 구현 (네이버 SMTP 기반)
-
-## Context
-
-KHP Dashboard에 교육 신청 안내 메일을 발송하는 시스템을 구현합니다. 설계는 완료되었고, 아래 계획을 **순서대로** 구현해주세요.
-
-**기술 스택**
-- 백엔드: Node.js + TypeScript, Express, nodemailer
-- 프론트엔드: React + TypeScript + Tailwind (Layout-only) + CSS Variables
-- DB: 기존 `backend/src/db.ts` 스키마 확장
-- 디자인: 기존 `master.md` 디자인 시스템 + A-2 전략 (색상/그림자/컴포넌트는 CSS 클래스, Tailwind는 layout만)
-
-**중요 제약**
-- 네이버 SMTP는 일일 발송 한도 + 분당 rate limit 존재 → 청크/인터벌 필수
-- 25MB는 메일 전체 크기 (Base64 후) → raw 파일은 18MB 권장
-- 일괄 발송은 **반드시 비동기**로 처리 (동기 시 API 타임아웃)
-- 발송 API는 **관리자 인증 필수** (스팸 도구화 방지)
-
----
-
-## 사전 확인 사항 (구현 시작 전 사용자에게 반드시 질문)
-
-다음 5가지가 결정되어야 구현 가능합니다. 답변을 받기 전까지 코드 작성 금지.
-
-1. 발송 계정: 단일 운영 계정만 사용하는가?
-2. 첨부파일 저장: 로컬 파일시스템(`backend/uploads/email-attachments/`)으로 진행해도 되는가?
-3. 발송 큐: 별도 큐 라이브러리(BullMQ) 없이 메모리 기반 단순 큐로 진행해도 되는가?
-4. 일괄 발송 청크: 10통씩, 1.5초 인터벌로 시작해도 되는가?
-5. 로그 보존: `email_logs` 6개월 / 첨부파일 30일로 진행해도 되는가?
-
----
-
-## Phase 0: 환경 준비
-
-- [ ] `.env.example`에 다음 추가
-  ```
-  NAVER_EMAIL=
-  NAVER_APP_PASSWORD=
-  NAVER_SMTP_HOST=smtp.naver.com
-  NAVER_SMTP_PORT=465
-  EMAIL_DEV_MODE=true   # true면 모든 발송이 NAVER_EMAIL로만 강제 (실수 방지)
-  ```
-- [ ] `.env`가 `.gitignore`에 있는지 확인
-- [ ] README에 네이버 메일 설정 안내 추가 (POP3/SMTP 활성화, 2단계 인증, 앱 비밀번호 발급)
-
----
-
-## Phase 1: 백엔드 - 데이터 모델
-
-`backend/src/db.ts` 확장:
-
-- [ ] **`email_templates` 확장**
-  - `attachments` (JSON): `[{ id, filename, originalName, size, mimeType, path }]`
-  - `created_at`, `updated_at`
-
-- [ ] **`email_logs` 신규**
-  ```
-  id (PK)
-  job_id (FK to email_jobs, nullable)
-  template_id (FK, nullable)
-  sender_email
-  recipient_email
-  subject
-  body_rendered
-  status: 'pending' | 'sent' | 'failed'
-  error_message (nullable)
-  attachments_meta (JSON)
-  sent_at (nullable)
-  created_at
-  ```
-
-- [ ] **`email_jobs` 신규**
-  ```
-  id (PK, UUID)
-  template_id (FK)
-  total_count
-  sent_count
-  failed_count
-  status: 'queued' | 'running' | 'completed' | 'failed'
-  created_by
-  created_at
-  completed_at (nullable)
-  ```
-
----
-
-## Phase 2: 백엔드 - 메일 서비스
-
-### 2-1. `backend/src/services/mailService.ts`
-
-```typescript
-export async function sendEmail(options: SendOptions): Promise<SendResult>
-export function renderTemplate(template: string, vars: Record<string, string>): {
-  rendered: string;
-  unresolvedVars: string[];
-}
-export function validateAttachments(files: AttachmentInput[]): ValidationResult
-```
-
-요구사항:
-- nodemailer SMTP (smtp.naver.com:465, secure:true, pool:true)
-- `EMAIL_DEV_MODE=true`이면 모든 수신자를 `NAVER_EMAIL`로 강제 + subject에 `[DEV]` 프리픽스
-- 재시도: 일시적 실패 시 최대 3회 지수 백오프 (1s, 2s, 4s)
-- 첨부파일 검증:
-  - MIME 화이트리스트 (pdf, hwp, docx, xlsx, pptx, png, jpg, zip 등 / 실행파일 차단)
-  - 전체 크기(Base64 후) ≤ 25MB
-  - 한글 파일명 RFC 2047 인코딩
-- 변수 치환: `{{varName}}` 패턴, 미치환 변수 감지
-
-### 2-2. `backend/src/services/emailQueue.ts`
-
-메모리 기반 단순 큐:
-- `enqueueBatch(templateId, recipients, variables): jobId` — 즉시 jobId 반환
-- 백그라운드에서 청크 단위 발송 (10통씩, 1.5초 인터벌)
-- 각 발송 결과를 `email_logs`에 기록
-- `email_jobs.sent_count` / `failed_count` 실시간 업데이트
-- `getJobStatus(jobId)` 제공
-
----
-
-## Phase 3: 백엔드 - API 엔드포인트
-
-`backend/src/routes/emails.ts` 신규 생성, `index.ts`에 등록.
-
-모든 엔드포인트에 **관리자 인증 미들웨어** + **rate limiting** 적용 (발송 API 분당 5회, 일괄 발송 분당 1회).
-
-- [ ] `POST /api/v1/emails/preview` — 변수 치환 미리보기 (발송 X)
-- [ ] `POST /api/v1/emails/test` — 단일 테스트 발송 (동기)
-- [ ] `POST /api/v1/emails/send` — 일괄 발송 (즉시 `{ jobId }` 반환, 202)
-- [ ] `GET /api/v1/emails/jobs/:jobId` — 진행 상황 조회
-- [ ] `GET /api/v1/emails/logs` — 이력 조회 (페이징, 필터)
-- [ ] `POST /api/v1/emails/templates/:id/attachments` — 업로드 (multer)
-- [ ] `DELETE /api/v1/emails/templates/:id/attachments/:attachmentId`
-
----
-
-## Phase 4: 프론트엔드 - 타입 & Store
-
-### 4-1. `frontend/src/types/models.ts`
-
-```typescript
-interface AttachmentMeta {
-  id: string;
-  filename: string;
-  originalName: string;
-  size: number;
-  mimeType: string;
-}
-
-interface EmailTemplate {
-  // 기존 필드 +
-  attachments: AttachmentMeta[];
-}
-
-interface EmailLog { /* DB 스키마 대응 */ }
-interface EmailJob { /* DB 스키마 대응 */ }
-interface SendResult { success: boolean; recipient: string; error?: string; }
-```
-
-### 4-2. `useTemplateStore.ts`
-- `attachments` 필드 관리 (추가/삭제, 낙관적 업데이트)
-
----
-
-## Phase 5: 프론트엔드 - TemplateEditor
-
-`frontend/src/pages/TemplateEditor.tsx` 수정:
-
-- [ ] **첨부파일 섹션** (`components/email/AttachmentUploader.tsx` 신규)
-  - 드래그 앤 드롭, 파일 목록, 전체 크기 표시
-  - 18MB 권장 / 25MB 한도 경고
-  - 차단된 확장자 즉시 안내
-
-- [ ] **미리보기 강화**
-  - 샘플/선택 참여자 데이터로 변수 치환
-  - 미치환 변수는 빨간 배경 하이라이트
-
-- [ ] **테스트 발송 버튼 + 모달**
-  - 수신 이메일 입력 (기본값: 로그인 사용자)
-  - 미리보기 → 발송 → 결과 토스트
-
----
-
-## Phase 6: 프론트엔드 - 일괄 발송 (ParticipantsPage)
-
-`frontend/src/pages/participants/ParticipantsPage.tsx` 수정:
-
-- [ ] **선택 → 발송 흐름**
-  - 체크박스 다중 선택 → "메일 발송" 버튼 활성화
-  - 템플릿 선택 → 변수 자동 매핑
-
-- [ ] **발송 확인 모달** (`components/email/SendConfirmModal.tsx` 신규)
-  - 수신자 수, 템플릿명, 첨부파일 목록 명시
-  - **"테스트 발송(본인)"** 과 **"실제 발송(N명)"** 색상 구분
-    - 테스트: `.btn-secondary` (회색 계열)
-    - 실제: `.btn-cta` (CTA 그린) + 수신자 수 강조
-  - 실제 발송은 한 번 더 확인 ("정말 N명에게 발송하시겠습니까?")
-
-- [ ] **진행률 UI**
-  - jobId 폴링 (2초 간격)
-  - 진행 바 + "23/50 발송 완료"
-  - 완료 후 성공/실패 요약 + 실패 건 재발송 버튼
-
-- [ ] **발송 이력 페이지** (`pages/EmailLogsPage.tsx` 신규)
-  - 라우트: `/emails/logs`
-  - 필터: 날짜 범위, 템플릿, 상태
-  - 행 클릭 시 상세(에러 메시지)
-
----
-
-## Phase 7: 검증
-
-### 기능 테스트
-- [ ] 테스트 발송 → 본인 네이버 계정 수신
-- [ ] 첨부파일 1MB / 10MB / 25MB 경계 테스트
-- [ ] 한글 파일명 정상 수신
-- [ ] 변수 치환, 미치환 경고 표시
-- [ ] 일괄 발송 10명 진행률 실시간 업데이트
-- [ ] 일부 실패 시 재발송 동작
-- [ ] 발송 이력 조회/필터링
-
-### 보안/실패 테스트
-- [ ] 비인증 호출 → 401
-- [ ] Rate limit 초과 → 429
-- [ ] `.exe` 첨부 시도 → 차단
-- [ ] 25MB 초과 → 차단
-- [ ] `EMAIL_DEV_MODE=true` 시 모든 메일이 본인에게만 발송
-
----
-
-## 작업 진행 방식
-
-1. **Phase 0의 사전 확인 사항 5가지**부터 사용자에게 질문
-2. 답변 받은 후 Phase 0 → Phase 7 순서대로 진행
-3. 각 Phase 완료 시:
-   - 변경 파일 목록 보고
-   - 다음 Phase로 넘어가기 전 확인 요청
-4. 기존 `CompanyManagementPage`의 디자인 패턴을 참고
-
-## 절대 하지 말아야 할 것
-
-- 동기식 일괄 발송 구현
-- 인증 미들웨어 없는 발송 API
-- `bg-blue-500`, `shadow-lg` 같은 Tailwind 색상/그림자 utility 사용
-- 환경변수 하드코딩
-- 한 Phase가 완료되지 않은 상태에서 다음 Phase 진행
-- 사용자가 5가지 사전 확인 사항에 답하기 전에 코드 작성 시작
-```

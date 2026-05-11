@@ -1,0 +1,16 @@
+[
+  {
+    "id": "63e1ca93-22e5-4102-9786-638a6366017a",
+    "template_id": null,
+    "recipient_email": "play0414",
+    "subject": "E2E Test Subject: Self Test",
+    "status": "failed",
+    "error_message": "Invalid login: 535 5.7.1 Username and Password not accepted AApU3nmHSu+soRp9OH4YuA - nsmtp",
+    "sent_at": "2026-05-08T05:57:53.599Z",
+    "job_id": null,
+    "sender_email": null,
+    "body_rendered": "Hello Self Test,\nThis is an automated E2E test email.\nBest,\nAdmin",
+    "attachments_meta": [],
+    "created_at": "2026-05-08T05:57:53.599Z"
+  }
+]

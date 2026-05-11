@@ -13,7 +13,7 @@ async function getTransporter() {
 
   return nodemailer.createTransport({
     host: config.host || process.env.NAVER_SMTP_HOST || 'smtp.naver.com',
-    port: parseInt(process.env.NAVER_SMTP_PORT || '465'),
+    port: parseInt(config.port || process.env.NAVER_SMTP_PORT || '465', 10),
     secure: true, // use SSL
     pool: true,
     maxConnections: 5,

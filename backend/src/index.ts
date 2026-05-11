@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import pool, { query } from './db';
 import emailRoutes from './routes/emails';
 import settingsRoutes from './routes/settings';
+import authRoutes from './routes/auth';
+import { authenticateToken } from './middleware/auth';
 
 dotenv.config();
 
@@ -17,11 +19,10 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api/v1/emails', emailRoutes);
-app.use('/api/v1/settings', settingsRoutes);
+// Public Routes
+app.use('/api/v1/auth', authRoutes);
 
-// Health check route
+// Health check route (Public)
 app.get('/api/health', async (req: Request, res: Response) => {
   try {
     const dbCheck = await query('SELECT NOW()');
@@ -40,8 +41,12 @@ app.get('/api/health', async (req: Request, res: Response) => {
   }
 });
 
+// Protected Routes
+app.use('/api/v1/emails', authenticateToken, emailRoutes);
+app.use('/api/v1/settings', authenticateToken, settingsRoutes);
+
 // Stats API
-app.get('/api/v1/stats', async (req: Request, res: Response) => {
+app.get('/api/v1/stats', authenticateToken, async (req: Request, res: Response) => {
   try {
     const [
       companiesRes, 

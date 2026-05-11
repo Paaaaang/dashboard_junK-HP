@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import apiClient from "../api/client";
+import { supabase } from "../api/supabase";
 import type { EmailTemplate, EmailLog, EmailJob, AttachmentMeta } from "../types/models";
 
 interface SendRecipient {
@@ -22,6 +23,7 @@ interface TemplateStore {
   uploadAttachment: (templateId: string, file: File) => Promise<AttachmentMeta>;
   deleteAttachment: (templateId: string, attachmentId: string) => Promise<void>;
   fetchLogs: (params?: any) => Promise<void>;
+  subscribeToTemplates: () => () => void;
   clearError: () => void;
   setActiveJob: (job: EmailJob | null) => void;
 }
@@ -182,5 +184,35 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });
     }
+  },
+
+  subscribeToTemplates: () => {
+    const channel = supabase
+      .channel('public:templates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'email_templates' },
+        () => get().fetchTemplates()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'email_logs' },
+        () => get().fetchLogs()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'email_jobs' },
+        (payload) => {
+          const { new: newJob } = payload as any;
+          if (get().activeJob?.id === newJob.id) {
+            set({ activeJob: newJob });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 }));

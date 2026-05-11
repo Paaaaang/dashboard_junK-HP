@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Mail, Shield, Save, ExternalLink, RefreshCw, Server, CheckCircle2 } from "lucide-react";
+import { X, Shield, Save, RefreshCw, Server, CheckCircle2 } from "lucide-react";
 import apiClient from "../../api/client";
 import { useToastStore } from "../../stores/useToastStore";
 import { ModalPortal } from "../Modal";
@@ -13,9 +13,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const [naverEmail, setNaverEmail] = useState("");
   const [naverPassword, setNaverPassword] = useState("");
   const [smtpHost, setNaverHost] = useState("smtp.naver.com"); // Default
-  const [importKeyword, setImportKeyword] = useState("");
+  const [smtpPort, setSmtpPort] = useState("465"); // Default
   const [isSaving, setIsSaving] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<"idle" | "success" | "error">("idle");
@@ -28,9 +27,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           setNaverEmail(data.naver_smtp.email || "");
           setNaverPassword(data.naver_smtp.password || "");
           setNaverHost(data.naver_smtp.host || "smtp.naver.com");
-        }
-        if (data.mail_import) {
-          setImportKeyword(data.mail_import.keyword || "");
+          setSmtpPort(data.naver_smtp.port || "465");
         }
       } catch (err) {
         addToast("설정을 불러오지 못했습니다.", "error");
@@ -42,8 +39,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   }, [addToast]);
 
   const handleTestConnection = async () => {
-    if (!naverEmail || !naverPassword || !smtpHost) {
-      addToast("테스트를 위해 모든 정보(아이디, 비밀번호, 서버)를 입력해주세요.", "error");
+    if (!naverEmail || !naverPassword || !smtpHost || !smtpPort) {
+      addToast("테스트를 위해 모든 정보(아이디, 비밀번호, 서버, 포트)를 입력해주세요.", "error");
       return;
     }
     setIsTesting(true);
@@ -51,6 +48,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     try {
       await apiClient.post("v1/settings/smtp/test", {
         host: smtpHost,
+        port: parseInt(smtpPort, 10),
         email: naverEmail,
         password: naverPassword
       });
@@ -65,18 +63,15 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   };
 
   const handleSave = async () => {
-    if (!naverEmail || !naverPassword || !smtpHost) {
-      addToast("필수 입력란(아이디, 비밀번호, 서버 주소)을 모두 입력해 주세요.", "error");
+    if (!naverEmail || !naverPassword || !smtpHost || !smtpPort) {
+      addToast("필수 입력란(아이디, 비밀번호, 서버 주소, 포트)을 모두 입력해 주세요.", "error");
       return;
     }
     setIsSaving(true);
     try {
       await Promise.all([
         apiClient.put("v1/settings/naver_smtp", { 
-          value: { email: naverEmail, password: naverPassword, host: smtpHost } 
-        }),
-        apiClient.put("v1/settings/mail_import", { 
-          value: { keyword: importKeyword } 
+          value: { email: naverEmail, password: naverPassword, host: smtpHost, port: smtpPort } 
         })
       ]);
       addToast("환경 설정이 저장되었습니다.", "success");
@@ -88,21 +83,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
-  const handleScan = async () => {
-    setIsScanning(true);
-    try {
-      const { data } = await apiClient.post("v1/settings/import/scan");
-      addToast(`${data.count}건의 새로운 메일을 확인했습니다.`, "info");
-    } catch (err: any) {
-      addToast(`스캔 실패: ${err.response?.data?.error || err.message}`, "error");
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
   return (
-    <ModalPortal>
-      <div className="fixed inset-0 z-[300] flex items-start justify-center p-4 overflow-y-auto animate-in fade-in duration-200 pt-8">
+    <ModalPortal>      <div className="fixed inset-0 z-[300] flex items-start justify-center p-4 overflow-y-auto animate-in fade-in duration-200 pt-8">
         <div className="bg-surface rounded-[32px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col flex-shrink-0 animate-in zoom-in-95 duration-200">
         <header className="px-8 py-6 border-b border-border/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -130,16 +112,28 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   <Server size={14} /> 발송/수신 서버 및 계정 (필수)
                 </h4>
                 <div className="grid gap-4">
-                  <label className="field">
-                    서버 주소 (ex: smtp.naver.com)
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2.5 bg-surface-subtle border border-border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
-                      placeholder="smtp.naver.com"
-                      value={smtpHost}
-                      onChange={(e) => setNaverHost(e.target.value)}
-                    />
-                  </label>
+                  <div className="grid grid-cols-[2fr_1fr] gap-4">
+                    <label className="field">
+                      서버 주소 (ex: smtp.naver.com)
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2.5 bg-surface-subtle border border-border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                        placeholder="smtp.naver.com"
+                        value={smtpHost}
+                        onChange={(e) => setNaverHost(e.target.value)}
+                      />
+                    </label>
+                    <label className="field">
+                      포트
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2.5 bg-surface-subtle border border-border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                        placeholder="465"
+                        value={smtpPort}
+                        onChange={(e) => setSmtpPort(e.target.value)}
+                      />
+                    </label>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="field">
                       네이버 아이디 (이메일)
@@ -165,7 +159,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   <div className="flex justify-end">
                     <button
                       onClick={handleTestConnection}
-                      disabled={isTesting || !naverEmail || !naverPassword || !smtpHost}
+                      disabled={isTesting || !naverEmail || !naverPassword || !smtpHost || !smtpPort}
                       className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
                         testResult === "success" 
                           ? "bg-green-500/10 text-green-600 border border-green-500/20"
@@ -180,38 +174,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   </div>
                 </div>
                 <p className="text-[10px] text-tertiary leading-relaxed italic">
-                  * 발송(SMTP: 465) 및 가져오기(IMAP: 993) 공통 계정으로 사용됩니다.
+                  * 발송 공통 계정으로 사용됩니다.
                 </p>
-              </section>
-
-              {/* External Mail Import */}
-              <section className="space-y-4">
-                <h4 className="text-xs font-black text-tertiary uppercase tracking-widest flex items-center gap-2">
-                  <Mail size={14} /> 외부 메일 스캔 키워드
-                </h4>
-                <label className="field">
-                  가져올 메일 제목 키워드
-                  <input 
-                    type="text" 
-                    className="w-full px-4 py-2.5 bg-surface-subtle border border-border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
-                    placeholder="예: [교육신청]"
-                    value={importKeyword}
-                    onChange={(e) => setImportKeyword(e.target.value)}
-                  />
-                </label>
-                <div className="p-4 bg-brand-primary/5 rounded-2xl border border-brand-primary/10 flex items-center justify-between gap-4">
-                  <p className="text-[11px] text-secondary font-medium leading-relaxed">
-                    설정된 키워드가 포함된 읽지 않은 메일을 스캔합니다.
-                  </p>
-                  <button 
-                    onClick={handleScan}
-                    disabled={isScanning || !naverEmail}
-                    className="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-surface border border-brand-primary/30 rounded-lg text-[10px] font-black text-brand-primary hover:bg-brand-primary/5 transition-all disabled:opacity-50"
-                  >
-                    {isScanning ? <RefreshCw size={12} className="animate-spin" /> : <ExternalLink size={12} />}
-                    즉시 스캔
-                  </button>
-                </div>
               </section>
             </>
           )}

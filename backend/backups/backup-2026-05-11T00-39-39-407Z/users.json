@@ -1,0 +1,13 @@
+[
+  {
+    "id": "af99b6e2-ee96-4d7a-ad46-437a72c24229",
+    "username": "admin",
+    "password": "$2b$10$GijoV8YbmWBF1qKbfeGx0OtkLk.lN3g7KGL1yzilLs9ZB2fEDFNva",
+    "role": "admin",
+    "name": "System Administrator",
+    "email": "admin@khp.dashboard",
+    "last_login": null,
+    "created_at": "2026-05-11T00:22:47.117Z",
+    "updated_at": "2026-05-11T00:22:47.117Z"
+  }
+]

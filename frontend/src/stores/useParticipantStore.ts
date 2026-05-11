@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import apiClient from "../api/client";
+import { supabase } from "../api/supabase";
 import type { ParticipantRecord } from "../types/models";
 
 interface ParticipantStore {
@@ -10,10 +11,11 @@ interface ParticipantStore {
   upsertParticipant: (participant: ParticipantRecord) => Promise<void>;
   batchUpsertParticipants: (participants: ParticipantRecord[]) => Promise<void>;
   deleteParticipants: (ids: string[]) => Promise<void>;
+  subscribeToParticipants: () => () => void;
   clearError: () => void;
 }
 
-export const useParticipantStore = create<ParticipantStore>((set) => ({
+export const useParticipantStore = create<ParticipantStore>((set, get) => ({
   participants: [],
   isLoading: false,
   error: null,
@@ -92,6 +94,30 @@ export const useParticipantStore = create<ParticipantStore>((set) => ({
       set({ error: err.response?.data?.error || err.message, isLoading: false });
       throw err;
     }
+  },
+
+  subscribeToParticipants: () => {
+    const channel = supabase
+      .channel('public:participants')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'participants' },
+        () => {
+          get().fetchParticipants();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'enrollments' },
+        () => {
+          get().fetchParticipants();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 }));
 

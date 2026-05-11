@@ -311,7 +311,7 @@ export function CompanyManagementPage() {
       pagination={
         <nav className="flex items-center justify-between">
           <p className="text-[11px] font-black text-tertiary uppercase tracking-widest">
-            Company <span>{paginated.length}</span>/<span>{filteredCompanies.length}</span> Listings
+            기업 <span>{paginated.length}</span>/<span>{filteredCompanies.length}</span>
           </p>
           <div className="flex items-center gap-1.5">
             <button

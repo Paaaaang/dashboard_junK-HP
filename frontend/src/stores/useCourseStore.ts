@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import apiClient from "../api/client";
+import { supabase } from "../api/supabase";
 import { CourseGroup, AudienceOption } from "../types/models";
 
 interface CourseStore {
@@ -11,6 +12,7 @@ interface CourseStore {
   addCourseGroup: (group: CourseGroup) => Promise<void>;
   updateCourseGroup: (group: CourseGroup) => Promise<void>;
   deleteCourseGroup: (id: string) => Promise<void>;
+  subscribeToCourses: () => () => void;
   clearError: () => void;
   }
 
@@ -189,6 +191,37 @@ interface CourseStore {
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });
     }
+  },
+
+  subscribeToCourses: () => {
+    const channel = supabase
+      .channel('public:courses')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'course_groups' },
+        () => {
+          get().fetchCourseGroups();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sub_courses' },
+        () => {
+          get().fetchCourseGroups();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sub_course_sessions' },
+        () => {
+          get().fetchCourseGroups();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 }));
 

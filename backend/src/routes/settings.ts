@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db';
-import { importEmails } from '../services/mailImportService';
 import nodemailer from 'nodemailer';
 
 const router = Router();
@@ -10,11 +9,11 @@ const router = Router();
  * Test SMTP connection with provided credentials
  */
 router.post('/smtp/test', async (req: Request, res: Response) => {
-  const { host, email, password } = req.body;
+  const { host, port, email, password } = req.body;
   try {
     const transporter = nodemailer.createTransport({
       host: host || 'smtp.naver.com',
-      port: 465,
+      port: port || 465,
       secure: true,
       auth: {
         user: email,
@@ -26,19 +25,6 @@ router.post('/smtp/test', async (req: Request, res: Response) => {
     res.json({ success: true, message: 'SMTP connection successful' });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * POST /api/v1/settings/import/scan
- * Manually trigger email import scan.
- */
-router.post('/import/scan', async (req: Request, res: Response) => {
-  try {
-    const result = await importEmails();
-    res.json({ success: true, ...result });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
   }
 });
 
