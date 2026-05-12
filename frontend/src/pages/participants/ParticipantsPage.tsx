@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Mail, Download, Search, Settings2, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Mail, Download, Search, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { FloatingActionBar, DataPageLayout } from "../../components";
 import { useCompanyStore, useParticipantStore, useToastStore } from "../../stores";
@@ -187,16 +187,6 @@ export function ParticipantsPage() {
                 </button>
               ))}
             </div>
-            <div className="w-px h-4 bg-border mx-1 flex-shrink-0" />
-            <button
-              type="button"
-              className="p-1.5 rounded-full text-tertiary hover:bg-surface-subtle hover:text-brand-primary transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-              onClick={() => navigate("/education/courses")}
-              aria-label="과정 관리 페이지 이동"
-              title="과정 관리 이동"
-            >
-              <Settings2 className="w-4 h-4" strokeWidth={2.5} size={18} />
-            </button>
           </div>
 
           <div className="flex items-center gap-3">
