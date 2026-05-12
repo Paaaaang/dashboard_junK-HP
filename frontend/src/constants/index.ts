@@ -67,8 +67,8 @@ export const programCatalog: Record<CourseType, string[]> = {
 // 네비게이션
 export const mainNavigation: NavigationItem[] = [
   { to: "/", label: "대시보드", icon: LayoutDashboard },
-  { to: "/forms", label: "신청 폼 자동화", icon: FileText },
-  { to: "/posters", label: "포스터 자동화", icon: Megaphone },
+  { to: "/forms", label: "신청 폼 자동화(예정)", icon: FileText },
+  { to: "/posters", label: "포스터 자동화(예정)", icon: Megaphone },
 ];
 
 type EducationSubNavigationItem = Omit<NavigationItem, "icon">;
