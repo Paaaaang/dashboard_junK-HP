@@ -44,6 +44,7 @@ interface CourseStore {
         id: g.id,
         name: g.name,
         audiences: baseAudiences[g.name] || [],
+        createdAt: g.created_at || g.createdAt,
         details: (details || [])
           .filter((d: any) => d.groupId === g.id)
           .map((d: any) => {

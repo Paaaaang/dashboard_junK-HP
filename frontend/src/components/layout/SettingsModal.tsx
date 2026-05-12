@@ -56,7 +56,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       addToast("SMTP 연결 테스트 성공", "success");
     } catch (err: any) {
       setTestResult("error");
-      addToast("SMTP 연결 실패. 정보를 확인해주세요.", "error");
+      const errorMessage = err.response?.data?.error || "SMTP 연결 실패. 정보를 확인해주세요.";
+      addToast(errorMessage, "error");
     } finally {
       setIsTesting(false);
     }

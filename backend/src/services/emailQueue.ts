@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface Recipient {
   id?: string;
   email: string;
+  name?: string;
   variables: Record<string, string>;
 }
 
@@ -100,13 +101,14 @@ async function processQueue(jobId: string) {
       // Log to DB
       await query(
         `INSERT INTO email_logs 
-         (job_id, template_id, sender_email, recipient_email, subject, body_rendered, status, error_message, sent_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         (job_id, template_id, sender_email, recipient_email, recipient_name, subject, body_rendered, status, error_message, sent_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           jobId, 
           job.templateId, 
           process.env.NAVER_EMAIL, 
-          recipient.email, 
+          recipient.email,
+          recipient.name || null,
           sendOptions.subject, 
           body, 
           result.success ? 'sent' : 'failed',

@@ -27,6 +27,7 @@ async function migrate() {
     const columns = [
       { name: 'job_id', type: 'UUID REFERENCES email_jobs(id) ON DELETE SET NULL' },
       { name: 'sender_email', type: 'TEXT DEFAULT \'\'' },
+      { name: 'recipient_name', type: 'TEXT' },
       { name: 'body_rendered', type: 'TEXT' },
       { name: 'attachments_meta', type: 'JSONB DEFAULT \'[]\'::jsonb' },
       { name: 'created_at', type: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP' }

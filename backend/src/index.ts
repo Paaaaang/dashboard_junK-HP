@@ -471,6 +471,44 @@ app.get('/api/v1/participants', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/v1/sessions/:id/participants
+app.get('/api/v1/sessions/:id/participants', authenticateToken, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await query(`
+      SELECT 
+        e.id as enrollment_id,
+        p.id as participant_id,
+        p.name,
+        c.company_name,
+        e.status,
+        e.completion_date,
+        e.certificate_no,
+        e.application_date
+      FROM enrollments e
+      JOIN participants p ON p.id = e.participant_id
+      LEFT JOIN companies c ON c.id = p.company_id
+      WHERE e.session_id = $1
+      ORDER BY p.name ASC
+    `, [id]);
+
+    const participants = result.rows.map(row => ({
+      enrollmentId: row.enrollment_id,
+      participantId: row.participant_id,
+      name: row.name,
+      companyName: row.company_name,
+      status: row.status,
+      completionDate: row.completion_date,
+      certificateNo: row.certificate_no,
+      applicationDate: row.application_date
+    }));
+
+    res.json(participants);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/v1/participants', async (req: Request, res: Response) => {
   const { 
     name, companyId, position, phone, email, 
@@ -650,10 +688,69 @@ app.post('/api/v1/participants/batch', async (req: Request, res: Response) => {
   }
 });
 
+// --- Enrollments API ---
+app.post('/api/v1/enrollments', authenticateToken, async (req: Request, res: Response) => {
+  const { participantId, subCourseId, sessionId, status, applicationDate } = req.body;
+  try {
+    const result = await query(
+      `INSERT INTO enrollments (participant_id, sub_course_id, session_id, status, application_date)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (participant_id, sub_course_id) DO UPDATE SET session_id = $3, status = $4
+       RETURNING *`,
+      [participantId, subCourseId, sessionId, status || '미수료', applicationDate || new Date()]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/v1/enrollments/bulk', authenticateToken, async (req: Request, res: Response) => {
+  const { enrollmentIds, status, completionDate } = req.body;
+  
+  if (!Array.isArray(enrollmentIds) || !status) {
+    return res.status(400).json({ error: 'enrollmentIds array and status are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    for (const id of enrollmentIds) {
+      const certNo = status === '수료' ? `CERT-2026-${Math.floor(Math.random() * 9000 + 1000)}` : null;
+      await client.query(
+        `UPDATE enrollments 
+         SET status = $1, 
+             completion_date = $2, 
+             certificate_no = CASE WHEN $1 = '수료' AND certificate_no IS NULL THEN $3 ELSE certificate_no END
+         WHERE id = $4`,
+        [status, status === '수료' ? (completionDate || new Date()) : null, certNo, id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, count: enrollmentIds.length });
+  } catch (err: any) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete('/api/v1/enrollments/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    await query('DELETE FROM enrollments WHERE id = $1', [req.params.id]);
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Course Groups & Sub Courses API ---
 app.get('/api/v1/course-groups', async (req: Request, res: Response) => {
   try {
-    const result = await query('SELECT * FROM course_groups ORDER BY name ASC');
+    const result = await query('SELECT * FROM course_groups ORDER BY created_at ASC');
     res.json(result.rows);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -710,7 +807,7 @@ app.get('/api/v1/sub-courses', async (req: Request, res: Response) => {
       FROM sub_courses sc
       LEFT JOIN sub_course_sessions scs ON scs.sub_course_id = sc.id
       GROUP BY sc.id
-      ORDER BY sc.start_date DESC
+      ORDER BY sc.created_at ASC
     `);
     res.json(result.rows.map(row => ({
       id: row.id,

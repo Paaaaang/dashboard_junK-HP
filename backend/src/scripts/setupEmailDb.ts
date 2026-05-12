@@ -38,6 +38,7 @@ async function setup() {
         template_id UUID REFERENCES email_templates(id) ON DELETE SET NULL,
         sender_email TEXT NOT NULL,
         recipient_email TEXT NOT NULL,
+        recipient_name TEXT,
         subject TEXT NOT NULL,
         body_rendered TEXT,
         status TEXT NOT NULL, -- pending, sent, failed

@@ -19,7 +19,7 @@ interface TemplateStore {
   deleteTemplate: (id: string) => Promise<void>;
   sendBatch: (templateId: string, recipients: SendRecipient[]) => Promise<{ jobId: string }>;
   fetchJobStatus: (jobId: string) => Promise<EmailJob>;
-  testEmail: (to: string, subject: string, body: string, attachments?: any[]) => Promise<any>;
+  testEmail: (templateId: string | undefined, to: string, subject: string, body: string, attachments?: any[]) => Promise<any>;
   uploadAttachment: (templateId: string, file: File) => Promise<AttachmentMeta>;
   deleteAttachment: (templateId: string, attachmentId: string) => Promise<void>;
   fetchLogs: (params?: any) => Promise<void>;
@@ -120,10 +120,10 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     }
   },
 
-  testEmail: async (to, subject, body, attachments) => {
+  testEmail: async (templateId, to, subject, body, attachments) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.post('v1/emails/test', { to, subject, body, attachments });
+      const response = await apiClient.post('v1/emails/test', { templateId, to, subject, body, attachments });
       set({ isLoading: false });
       return response.data;
     } catch (err: any) {

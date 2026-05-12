@@ -73,7 +73,7 @@ export function ParticipantsTable({
               <th className="px-5 py-5 min-w-[120px] text-center">이름</th>
               <th className="px-5 py-5 min-w-[160px] text-center">소속 기업</th>
               <th className="px-5 py-5 text-center">직위</th>
-              <th className="px-5 py-5 text-center">연락처 / 이메일</th>
+              <th className="px-5 py-5 min-w-[200px] text-center">연락처 / 이메일</th>
               <th className="px-5 py-5 min-w-[180px] text-center">참여 과정</th>
               <th className="px-5 py-5 text-center">수료 상태</th>
             </tr>
@@ -147,7 +147,7 @@ export function ParticipantsTable({
                         </button>
                         <button 
                           type="button"
-                          className="text-[11px] font-medium text-tertiary truncate max-w-[150px] hover:text-brand-primary transition-colors flex items-center justify-center gap-1.5 group/copy w-fit"
+                          className="text-[11px] font-medium text-tertiary hover:text-brand-primary transition-colors flex items-center justify-center gap-1.5 group/copy w-fit"
                           onClick={(e) => { e.stopPropagation(); handleCopy(p.email, p.id, "email"); }}
                         >
                           {p.email || "-"}

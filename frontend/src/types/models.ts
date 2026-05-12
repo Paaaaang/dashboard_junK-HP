@@ -127,6 +127,7 @@ export interface EmailLog {
   templateName?: string;
   senderEmail: string;
   recipientEmail: string;
+  recipientName?: string;
   subject: string;
   bodyRendered?: string;
   status: "sent" | "failed" | "pending";
@@ -205,6 +206,7 @@ export interface CourseDetail {
   totalHours: number;
   targetOutcome: number;
   sessions?: CourseSession[];
+  createdAt?: string;
 }
 
 export interface CourseGroup {
@@ -212,6 +214,7 @@ export interface CourseGroup {
   name: string;
   audiences: AudienceOption[];
   details: CourseDetail[];
+  createdAt?: string;
 }
 
 export interface CourseGroupForm {

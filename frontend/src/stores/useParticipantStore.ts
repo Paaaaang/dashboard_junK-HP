@@ -13,6 +13,11 @@ interface ParticipantStore {
   deleteParticipants: (ids: string[]) => Promise<void>;
   subscribeToParticipants: () => () => void;
   clearError: () => void;
+  // Session management actions
+  fetchSessionParticipants: (sessionId: string) => Promise<any[]>;
+  bulkUpdateEnrollments: (enrollmentIds: string[], status: string, completionDate?: string) => Promise<void>;
+  addEnrollment: (enrollment: { participantId: string; subCourseId: string; sessionId: string; status?: string }) => Promise<void>;
+  removeEnrollment: (enrollmentId: string) => Promise<void>;
 }
 
 export const useParticipantStore = create<ParticipantStore>((set, get) => ({
@@ -29,6 +34,52 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
       set({ participants: response.data, isLoading: false });
     } catch (err: any) {
       set({ error: err.response?.data?.error || err.message, isLoading: false });
+    }
+  },
+
+  fetchSessionParticipants: async (sessionId: string) => {
+    try {
+      const response = await apiClient.get(`v1/sessions/${sessionId}/participants`);
+      return response.data;
+    } catch (err: any) {
+      console.error('Error fetching session participants:', err);
+      return [];
+    }
+  },
+
+  bulkUpdateEnrollments: async (enrollmentIds, status, completionDate) => {
+    set({ isLoading: true });
+    try {
+      await apiClient.put('v1/enrollments/bulk', { enrollmentIds, status, completionDate });
+      await get().fetchParticipants(); // Refresh global state
+      set({ isLoading: false });
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  addEnrollment: async (enrollment) => {
+    set({ isLoading: true });
+    try {
+      await apiClient.post('v1/enrollments', enrollment);
+      await get().fetchParticipants();
+      set({ isLoading: false });
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  removeEnrollment: async (enrollmentId) => {
+    set({ isLoading: true });
+    try {
+      await apiClient.delete(`v1/enrollments/${enrollmentId}`);
+      await get().fetchParticipants();
+      set({ isLoading: false });
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || err.message, isLoading: false });
+      throw err;
     }
   },
 

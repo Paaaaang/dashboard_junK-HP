@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Plus, Trash2, Check, Activity, Settings2, Target, Award, Users, ChevronDown, ChevronRight, LayoutList } from "lucide-react";
-import { PageHeader } from "../../components";
+import { CourseFloatingActionBar, PageHeader } from "../../components";
 import { useCourseStore, useParticipantStore, useToastStore } from "../../stores";
 import { useCourseManager } from "../participants/hooks/useCourseManager";
 import type { AudienceOption } from "../../types/models";
@@ -23,6 +23,7 @@ export function CourseManagementPage() {
   const { courseGroups } = useCourseStore();
   const { participants } = useParticipantStore();
   const { addToast } = useToastStore();
+  const [isSaving, setIsSaving] = useState(false);
 
   const {
     managerSelectedGroupId,
@@ -57,6 +58,24 @@ export function CourseManagementPage() {
       setManagerError("");
     }
   }, [managerError, addToast, setManagerError]);
+
+  // 과정 구분 리스트를 생성 날짜 순(오래된 순)으로 정렬
+  const sortedCourseGroups = useMemo(() => {
+    return [...courseGroups].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateA - dateB;
+    });
+  }, [courseGroups]);
+
+  // 세부 프로그램 구성 목록을 생성 날짜 순(오래된 순)으로 정렬
+  const sortedDetails = useMemo(() => {
+    return [...(managerGroupForm?.details || [])].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateA - dateB;
+    });
+  }, [managerGroupForm?.details]);
 
   const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
   const [pendingDeleteDetail, setPendingDeleteDetail] = useState<{groupId: string, detailId: string, detailName: string} | null>(null);
@@ -106,8 +125,23 @@ export function CourseManagementPage() {
     });
   };
 
+  // 저장 핸들러 래핑 (플로팅 바용)
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveCourseGroup();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 h-full pb-10">
+      <CourseFloatingActionBar
+        isModified={activeTab === "settings" && isManagerGroupModified}
+        onSave={handleSave}
+        isLoading={isSaving}
+      />
       <PageHeader
         title="교육 과정 관리"
         className="sticky top-0 z-20 bg-background/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 pt-4 sm:pt-6"
@@ -129,16 +163,6 @@ export function CourseManagementPage() {
                 과정 설정
               </button>
             </div>
-            {activeTab === "settings" && (
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={!isManagerGroupModified}
-                onClick={saveCourseGroup}
-              >
-                변경 사항 전체 저장
-              </button>
-            )}
           </div>
         }
       />
@@ -153,7 +177,7 @@ export function CourseManagementPage() {
         <div className="flex flex-col lg:flex-row gap-6 px-4 sm:px-6">
           {/* Sidebar: Group List */}
           <aside
-            className="w-full lg:w-[280px] flex flex-col overflow-hidden shrink-0"
+            className="w-full lg:w-[280px] lg:sticky lg:top-[70px] lg:h-[calc(100vh-130px)] flex flex-col overflow-hidden shrink-0"
             style={{ background: "var(--color-surface)", borderRadius: 24, boxShadow: "var(--shadow-md)", border: "1px solid var(--color-border)" }}
           >
             <div className="p-5 space-y-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
@@ -174,7 +198,7 @@ export function CourseManagementPage() {
                   <Settings2 size={40} className="opacity-20" strokeWidth={2.5} />
                   <p className="text-sm font-bold italic">등록된 과정이<br />없습니다.</p>
                 </div>
-              ) : courseGroups.map((group) => {
+              ) : sortedCourseGroups.map((group) => {
                 const isSelected = group.id === managerSelectedGroupId;
                 const isExpanded = managerExpandedGroups.has(group.id);
 
@@ -329,14 +353,14 @@ export function CourseManagementPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-4">
-                      {managerGroupForm.details.length === 0 ? (
+                      {sortedDetails.length === 0 ? (
                         <div
                           className="w-full py-12 text-center rounded-3xl border border-dashed"
                           style={{ background: "rgba(16, 185, 129, 0.03)", borderColor: "var(--color-border)" }}
                         >
                           <p className="text-tertiary text-sm font-bold italic">등록된 세부 과정이 없습니다.</p>
                         </div>
-                      ) : managerGroupForm.details.map((detail) => {
+                      ) : sortedDetails.map((detail) => {
                         const achieved = getSubCourseTotalAchieved(detail.name);
                         const rate = detail.targetOutcome > 0 ? Math.round((achieved / detail.targetOutcome) * 100) : 0;
                         const isDetailSelected = detail.id === selectedDetailId;

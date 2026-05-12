@@ -57,20 +57,22 @@ router.post('/preview', adminAuth, async (req: Request, res: Response) => {
  * Send a single test email (synchronous).
  */
 router.post('/test', adminAuth, async (req: Request, res: Response) => {
-  const { to, subject, body, attachments = [] } = req.body;
+  const { templateId, to, subject, body, attachments = [] } = req.body;
   try {
+    const { rendered: renderedBody } = renderTemplate(body, {});
+    
     const result = await sendEmail({
       to,
       subject,
       text: body.replace(/<[^>]*>?/gm, ''),
-      html: body,
+      html: renderedBody,
       attachments
     });
     
-    // Log test attempt
+    // Log test attempt with templateId
     await query(
-      'INSERT INTO email_logs (sender_email, recipient_email, subject, body_rendered, status, error_message) VALUES ($1, $2, $3, $4, $5, $6)',
-      [process.env.NAVER_EMAIL, to, subject, body, result.success ? 'sent' : 'failed', result.error || null]
+      'INSERT INTO email_logs (template_id, sender_email, recipient_email, subject, body_rendered, status, error_message, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())',
+      [templateId || null, process.env.NAVER_EMAIL, to, subject, renderedBody, result.success ? 'sent' : 'failed', result.error || null]
     );
 
     res.json(result);
@@ -120,7 +122,12 @@ router.get('/logs', adminAuth, async (req: Request, res: Response) => {
   const { limit = 50, offset = 0, status, templateId } = req.query;
   try {
     let sql = `
-      SELECT el.*, et.name as template_name, ej.status as job_status
+      SELECT 
+        el.id, el.job_id, el.template_id, el.sender_email, el.recipient_email, 
+        el.recipient_name, el.subject, el.body_rendered, el.status, el.error_message, 
+        el.sent_at, el.created_at,
+        COALESCE(et.name, '') as template_name, 
+        ej.status as job_status
       FROM email_logs el
       LEFT JOIN email_templates et ON et.id = el.template_id
       LEFT JOIN email_jobs ej ON ej.id = el.job_id
@@ -141,7 +148,26 @@ router.get('/logs', adminAuth, async (req: Request, res: Response) => {
     params.push(limit, offset);
 
     const result = await query(sql, params);
-    res.json(result.rows);
+    
+    // Convert snake_case to camelCase
+    const logs = result.rows.map((row: any) => ({
+      id: row.id,
+      jobId: row.job_id,
+      templateId: row.template_id,
+      senderEmail: row.sender_email,
+      recipientEmail: row.recipient_email,
+      recipientName: row.recipient_name,
+      subject: row.subject,
+      bodyRendered: row.body_rendered,
+      status: row.status,
+      errorMessage: row.error_message,
+      sentAt: row.sent_at,
+      createdAt: row.created_at,
+      templateName: row.template_name,
+      jobStatus: row.job_status,
+    }));
+    
+    res.json(logs);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

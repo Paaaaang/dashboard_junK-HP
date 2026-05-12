@@ -1,10 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useCourseStore, useParticipantStore } from "../../stores";
 import { parseISO, format } from "date-fns";
+import { SessionManagementDrawer } from "./SessionManagementDrawer";
 
 export function CourseStatusTable() {
   const { courseGroups } = useCourseStore();
   const { participants } = useParticipantStore();
+  
+  const [selectedSession, setSelectedSession] = useState<{
+    id: string;
+    subCourseId: string;
+    name: string;
+    date: string;
+    groupName: string;
+  } | null>(null);
 
   const getSessionAchieved = (courseType: string, subCourseName: string, sessionId: string) => {
     return participants.flatMap(p => 
@@ -36,13 +45,6 @@ export function CourseStatusTable() {
       return dateStr;
     }
   };
-
-  // We need to calculate row spans
-  // 1. Group row span = total number of sessions in all its details (sub-courses) + 1 (for total row). Wait, the image shows "총합" row separate. 
-  // Wait, let's look at the image again. 
-  // "구분" (1st col) and "대상" (2nd col) span across all subcourses and sessions. The "총합" row spans col 1-4.
-  // Actually, in the image, the "총합" row is INSIDE the group?
-  // Let's create a structured data for rendering.
 
   const tableData = useMemo(() => {
     const rows: any[] = [];
@@ -80,9 +82,10 @@ export function CourseStatusTable() {
             groupRowSpan: dIdx === 0 && sIdx === 0 ? groupSessionsCount : 0,
             
             detailId: detail.id,
-            detailName: `${detail.name} (${sessions.length > 1 ? '다회차' : '1일'}, ${session.totalHours}시간)`, // Adjusted format to be generic
+            detailName: `${detail.name} (${sessions.length > 1 ? '다회차' : '1일'}, ${session.totalHours}시간)`,
             detailRowSpan: sIdx === 0 ? detailSessionsCount : 0,
             
+            sessionId: session.id,
             sessionDate: formatDate(session.startDate),
             target,
             achieved,
@@ -90,11 +93,14 @@ export function CourseStatusTable() {
             
             isFirstDetail: dIdx === 0 && sIdx === 0,
             isFirstSession: sIdx === 0,
+            
+            rawSession: session,
+            rawDetail: detail,
+            rawGroup: group
           });
         });
       });
 
-      // After all details in a group, add total row
       const groupRate = groupTotalTarget > 0 ? ((groupTotalAchieved / groupTotalTarget) * 100).toFixed(1) : "0.0";
       rows.push({
         type: 'total',
@@ -109,6 +115,7 @@ export function CourseStatusTable() {
   }, [courseGroups, participants]);
 
   return (
+    <>
     <div className="bg-surface border border-border/50 rounded-[32px] overflow-hidden shadow-sm">
       <div className="overflow-x-auto custom-scrollbar">
         <table className="w-full text-center border-collapse">
@@ -144,12 +151,8 @@ export function CourseStatusTable() {
                   );
                 }
 
-                // Determine background color based on group index
-                // It helps visually separate groups if needed, but for now we'll stick to a clean look with borders.
-                const groupBgClass = "bg-white"; 
-
                 return (
-                  <tr key={`row-${idx}`} className={`hover:bg-brand-primary/[0.02] transition-colors ${groupBgClass}`}>
+                  <tr key={`row-${idx}`} className={`hover:bg-brand-primary/[0.02] transition-colors bg-white`}>
                     {row.groupRowSpan > 0 && (
                       <td rowSpan={row.groupRowSpan} className="px-4 py-3 text-sm font-black text-primary border border-border/50 align-middle">
                         {row.groupName}
@@ -165,8 +168,23 @@ export function CourseStatusTable() {
                         {row.detailName}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-[13px] font-mono font-medium text-secondary border border-border/50">
-                      {row.sessionDate}
+                    <td className="px-4 py-3 text-[13px] font-mono font-medium border border-border/50">
+                      <button
+                        onClick={() => row.sessionId !== 'dummy' && setSelectedSession({
+                          id: row.sessionId,
+                          subCourseId: row.detailId,
+                          name: row.rawDetail.name,
+                          date: row.sessionDate,
+                          groupName: row.groupName
+                        })}
+                        className={`w-full py-1 rounded-lg transition-all ${
+                          row.sessionId !== 'dummy' 
+                            ? "text-brand-primary font-bold hover:bg-brand-primary/10 hover:underline cursor-pointer" 
+                            : "text-secondary cursor-default"
+                        }`}
+                      >
+                        {row.sessionDate}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-[13px] font-mono text-secondary border border-border/50">
                       {row.target}
@@ -185,5 +203,12 @@ export function CourseStatusTable() {
         </table>
       </div>
     </div>
+
+    <SessionManagementDrawer 
+      isOpen={!!selectedSession}
+      onClose={() => setSelectedSession(null)}
+      sessionInfo={selectedSession}
+    />
+    </>
   );
 }

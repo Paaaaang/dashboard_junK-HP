@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { 
-  Mail, Paperclip, Send, X, AlertCircle, Clock, Plus as PlusIcon, 
+  Mail, Paperclip, Send, X, AlertCircle, Clock, Plus as PlusIcon, ChevronDown,
   Settings, Save, HelpCircle, RotateCcw, RotateCw, 
   Bold, Italic, Underline, Palette,
   Strikethrough, Link, Highlighter, Type, Baseline, ExternalLink
@@ -40,6 +40,7 @@ export function TemplateEditorPage() {
   // --- Logs Filter State ---
   const [logFilterStatus, setLogFilterStatus] = useState<string>("ALL");
   const [logFilterPeriod, setLogFilterPeriod] = useState<string>("ALL");
+  const [selectedLog, setSelectedLog] = useState<any>(null);
 
   // --- History & Editor State ---
   const [history, setHistory] = useState<EmailTemplate[]>([]);
@@ -372,6 +373,7 @@ export function TemplateEditorPage() {
     };
     try {
       await testEmail(
+        draftTemplate.id,
         testEmailAddr,
         applyTemplateVariables(draftTemplate.subject, mockDataForSend),
         applyTemplateVariables(draftTemplate.body, mockDataForSend),
@@ -826,8 +828,8 @@ export function TemplateEditorPage() {
                 <tbody className="divide-y divide-border/20">
                   {logs.length === 0 ? (
                     <tr><td colSpan={5} className="px-6 py-24 text-center text-sm text-disabled font-bold italic">필터 조건에 맞는 발송 이력이 없습니다.</td></tr>
-                  ) : logs.map(log => (
-                    <tr key={log.id} className="hover:bg-brand-primary/[0.02] transition-colors group">
+                  ) : logs.flatMap(log => [
+                    <tr key={`log-${log.id}`} className="hover:bg-brand-primary/[0.02] transition-colors">
                       <td className="px-6 py-4"><div className="flex items-center gap-2 text-xs font-bold text-secondary tracking-tighter"><Clock size={12} className="text-disabled/60" />{log.sentAt ? `${toDotDate(log.sentAt)} ${new Date(log.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : toDotDate(log.createdAt)}</div></td>
                       <td className="px-6 py-4 text-[11px] font-black text-primary uppercase tracking-tight">{log.templateName || "직접 발송"}</td>
                       <td className="px-6 py-4">
@@ -845,21 +847,36 @@ export function TemplateEditorPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        {log.errorMessage ? (
-                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-error max-w-[180px]">
-                            <AlertCircle size={12} className="shrink-0 opacity-70" />
-                            <span className="truncate opacity-90">{log.errorMessage}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] font-bold text-tertiary/60 tracking-tight">{log.status === "sent" ? "성공적으로 전달됨" : "-"}</span>
-                        )}
+                        <button
+                          onClick={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
+                          className={`p-2 rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                            selectedLog?.id === log.id ? "bg-surface-subtle text-brand-primary" : "text-secondary hover:bg-surface-subtle"
+                          }`}
+                          aria-label="에러 메시지 보기"
+                        >
+                          <ChevronDown size={16} className={`transition-transform ${selectedLog?.id === log.id ? "rotate-180" : ""}`} />
+                        </button>
                       </td>
-                    </tr>
-                  ))}
+                    </tr>,
+                    selectedLog?.id === log.id && log.errorMessage ? (
+                      <tr key={`error-${log.id}`} className="bg-error/5 border-t-2 border-error/20">
+                        <td colSpan={5} className="px-6 py-4">
+                          <div className="flex items-start gap-3 p-3 bg-error/10 border border-error/20 rounded-lg">
+                            <AlertCircle size={16} className="text-error shrink-0 mt-0.5" />
+                            <div className="flex-1 space-y-1">
+                              <p className="text-xs font-black text-error">발송 오류</p>
+                              <p className="text-xs font-bold text-error break-words leading-relaxed">{log.errorMessage}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null
+                  ])}
                 </tbody>
               </table>
             </div>
           </div>
+
         </section>
       )}
 
