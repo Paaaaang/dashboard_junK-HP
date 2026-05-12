@@ -79,7 +79,7 @@ function AppContent() {
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopRail />
-        <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-background/50">
+        <main className="flex-1 overflow-y-auto px-6 pb-6 scroll-smooth bg-background/50">
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">
               <div className="w-8 h-8 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
