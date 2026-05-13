@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
   X, Users, Award, Search, CheckCircle2, XCircle, 
-  Trash2, Plus, Download, CheckSquare, Square, 
+  Trash2, Download, CheckSquare, Square, 
   ChevronRight, AlertCircle, RefreshCw
 } from "lucide-react";
 import { useParticipantStore, useToastStore } from "../../stores";
