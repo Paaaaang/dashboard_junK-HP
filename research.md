@@ -1,121 +1,149 @@
-# 프로젝트 심층 분석 보고서 (최종 업데이트)
+# 프로젝트 온보딩 및 아키텍처 가이드 (Research & Architecture)
 
-> 분석 및 작업 완료 일자: 2026-05-08  
-> 작업 범위: 3-Tier 아키텍처 전환, SOLID 리팩터링, 이메일 시스템 연동, 보안 강화, 성능 최적화  
-> 총 코드량: 약 28,000줄 이상 (완전 모듈화 및 실데이터 연동 완료)
+본 문서는 프로젝트에 새로 합류하는 개발자가 프로젝트의 동작 원리, 폴더 구조, 기술 스택 등을 빠르게 파악할 수 있도록 작성된 상세 가이드입니다. 기존의 기술 리서치 및 결정 사항을 아우르며, 현재 프로젝트의 상태를 대변합니다.
 
----
+## 1. 기술 스택 (Tech Stack)
+- **Frontend Framework:** React 18, TypeScript, Vite
+- **State Management:** Zustand (전역 상태 및 데이터 페칭 관리)
+- **Styling:** Tailwind CSS v4, PostCSS
+- **Backend/Database (BaaS):** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **Data Visualization:** Recharts
+- **Icons & UI:** Lucide React, Custom UI Components
+- **Utilities:** date-fns (날짜 처리), xlsx (엑셀 파싱 및 추출)
 
-## 1. 프로젝트 개요
+## 2. 시스템 아키텍처 및 동작 원리
+이 프로젝트는 기존의 FE/BE 분리(2-Tier) 구조에서 **단일 클라이언트 앱 + Supabase(BaaS)** 구조로 마이그레이션되었습니다. 별도의 백엔드 서버(Node.js) 없이 클라이언트가 데이터베이스 및 인증 서비스와 직접 소통합니다.
 
-**프로젝트명**: Dashboard KHP (전남대학교 K-하이테크 플랫폼 대시보드)
+### 2.1. 데이터 흐름 (Data Flow)
+1. **Zustand Stores (`src/stores/*`)**: 모든 비즈니스 로직과 데이터 페칭은 Zustand 스토어에서 처리됩니다. 
+   - 스토어 내에서 `src/api/supabase.ts`에 정의된 클라이언트를 사용하여 데이터베이스(PostgreSQL)에 직접 쿼리를 날립니다.
+2. **Realtime Subscription**: Supabase의 Realtime 기능을 적극 활용합니다. Zustand 스토어 내에 `subscribeTo...` 함수들이 정의되어 있으며, 이를 통해 데이터베이스의 변경 사항(`postgres_changes`)을 실시간으로 구독하고, 변경 발생 시 상태를 자동으로 갱신하여 UI에 실시간으로 반영합니다.
+3. **Edge Functions**: 클라이언트에서 직접 처리하기 어렵거나 보안이 필요한 작업(예: 대량 이메일 비동기 발송, 외부 SMTP 연동 테스트 등)은 Supabase Edge Functions를 호출(`supabase.functions.invoke`)하여 처리합니다.
 
-**목적**: 기업 교육 프로그램 관리 및 참여자 추적을 위한 웹 기반 대시보드 시스템
+### 2.2. 인증 (Authentication)
+- Supabase Auth를 사용하며, 이메일/비밀번호 기반의 로그인을 지원합니다.
+- 인증 상태는 `useAuthStore`에서 관리되며, 토큰 및 세션 정보는 클라이언트 내부 및 Supabase 세션에 안전하게 유지됩니다.
 
-**핵심 성과 (2026-05-11 업데이트)**: 
-- **인증 및 보안 (Auth) 시스템 구축 완료**: Custom Express JWT 기반의 인증 시스템을 구현했습니다. `users` 테이블 생성, `bcryptjs`를 이용한 비밀번호 암호화, `jsonwebtoken`을 이용한 토큰 발급 및 검증 미들웨어를 완벽히 적용했습니다. 프론트엔드에서는 `ProtectedRoute`와 전용 로그인 페이지를 통해 비인증 사용자의 접근을 차단하고 보안을 강화했습니다.
-- **실시간 데이터 동기화 (Realtime) 통합 완료**: Supabase Realtime을 모든 주요 데이터 스토어(기업, 참여자, 과정, 통계, 템플릿)에 통합했습니다. 이제 다중 사용자 환경에서 데이터가 변경되면 화면 새로고침 없이도 모든 클라이언트의 대시보드와 테이블이 즉각적으로 최신 상태를 유지합니다.
-- **이메일 발송 시스템 구축 및 E2E 검증 완료**: 네이버 SMTP 연동을 통한 이메일 일괄 발송 시스템을 구축함. 백그라운드 큐(Job Queue) 폴링을 통한 진행률 추적, 실시간 템플릿 변수 미해결 경고, 첨부파일 용량 검증 및 SMTP 자격증명 테스트 기능을 완벽히 구현했으며, 백엔드 E2E API 테스트 스크립트를 통해 정상 동작을 최종 검증함.
-- **고도화된 리치 텍스트 에디터 UX 구현 (2026-05-11)**: 
-  - **정밀 포지셔닝**: Hidden Mirror Div를 이용한 Caret 좌표 계산으로 선택 영역 시작 지점에 툴바를 정확히 배치.
-  - **실시간 스크롤 동기화**: 에디터 내부 스크롤 시 툴바가 선택된 텍스트를 실시간으로 추적하도록 구현.
-  - **서식 지능형 제어**: Bold, Italic, Underline, Color 토글 기능 및 중복 태그 방지 로직 적용.
-  - **전문가급 단축키**: Ctrl+B, I, U, S, Z, Y 등 표준 문서 도구 수준의 단축키 통합.
-- **참여자 과정 연결 및 회차 정보 보존**: 수강 이력(enrollments) 조회 시 회차(`session_id`) 정보가 유실되던 백엔드 API 이슈를 해결하고, 과정 연결 시 즉시 저장 모드로 전환되도록 UX를 개선하여 데이터 무결성을 확보함.
-- **SOLID 아키텍처 완성**: 모든 주요 페이지와 컴포넌트(기업/참여자 관리)를 커스텀 훅과 서브 컴포넌트로 분리하여 유지보수성을 극대화함.
-- **3-Tier 아키텍처 확립**: 프론트엔드 - Express 백엔드 - PostgreSQL(Supabase) 구조로의 전환 및 연결 완료.
-- **데이터 무결성 및 안정성**: 백엔드 응답 형식을 camelCase로 통일하여 프론트엔드 크래시(저장 후 빈 화면) 이슈 해결.
-- **데이터 가독성 개선**: raw ISO 문자열로 표시되던 날짜 데이터를 `YYYY.MM.DD` 형식으로 변환하는 공통 유틸리티(`toDotDate`)를 고도화하고 전면 적용.
-- **UI/UX 통일성 확보**: 기업 관리와 참여자 관리 페이지 간의 디자인 불일치(탭 스타일, 선택 바, 모달 레이아웃 등)를 "Modern & Dark Glass" 테마로 전면 통일.
-- **공통 컴포넌트 최적화**: `FloatingActionBar`를 고도화하여 다크 테마 기반의 일관된 액션 바 제공 및 코드 중복 제거.
-- **코드 품질 안정화**: 프로젝트 전반의 30개 이상의 TypeScript 타입 에러 및 구문 오류를 해결하고, **`npm run build` (TSC 체크 포함) 성공** 확인.
-- **과정 및 참여자 연결 로직 보완 (UX Blocker 해결)**: 세부 프로그램 삭제 시 UX 혼선을 막기 위한 확인 모달 및 강제 동기화 로직을 추가하고, 참여자의 수강 이력(enrollments) 저장 시 `session_id`와 `sub_course_id`를 정확히 매핑하여 특정 회차에 대한 기록이 영구적으로 보존되도록 백엔드 스키마와 프론트엔드 연동을 개선함.
-- **UX 정교화**: 레이어링 이슈(Z-index) 해결 및 불필요한 UI 요소(과정 추가 버튼 등)를 제거하여 인터페이스 단순화.
-- **Courses UI/UX 개선**: 교육 과정 관리 화면의 "박스 중첩" 체감을 줄이기 위해 섹션 간 spacing/padding을 확대하고, 내부 구분선을 정리하며, 빈 상태 박스/카드 전환 효과(transition/scale)를 경량화함. 또한 라벨/배지/CTA 버튼의 텍스트 크기를 상향해 가독성을 개선하고, 지원대상/요약/테이블 등 내부 요소의 불필요한 border를 정리해 중첩감을 추가로 완화함.
-- **연결 복구 완료**: `DATABASE_URL` 및 DB 패스워드 설정을 통해 백엔드와 Supabase 간의 통신 정상화. Health Check(`api/health`) 및 실데이터 조회 테스트 통과.
-- **레거시 제거**: 구버전 설계서(`PhaseDocs/`), 빌드 결과물(`dist/`), 미사용 모달(`AddCourseModal.tsx`) 등 불필요한 파일 및 폴더 정리 완료.
-- **보안 철저화**: RLS(Row Level Security) 정책을 강화하여 프론트엔드의 직접적인 DB 접근을 차단하고 서버측 연결만 허용하는 구조 확립.
-- **성능 최적화**: 페이지별 Lazy Loading 및 `xlsx` 라이브러리 지연 로딩을 통해 초기 번들 크기를 400KB 이하(약 360KB)로 절감함.
+## 3. 폴더 구조 (Directory Structure)
 
----
-
-## 2. 기술 스택 상세
-
-### 2-1. 의존성 목록
-
-**프로덕션 의존성**:
-```
-nodemailer@^6.9.13            - 네이버 SMTP 기반 이메일 발송
-zustand@^5.0.12               - 핵심 상태 관리 (백엔드 API 연동 방식)
-axios@^1.6.2                 - API 통신 (127.0.0.1 최적화 연동)
-lucide-react@^0.294.0        - 24x24 SVG 아이콘 라이브러리 (트리셰이킹 적용)
-react@^18.2.0                - UI 라이브러리 (Lazy Loading 적용)
-react-router-dom@^6.20.1   - 클라이언트 사이드 라우팅
-recharts@^3.8.1            - React 전문 차트 컴포넌트 (Dashboard 고도화)
-xlsx@^0.18.5               - 엑셀 파일 처리 (지연 로딩으로 번들 최적화)
+```text
+/
+├── .env.example              # 환경 변수 템플릿 (VITE_SUPABASE_URL 등)
+├── package.json              # 프론트엔드 의존성 및 스크립트 정의
+├── vite.config.ts            # Vite 번들러 설정 (alias `@/` -> `src/` 포함)
+├── plan.md                   # 프로젝트 작업 계획 및 진행률
+└── src/
+    ├── api/                  # 외부 통신 클라이언트 (`supabase.ts`)
+    ├── assets/               # 이미지, 아이콘 등 정적 자원
+    ├── components/           # 재사용 가능한 UI 컴포넌트
+    │   ├── ui/               # 기본 UI 요소 (버튼, 달력, 뱃지 등)
+    │   ├── layout/           # 레이아웃 컴포넌트 (Sidebar, TopRail, 모달 등)
+    │   └── shared/           # 공통 기능 컴포넌트 (Toast, EmptyState 등)
+    ├── constants/            # 전역 상수 선언
+    ├── hooks/                # 커스텀 React Hooks (주로 페이지 도메인 내에 배치되기도 함)
+    ├── pages/                # 라우트별 메인 뷰 및 도메인 로직
+    │   ├── companies/        # 참여 기업 관리 도메인 (모달, Drawer, 훅 분리)
+    │   ├── education/        # 교육 과정 관리 도메인
+    │   └── participants/     # 참여자 관리 및 단체 이메일 발송 도메인
+    ├── stores/               # Zustand 전역 상태 관리 (각 도메인별 API 호출 로직 캡슐화)
+    ├── styles/               # 전역 CSS, Tailwind Variables, 애니메이션 설정
+    ├── types/                # TypeScript 타입/인터페이스 정의 (`models.ts` 등)
+    └── utils/                # 공통 헬퍼 유틸리티 함수 (템플릿 변수 치환 등)
 ```
 
-**개발 의존성**:
-```
-TypeScript@^6.0.3          - 엄격한 타입 안정성 확보 (TSC 오류 0개)
-Vite@^5.0.8               - 고성능 빌드 도구 (코드 스플리팅 적용)
-```
+## 4. 핵심 도메인 및 기능
+- **대시보드 (Dashboard):** `useStatsStore`를 통해 Supabase RPC(`get_dashboard_stats`)를 호출하여 실시간 통계, 참가자 현황, 교육 참여율 등을 차트로 시각화합니다.
+- **기업 및 참여자 관리:** CRUD 작업뿐만 아니라 Excel 업로드/다운로드 기능을 제공합니다. 각 도메인 폴더(`src/pages/companies/` 등) 내에 비즈니스 훅(`hooks/`)과 뷰 모달(`modals/`)을 분리하여 SOLID 원칙에 입각한 설계를 유지합니다.
+- **이메일 템플릿 및 발송:** `useTemplateStore`에서 이메일 템플릿을 관리하고, Supabase Edge Functions(`send-batch`)를 호출하여 다수의 참여자에게 외부 SMTP(Naver 등)를 경유한 이메일을 백그라운드에서 발송합니다.
+
+## 5. 온보딩 가이드 (신규 합류자 필수 확인 사항)
+
+### 5.1. 로컬 개발 환경 설정
+1. **의존성 설치:** 프로젝트 루트에서 `npm install` 실행
+2. **환경 변수 설정:** 루트 경로의 `.env.example`을 복사하여 `.env` (또는 `.env.local`)을 생성하고, Supabase 프로젝트 URL과 Anon Key를 입력합니다.
+3. **로컬 서버 실행:** `npm run dev` 실행 (기본 포트: 5173)
+
+### 5.2. 개발 규칙 및 컨벤션 (Conventions)
+- **컴포넌트 설계:** 모든 새로운 컴포넌트는 `src/components` 또는 각 도메인(`src/pages/[domain]`) 내에 적절히 배치하며, 단일 책임 원칙(SRP)을 준수하도록 로직(Zustand, Custom Hooks)과 뷰를 분리합니다.
+- **경로 참조 (Absolute Imports):** 상대 경로(`../../`) 대신 Vite에 설정된 절대 경로 Alias(`@/`)를 적극 활용합니다. (예: `import { Button } from '@/components/ui/Button'`)
+- **UI/UX 스탠다드:** 
+  - 이모지 대신 `lucide-react` SVG 아이콘을 사용합니다.
+  - 인터랙션 요소(Hover, Transition)는 부드럽고 안정적으로 설계하며, 레이아웃 이동(Shift)을 최소화합니다.
+  - 숫자가 표시되는 테이블/차트 등에서는 `font-variant-numeric: tabular-nums`를 사용하여 정렬을 유지합니다.
 
 ---
 
-## 3. 시스템 구조 (SOLID 리팩터링 결과)
+# Component Dependency Graph (Archive)
 
-### 3-1. 모듈별 구성
-- **Companies**: `Page` -> `Hooks(Filters, Sort, Selection, Modals, DrawerState, Excel, Tooltips, Popover)` -> `Components(Table, Drawer, Sections, Modals)` -> `Utils`
-- **Participants**: `Page` -> `Hooks(Filters, Selection, Excel, CourseManager)` -> `Components(Table, Drawer, Modals)`
-- **Courses**: `Page` -> `Redesigned Split-View Editor (Left: Summary List / Right: Performance Detail)` -> `Sub-components`
+이 섹션은 프로젝트 초기 마이그레이션 과정에서 컴포넌트의 관계와 레거시 청소 내역을 추적하기 위해 사용되었던 기록입니다.
 
-### 3-2. 데이터 흐름
-- **Frontend**: Zustand 스토어에서 `apiClient`(Axios)를 통해 백엔드 호출.
-- **Backend**: Express API 엔드포인트에서 `pg pool`을 통해 DB 직접 연결 및 트랜잭션 처리 완료.
-- **Database**: PostgreSQL(Supabase) 테이블 간 관계(1:N, N:M)를 통한 정규화된 데이터 저장.
+## Workflow: Create -> Track -> Replace -> Remove
+1. **Create**: Develop the new component (e.g., `NewComponent.tsx`).
+2. **Track**: Add the new and old components to this graph.
+3. **Replace**: Update all files using the old component to use the new one.
+4. **Remove**: Delete the old component file.
 
----
+## Component Map
 
-## 4. 데이터 모델 (Supabase MCP 연동 상태)
-- **Project URL**: https://boduyyabeigqxxvudles.supabase.co
-- **Status**: Connected & Operational
-- **Tables**: `companies`, `course_groups`, `sub_courses`, `participants`, `enrollments`, `email_templates`, `system_logs`, `company_courses` 정상 작동 확인.
+### UI Components
+- **ToggleSwitch**
+  - Path: `src/components/ui/ToggleSwitch.tsx`
+  - Replaced: Manual peer-checked checkbox implementations.
+  - Usage: `CompanyDrawer.tsx`, `ParticipantDrawer.tsx`, `AddParticipantModal.tsx`
+- **CompletionBadge**
+  - Path: `src/components/ui/CompletionBadge.tsx`
+  - Usage: `ParticipantDrawer.tsx`, `ParticipantsTable.tsx`
+- **StatusBadge**
+  - Path: `src/components/ui/StatusBadge.tsx`
+  - Usage: `CompanyDrawer.tsx`, `CompanyTable.tsx`, `MOUStatusSection.tsx`
+- **CourseTypeBadge**
+  - Path: `src/components/ui/CourseTypeBadge.tsx`
+  - Usage: `CompanyTable.tsx`
 
----
+### Shared Components
+- **EmptyState**
+  - Path: `src/components/shared/EmptyState.tsx`
+  - Usage: `CompanyTable.tsx`, `ParticipantsTable.tsx`
+- **PageHeader**
+  - Path: `src/components/layout/PageHeader.tsx`
+  - Usage: All main pages. Now includes centralized action buttons.
 
-## 5. 향후 과제 및 권장 사항
+### Page Modules (SOLID Refactored)
 
-1.  **실시간 구독(Realtime) 고도화**: Supabase Realtime 기능을 활용하여 다중 사용자 환경에서 데이터(기업 정보, 참여자 정보, 발송 이력 등)가 변경되었을 때 화면을 새로고침하지 않고도 실시간으로 반영되도록 개선.
-2.  **데이터 백업 및 스냅샷**: 중요한 이력 데이터(`enrollments`, `email_logs`)에 대한 자동화된 백업 파이프라인 구축.
-3.  **지속적인 UI/UX 정제**: 공통화된 `DataPageLayout` 시스템을 기반으로 대시보드 메인 화면 및 기타 설정 화면들의 시각적 일관성(Visual Consistency) 유지 보수 및 사용자 피드백 기반 미세 조정.
+#### Companies Module
+- **Hooks**:
+  - `useCompanyFilters`: Filtering logic.
+  - `useCompanySort`: Sorting logic.
+  - `useCompanySelection`: Selection logic.
+  - `useCompanyModals`: Modal orchestration.
+  - `useCompanyDrawerState`: Drawer internal state.
+  - `useCompanyExcel`: Excel parsing and upload.
+  - `useCompanyTooltips`: Table tooltips.
+  - `useParticipantPopover`: Participant preview popover.
+- **Drawer Sections**:
+  - `DrawerHeader`, `BasicInfoSection`, `ManagerInfoSection`, `MOUStatusSection`, `CourseParticipationSection`.
 
+#### Participants Module
+- **Hooks**:
+  - `useParticipantFilters`: Filtering logic.
+  - `useParticipantSelection`: Selection logic.
+  - `useParticipantExcel`: Excel parsing and upload.
+  - `useCourseManager`: Course management logic.
+- **Modals**:
+  - `AddParticipantChoiceModal`: Consolidated entry point for adding participants.
+  - `AddParticipantModal`: Inline enterprise registration support.
+  - `LinkCourseModal`: Synchronized with real-time database courses.
+  - `BulkEmailModal`: Multi-recipient email sending via Naver SMTP.
 
----
-
-## 9. 시스템 동작 기능 및 데이터 흐름 분석
-
-### 9-1. 주요 기능 동작 모듈
-1. **기업 관리 (Company Management)**
-   - **조회/필터/정렬**: 8개의 커스텀 훅을 통한 고도로 분리된 로직.
-   - **MOU 관리**: 실시간 상태 업데이트 및 이력 관리 기반 마련.
-
-2. **참여자 관리 (Participant Management)**
-   - **수강 이력**: `enrollments` 테이블 연동을 통한 완전한 영속성 확보.
-   - **단체 메일 발송**: `BulkEmailModal`을 통한 일괄 발송 시스템 통합.
-
-3. **이메일 시스템 (Email System)**
-   - **템플릿 관리**: 변수 치환 및 실시간 미리보기를 통한 메일 작성 효율화.
-   - **발송 이력**: `email_logs` 연동으로 수신자별 성공/실패 여부 추적.
-
-### 9-2. 데이터베이스 엔티티 매핑 분석 (Entity Mapping)
-
-| 구분 | 엔티티 명 | 주요 속성 | 관계 |
-| :--- | :--- | :--- | :--- |
-| **기업** | `companies` | 명칭, 사업자번호, 소재지, 대표자, 담당자 정보, MOU 상태 | 1 : N (참여자) |
-| **참여자** | `participants` | 이름, 소속기업ID, 직위, 연락처, 고용보험 상태, 경력 | N : 1 (기업) |
-| **과정 분류** | `course_groups` | 분류명 (훈련비, 지원비, 세미나) | 1 : N (세부 과정) |
-| **세부 과정** | `sub_courses` | 과정명, 시작/종료일, 총 시간, 목표 인원 | 1 : N (수강 이력) |
-| **수강 이력** | `enrollments` | 참여자ID, 세부과정ID, 수료상태, 수료일, 수료번호 | N : M (참여자-과정) |
-| **메일 템플릿** | `email_templates` | 템플릿명, 대상 구분, 제목, 본문, 첨부파일 정보 | 1 : N (발송 이력) |
-| **발송 이력** | `email_logs` | 수신 이메일, 템플릿ID, 발송 상태, 에러 메시지, 발송일시 | N : 1 (템플릿) |
+## Completed Migrations (Archive)
+- [x] Removed unused `ChartNotes.tsx` component.
+- [x] Removed unused `EducationOverview.tsx` legacy page.
+- [x] Unify `index.css` and move to `styles/`.
+- [x] Refactor `CompanyManagementPage` and `ParticipantsPage` to SOLID architecture.
+- [x] Decompose `CompanyDrawer` into modular sections.
+- [x] Transition to 3-tier architecture with Express backend -> **(Updated) Transitioned to BaaS with Supabase**.
+- [x] Implement Recharts analytics dashboard.
+- [x] Replace inline error alerts with professional Toast system.
+- [x] Consolidate participant action buttons.
+- [x] Secure database with RLS hardening.
+- [x] Implement Naver SMTP-based Email Sending System.

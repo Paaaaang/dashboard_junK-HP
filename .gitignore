@@ -38,3 +38,9 @@ Thumbs.db
 
 .claude/
 .gemini/
+.vercel
+.agents
+
+supabase/
+
+plan.md
