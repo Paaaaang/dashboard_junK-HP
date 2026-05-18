@@ -121,15 +121,15 @@ export function CourseStatusTable() {
         <table className="w-full text-center border-collapse">
           <thead>
             <tr>
-              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[120px]">구분</th>
-              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[140px]">대상</th>
-              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[280px]">과정명</th>
-              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[100px]">진행(예정)일</th>
-              <th colSpan={3} className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50">성과달성</th>
+              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[120px]">과정 구분</th>
+              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[140px]">지원 대상</th>
+              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[280px]">세부 과정명</th>
+              <th rowSpan={2} className="px-4 py-3 text-xs font-black text-secondary bg-surface-subtle border border-border/50 align-middle min-w-[100px]">진행 일정</th>
+              <th colSpan={3} className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50">성과 달성 지표</th>
             </tr>
             <tr>
-              <th className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50 min-w-[80px]">목표</th>
-              <th className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50 min-w-[80px]">달성</th>
+              <th className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50 min-w-[80px]">목표 인원</th>
+              <th className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50 min-w-[80px]">수료 인원</th>
               <th className="px-4 py-2 text-xs font-black text-secondary bg-surface-subtle border border-border/50 min-w-[100px]">달성률(%)</th>
             </tr>
           </thead>
@@ -142,11 +142,11 @@ export function CourseStatusTable() {
               tableData.map((row, idx) => {
                 if (row.type === 'total') {
                   return (
-                    <tr key={`total-${row.groupId}`} className="bg-surface-subtle/50">
-                      <td colSpan={4} className="px-4 py-3 text-sm font-black text-primary border border-border/50">총합</td>
-                      <td className="px-4 py-3 text-sm font-black text-primary border border-border/50">{row.target}</td>
-                      <td className="px-4 py-3 text-sm font-black text-primary border border-border/50">{row.achieved > 0 ? row.achieved : ""}</td>
-                      <td className="px-4 py-3 text-sm font-black text-primary border border-border/50">{row.rate}%</td>
+                    <tr key={`total-${row.groupId}`} className="bg-surface-subtle/50 font-black">
+                      <td colSpan={4} className="px-4 py-3 text-sm text-primary border border-border/50 uppercase tracking-widest">해당 구분 합계 (Total)</td>
+                      <td className="px-4 py-3 text-sm text-primary border border-border/50 tabular-nums">{row.target}</td>
+                      <td className="px-4 py-3 text-sm text-primary border border-border/50 tabular-nums">{row.achieved > 0 ? row.achieved : "0"}</td>
+                      <td className="px-4 py-3 text-sm text-primary border border-border/50 tabular-nums">{row.rate}%</td>
                     </tr>
                   );
                 }
@@ -159,12 +159,12 @@ export function CourseStatusTable() {
                       </td>
                     )}
                     {row.groupRowSpan > 0 && (
-                      <td rowSpan={row.groupRowSpan} className="px-4 py-3 text-[13px] font-bold text-secondary border border-border/50 align-middle whitespace-pre-wrap">
+                      <td rowSpan={row.groupRowSpan} className="px-4 py-3 text-[12px] font-bold text-secondary border border-border/50 align-middle whitespace-pre-wrap leading-relaxed">
                         {row.groupAudiences.replace(/, /g, '\n')}
                       </td>
                     )}
                     {row.detailRowSpan > 0 && (
-                      <td rowSpan={row.detailRowSpan} className="px-4 py-3 text-[13px] font-bold text-secondary border border-border/50 align-middle text-left">
+                      <td rowSpan={row.detailRowSpan} className="px-4 py-3 text-[13px] font-bold text-secondary border border-border/50 align-middle text-left leading-snug">
                         {row.detailName}
                       </td>
                     )}
@@ -186,13 +186,13 @@ export function CourseStatusTable() {
                         {row.sessionDate}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-mono text-secondary border border-border/50">
+                    <td className="px-4 py-3 text-[13px] font-mono text-secondary border border-border/50 tabular-nums">
                       {row.target}
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-mono text-secondary border border-border/50">
-                      {row.achieved > 0 ? row.achieved : ""}
+                    <td className="px-4 py-3 text-[13px] font-mono text-secondary border border-border/50 tabular-nums">
+                      {row.achieved > 0 ? row.achieved : "0"}
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-mono border border-border/50" style={{ color: Number(row.rate) >= 100 ? 'var(--color-success)' : Number(row.rate) > 0 ? 'var(--brand-primary)' : 'var(--color-text-secondary)' }}>
+                    <td className="px-4 py-3 text-[13px] font-mono border border-border/50 tabular-nums" style={{ color: Number(row.rate) >= 100 ? 'var(--color-success)' : Number(row.rate) > 0 ? 'var(--brand-primary)' : 'var(--color-text-secondary)' }}>
                       {row.rate}%
                     </td>
                   </tr>

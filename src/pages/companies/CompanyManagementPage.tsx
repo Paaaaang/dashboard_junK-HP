@@ -11,7 +11,7 @@ import type {
 } from "@/types/models";
 
 // Hooks
-import { useCompanyFilters, TAB_ITEMS } from "@/pages/companies/hooks/useCompanyFilters";
+import { useCompanyFilters } from "@/pages/companies/hooks/useCompanyFilters";
 import { useCompanySort } from "@/pages/companies/hooks/useCompanySort";
 import { useCompanySelection } from "@/pages/companies/hooks/useCompanySelection";
 import { useCompanyModals } from "@/pages/companies/hooks/useCompanyModals";
@@ -37,13 +37,17 @@ import {
 } from "@/pages/companies/utils/companyUtils";
 
 const SYSTEM_FIELDS = [
-  { key: "companyName", label: "기업명 *" },
+  { key: "companyName", label: "기업명", required: true },
   { key: "businessRegNo", label: "사업자번호" },
   { key: "location", label: "소재지" },
   { key: "representative", label: "대표자명" },
   { key: "manager", label: "담당자" },
   { key: "phone", label: "연락처" },
   { key: "email", label: "이메일" },
+  { key: "mouSigned", label: "협약서 여부" },
+  { key: "mouSignedDate", label: "협약 체결일" },
+  { key: "participationCount", label: "참여 과정 수" },
+  { key: "participationList", label: "참여 과정 목록" },
   { key: "__skip__", label: "건너뛰기" },
 ];
 
@@ -59,8 +63,6 @@ export function CompanyManagementPage() {
   const { addToast } = useToastStore();
 
   // Memoized Data
-  const companies = useMemo(() => rawCompanies.map(c => normalizeCompanyParticipations(c, courseGroups)), [rawCompanies, courseGroups]);
-  
   const companyParticipants = useMemo(() => {
     const groupNames: Record<string, string> = {};
     courseGroups.forEach((g) => {
@@ -69,18 +71,59 @@ export function CompanyManagementPage() {
     return transformParticipantsToMap(participants, groupNames);
   }, [participants, courseGroups]);
 
+  const companies = useMemo(() => {
+    return rawCompanies.map(c => {
+      const normalized = normalizeCompanyParticipations(c, courseGroups);
+      
+      // Inject real-time participations from the participants store
+      const companyPtData = companyParticipants[c.id];
+      if (companyPtData) {
+        normalized.participations = courseGroups.map(group => {
+          const subCourses = companyPtData[group.id];
+          if (subCourses && Object.keys(subCourses).length > 0) {
+            const programNames = Object.values(subCourses).map(sc => sc.name);
+            return {
+              courseType: group.name,
+              enabled: true,
+              programNames,
+              status: "참여중" 
+            };
+          }
+          return normalized.participations.find(p => p.courseType === group.name) || {
+            courseType: group.name,
+            enabled: false,
+            programNames: [],
+            status: "미참여"
+          };
+        });
+      }
+      return normalized;
+    });
+  }, [rawCompanies, courseGroups, companyParticipants]);
+
   // Logic Hooks
   const { 
     activeTab, setActiveTab, searchRaw: searchText, setSearchRaw: setSearchText, searchDebounced, filterCompanies 
   } = useCompanyFilters();
+
+  const tabItems = useMemo(() => {
+    const items = [{ key: "ALL", label: "전체" }];
+    courseGroups.forEach(g => {
+      let label = g.name;
+      if (label === "훈련비과정") label = "훈련비";
+      if (label === "지원비과정") label = "지원비";
+      if (label === "공유개방 세미나") label = "세미나";
+      items.push({ key: g.name, label });
+    });
+    return items;
+  }, [courseGroups]);
   
   const { sortState, toggleSort, sortCompanies } = useCompanySort();
   
   const tabTargetGroupName = useMemo(() => {
     if (activeTab === "ALL") return null;
-    const keyword = activeTab === "TRAINING" ? "훈련비" : activeTab === "SUPPORT" ? "지원비" : "세미나";
-    return courseGroups.find((item) => item.name.includes(keyword))?.name ?? null;
-  }, [activeTab, courseGroups]);
+    return activeTab;
+  }, [activeTab]);
 
   const filteredCompanies = useMemo(() => {
     const tabFiltered = filterCompanies(companies, tabTargetGroupName);
@@ -116,10 +159,6 @@ export function CompanyManagementPage() {
     drawerNotice,
     setDrawerNotice,
     editModeSnapshot,
-    drawerNameEditing,
-    setDrawerNameEditing,
-    drawerNameDraft,
-    setDrawerNameDraft,
     cancelConfirmPending,
     setCancelConfirmPending,
     isClosing,
@@ -146,8 +185,10 @@ export function CompanyManagementPage() {
     setColumnMapping,
     uploadPreview,
     uploadError,
+    isParsing,
     resetUpload,
     goNextToPreview,
+    goPrevStep,
     handleFileChange,
     handleDropzoneDrop,
     confirmUpload,
@@ -248,7 +289,9 @@ export function CompanyManagementPage() {
       await upsertCompany(draftCompany);
       setIsSaving(false);
       addToast("정보가 저장되었습니다.", "success");
-      closeDrawer();
+      setDrawerEditMode(false); // Do not close drawer, just exit edit mode
+      setDrawerNotice("정보가 성공적으로 저장되었습니다.");
+      setTimeout(() => setDrawerNotice(""), 3000);
     } catch (err: any) {
       setDrawerNotice(`저장 실패: ${err.message}`);
       setIsSaving(false);
@@ -279,7 +322,7 @@ export function CompanyManagementPage() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center p-1 bg-surface border border-border/40 rounded-2xl shadow-subtle w-fit">
             <div className="flex items-center gap-1">
-              {TAB_ITEMS.map((tab) => (
+              {tabItems.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
@@ -301,7 +344,7 @@ export function CompanyManagementPage() {
             <input
               type="text"
               placeholder="기업명, 소재지, 담당자 검색..."
-              className="pl-11 pr-5 py-2.5 bg-surface border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all w-[320px] shadow-subtle text-primary placeholder:text-tertiary font-medium"
+              className="pl-11 pr-5 py-2.5 bg-surface border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all w-[320px] shadow-subtle placeholder:text-disabled font-medium"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
@@ -396,8 +439,6 @@ export function CompanyManagementPage() {
             draftCompany={draftCompany}
             drawerEditMode={drawerEditMode}
             drawerNotice={drawerNotice}
-            drawerNameEditing={drawerNameEditing}
-            drawerNameDraft={drawerNameDraft}
             expandedDrawerGroups={expandedDrawerGroups}
             expandedSubCourses={expandedSubCourses}
             addParticipantSubCourseId={addParticipantSubCourseId}
@@ -407,8 +448,6 @@ export function CompanyManagementPage() {
             isClosing={isClosing}
             courseGroups={courseGroups}
             onDrawerClose={() => { setIsClosing(true); setTimeout(() => { closeDrawer(); setIsClosing(false); }, 200); }}
-            onDrawerNameEditToggle={setDrawerNameEditing}
-            onDrawerNameDraftChange={setDrawerNameDraft}
             onUpdateDraftField={(f, v) => setDraftCompany(prev => prev ? ({ ...prev, [f]: v }) : prev)}
             onEnterEditMode={enterEditMode}
             onCancelEdit={() => {
@@ -460,7 +499,6 @@ export function CompanyManagementPage() {
               setAddParticipantSubCourseId(null); setAddParticipantDraft(""); setAddParticipantSessionId("");
               addToast(`${name} 참여자가 해당 과정에 추가되었습니다.`, "success");
             }}
-            onCancelAddParticipant={() => { setAddParticipantSubCourseId(null); setAddParticipantDraft(""); }}
             onRemoveParticipant={(gId, subName, pId) => setPendingRemoveParticipant({ groupId: gId, subCourseId: subName, ptId: pId })}
             onShowParticipantPopover={showParticipantPopover}
             onHideParticipantPopover={hideParticipantPopover}
@@ -487,9 +525,11 @@ export function CompanyManagementPage() {
               columnMapping={columnMapping}
               onMappingChange={(col, field) => setColumnMapping(prev => ({ ...prev, [col]: field }))}
               onNextStep={goNextToPreview}
+              onPrevStep={goPrevStep}
               systemFields={SYSTEM_FIELDS}
               uploadPreview={uploadPreview}
               uploadError={uploadError}
+              isParsing={isParsing}
               onFileChange={handleFileChange}
               onDropzoneDrop={handleDropzoneDrop}
               onConfirm={handleConfirmUpload}
@@ -502,10 +542,6 @@ export function CompanyManagementPage() {
               emailRecipientIds={emailRecipientIds}
               selectedTemplateId={selectedTemplateId}
               onTemplateChange={setSelectedTemplateId}
-              onSend={() => {
-                 addToast(`${emailRecipientIds.length}개 기업에 이메일 발송을 준비했습니다.`, "info");
-                 setActiveModal(null);
-              }}
               templates={templates}
             />
           )}

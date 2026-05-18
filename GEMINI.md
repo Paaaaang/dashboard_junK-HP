@@ -15,7 +15,13 @@ To maintain a professional "Data-Dense Dashboard" aesthetic, follow these rules 
 
 ### Color Consistency
 - **Theming**: Use semantic variables (`--brand-primary`, `--color-cta`) instead of hardcoded hex values, especially in chart components.
+- **The 90/10 Rule**: 80-90% of the UI must be neutral (White/Gray). Limit brand colors to CTAs, active tabs, and progress indicators. Strictly separate Brand color from Semantic status colors.
 - **Contrast**: Ensure all text has at least 4.5:1 contrast ratio.
+
+### Layout Hierarchy (Anti-"Box-in-Box")
+- **Whitespace > Borders**: Use spacing and proximity to group related items. Avoid excessive borders and nested gray backgrounds.
+- **Typography Hierarchy**: Use size, weight, and contrast (not boxes) to define data importance.
+- **Visual Flattening**: Keep visual depth shallow. Prefer flat lists/rows over deeply nested card components.
 
 ## Component Lifecycle Management (Create -> Track -> Replace -> Remove)
 To prevent redundant or old code ("zombie code") from remaining in the codebase, follow this strict workflow when creating or refactoring components:
@@ -31,6 +37,7 @@ To prevent redundant or old code ("zombie code") from remaining in the codebase,
 - Use `@tailwindcss/postcss` for PostCSS integration.
 
 ## Docker Workflow
-- Use `docker-compose up -d` for the full stack (frontend, backend, postgres, redis).
+- This project is now a single-tier client app migrated to Supabase.
+- Use `npm run dev` to start the local development server.
+- Supabase services are managed via the Supabase Dashboard.
 - Frontend is available on port `5173`.
-- Backend is available on port `3001`.

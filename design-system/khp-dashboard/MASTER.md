@@ -61,6 +61,32 @@
 
 ---
 
+## Global Hierarchy Principles
+
+### 1. Color Hierarchy (The 90/10 Rule)
+*Brand colors should define identity, not create noise.*
+
+- **Neutral Foundation (90%)**: 80-90% of the UI must be neutral (White, Gray, Slate). Let the data and text take center stage.
+- **Action-Driven Brand Color (<10%)**: Use brand colors strictly for:
+    - Primary CTAs (final action buttons)
+    - Active Tab indicators
+    - Progress bars/loading indicators
+- **Forbidden Usage**: Never use brand colors for decorative icons, header backgrounds, or static body text.
+- **Semantic Separation**: Keep State colors (Green for Success, Red for Error, Yellow for Warning) strictly separate from Brand colors.
+
+### 2. Layout Hierarchy (Anti-"Box-in-Box" Syndrome)
+*Avoid excessive nesting of containers to prevent UI heaviness.*
+
+- **Whitespace as Grouping**: Instead of drawing borders or using gray backgrounds, use Gestalt's "Proximity Principle":
+    - **Tight Gaps (4-8px)** for related items.
+    - **Wide Gaps (24-32px)** to separate distinct groups.
+- **Typography-Driven Hierarchy**: Establish hierarchy through Size, Weight, and Contrast rather than physical boxes. 
+    - Bold/Large for headers.
+    - Regular/Small/Muted for secondary info.
+- **Visual Flattening**: Limit visual depth. Avoid nested cards with overlapping shadows/borders. Most low-level data should be presented as flat lists or simple rows rather than nested cards.
+
+---
+
 ## Component Specs
 
 ### Buttons

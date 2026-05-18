@@ -52,10 +52,6 @@ export function AddParticipantChoiceModal({
             </div>
           </button>
         </div>
-
-        <div className="px-8 py-5 bg-surface-subtle/50 text-center">
-          <p className="text-xs text-tertiary font-medium tracking-tight uppercase">Dashboard Participant Management</p>
-        </div>
       </div>
     </div>
   );

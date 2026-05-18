@@ -2,14 +2,16 @@ import { parseISO, format } from "date-fns";
 import { CompanyRecord, CourseGroup } from "@/types/models";
 
 
-export function formatBusinessRegNo(value: string): string {
+export function formatBusinessRegNo(value: string | null | undefined): string {
+  if (!value) return "";
   const digits = value.replace(/\D/g, "").slice(0, 10);
   if (digits.length <= 3) return digits;
   if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
 }
 
-export function formatPhone(val: string): string {
+export function formatPhone(val: string | null | undefined): string {
+  if (!val) return "";
   const digits = val.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 3) return digits;
   if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;

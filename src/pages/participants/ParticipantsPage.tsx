@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Download, Search, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { FloatingActionBar, DataPageLayout } from "@/components";
-import { useCompanyStore, useParticipantStore, useToastStore } from "@/stores";
-import type { ParticipantRecord, CompletionFilter, InsuranceFilter, ParticipantTabKey } from "@/types/models";
+import { useCompanyStore, useParticipantStore, useToastStore, useCourseStore } from "@/stores";
+import type { ParticipantRecord, CompletionFilter, InsuranceFilter, ParticipantTabKey, CourseGroup } from "@/types/models";
 import { ParticipantDrawer } from "@/pages/participants/ParticipantDrawer";
 import { AddParticipantModal } from "@/pages/participants/modals/AddParticipantModal";
 import { AddParticipantChoiceModal } from "@/pages/participants/modals/AddParticipantChoiceModal";
@@ -18,22 +18,18 @@ import { useParticipantExcel } from "@/pages/participants/hooks/useParticipantEx
 const PAGE_SIZE = 20;
 
 const SYSTEM_FIELDS = [
-  { key: "name", label: "이름 *" },
-  { key: "companyName", label: "소속 기업 *" },
+  { key: "name", label: "이름", required: true },
+  { key: "companyName", label: "소속 기업", required: true },
   { key: "position", label: "직위" },
   { key: "phone", label: "연락처" },
   { key: "email", label: "이메일" },
-  { key: "employmentInsurance", label: "고용보험" },
-  { key: "workExperience", label: "경력사항" },
-  { key: "documentSkill", label: "서류역량" },
+  { key: "employmentInsurance", label: "고용보험 가입여부" },
+  { key: "workExperience", label: "업무 경력" },
+  { key: "documentSkill", label: "문서작성 역량" },
+  { key: "enrollmentCount", label: "참여 과정 수" },
+  { key: "completionCount", label: "수료 과정 수" },
+  { key: "enrollmentSummary", label: "상세 과정 요약" },
   { key: "__skip__", label: "건너뛰기" },
-];
-
-const TAB_ITEMS: Array<{ key: ParticipantTabKey; label: string }> = [
-  { key: "ALL", label: "전체" },
-  { key: "훈련비과정", label: "훈련비" },
-  { key: "지원비과정", label: "지원비" },
-  { key: "공유개방 세미나", label: "세미나" },
 ];
 
 export function ParticipantsPage() {
@@ -42,7 +38,27 @@ export function ParticipantsPage() {
 
   const { participants, upsertParticipant, fetchParticipants, error: storeError } = useParticipantStore();
   const { companies: allCompanies } = useCompanyStore();
+  const { courseGroups, fetchCourseGroups } = useCourseStore();
   const { addToast } = useToastStore();
+
+  const tabItems = useMemo(() => {
+    const items: Array<{ key: ParticipantTabKey; label: string }> = [{ key: "ALL", label: "전체" }];
+    courseGroups.forEach((g: CourseGroup) => {
+      // Shorten label if needed (e.g. 훈련비과정 -> 훈련비)
+      let label = g.name;
+      if (label === "훈련비과정") label = "훈련비";
+      if (label === "지원비과정") label = "지원비";
+      if (label === "공유개방 세미나") label = "세미나";
+      items.push({ key: g.name, label });
+    });
+    return items;
+  }, [courseGroups]);
+
+  useEffect(() => {
+    if (courseGroups.length === 0) {
+      fetchCourseGroups();
+    }
+  }, [courseGroups, fetchCourseGroups]);
 
   const handleUpdateParticipant = async (updated: ParticipantRecord) => {
     if (!updated.name.trim()) {
@@ -81,14 +97,17 @@ export function ParticipantsPage() {
     showUploadModal,
     openUploadModal,
     closeUploadModal,
+    uploadFile,
     uploadStep,
     rawRows,
     columnMapping,
     setColumnMapping,
     uploadPreview,
     uploadError,
+    isParsing,
     parseExcelFile,
     goNextToPreview,
+    goPrevStep,
     confirmUpload,
     resetUpload,
   } = useParticipantExcel(allCompanies, addToast);
@@ -172,7 +191,7 @@ export function ParticipantsPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center p-1 bg-surface border border-border/40 rounded-2xl shadow-subtle w-fit">
             <div className="flex items-center gap-1">
-              {TAB_ITEMS.map((tab) => (
+              {tabItems.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
@@ -234,7 +253,7 @@ export function ParticipantsPage() {
               <input
                 type="text"
                 placeholder="이름 또는 기업명 검색..."
-                className="pl-11 pr-5 py-2.5 bg-surface border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all w-[320px] shadow-subtle text-primary placeholder:text-tertiary font-medium"
+                className="pl-11 pr-5 py-2.5 bg-surface border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all w-[320px] shadow-subtle placeholder:text-disabled font-medium"
                 value={searchRaw}
                 onChange={(e) => setSearchRaw(e.target.value)}
               />
@@ -354,14 +373,17 @@ export function ParticipantsPage() {
           {showUploadModal && (
             <UploadModal
               onClose={closeUploadModal}
+              uploadFile={uploadFile}
               uploadStep={uploadStep}
               rawRows={rawRows}
               columnMapping={columnMapping}
               onMappingChange={(col, field) => setColumnMapping(prev => ({ ...prev, [col]: field }))}
               onNextStep={goNextToPreview}
+              onPrevStep={goPrevStep}
               systemFields={SYSTEM_FIELDS}
               uploadPreview={uploadPreview}
               uploadError={uploadError}
+              isParsing={isParsing}
               onFileChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {

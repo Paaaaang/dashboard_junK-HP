@@ -57,6 +57,7 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [uploadPreview, setUploadPreview] = useState<CompanyRecord[] | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
 
   const resetUpload = useCallback(() => {
     setUploadFile(null);
@@ -65,9 +66,20 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
     setColumnMapping({});
     setUploadPreview(null);
     setUploadError(null);
+    setIsParsing(false);
   }, []);
 
-  const parseExcelFile = (file: File) => {
+  const parseExcelFile = useCallback(async (file: File) => {
+    // 1. Extension Validation
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "xlsx" && ext !== "xls") {
+      setUploadError("지원하지 않는 파일 형식입니다. (.xlsx, .xls 파일만 가능)");
+      return;
+    }
+
+    setIsParsing(true);
+    setUploadError(null);
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -82,11 +94,16 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
 
         if (rows.length === 0) {
           setUploadError("인식된 데이터가 없습니다.");
+          setIsParsing(false);
           return;
         }
 
         const headers = Object.keys(rows[0]);
         const initialMapping: Record<string, string> = {};
+
+        // 2. Exact Label Auto-mapping (High Priority)
+        // Note: systemFields will be passed from the page component if needed, 
+        // but here we use a hardcoded reference or typical labels
         headers.forEach((h) => {
           const header = h.trim();
           if (["기업명", "회사명"].includes(header)) initialMapping[h] = "companyName";
@@ -96,6 +113,10 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
           else if (["담당자"].includes(header)) initialMapping[h] = "manager";
           else if (["연락처", "전화"].includes(header)) initialMapping[h] = "phone";
           else if (["이메일"].includes(header)) initialMapping[h] = "email";
+          else if (header.includes("협약서") || header.includes("MOU")) initialMapping[h] = "mouSigned";
+          else if (header.includes("협약 체결일")) initialMapping[h] = "mouSignedDate";
+          else if (header.includes("과정 수")) initialMapping[h] = "participationCount";
+          else if (header.includes("과정 목록")) initialMapping[h] = "participationList";
           else initialMapping[h] = "__skip__";
         });
 
@@ -103,13 +124,13 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
         setColumnMapping(initialMapping);
         setUploadStep(2);
       } catch {
-        setUploadError(
-          "파일 파싱에 실패했습니다. xlsx/xls 형식을 확인해 주세요.",
-        );
+        setUploadError("파일 파싱에 실패했습니다.");
+      } finally {
+        setIsParsing(false);
       }
     };
     reader.readAsArrayBuffer(file);
-  };
+  }, []);
 
   const goNextToPreview = () => {
     const parsed = rawRows.map((row, index) => {
@@ -124,6 +145,10 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
         const value = String(row[colName] ?? "").trim();
         if (systemField === "businessRegNo") {
           company.businessRegNo = formatBusinessRegNo(value);
+        } else if (systemField === "mouSigned") {
+          company.mouSigned = value === "체결" || value === "Y" || value === "true";
+        } else if (systemField === "mouSignedDate") {
+          if (value && value !== "-") company.mouSignedDate = value.replace(/\./g, "-");
         } else if (systemField in company) {
           (company as any)[systemField] = value;
         }
@@ -133,7 +158,7 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
     }).filter(company => company.companyName.trim().length > 0);
 
     if (parsed.length === 0) {
-      setUploadError("매핑된 기업명이 없습니다. 컬럼 매핑을 확인해 주세요.");
+      setUploadError("유효한 데이터가 없습니다. 기업명을 확인해 주세요.");
       return;
     }
 
@@ -141,12 +166,14 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
     setUploadStep(3);
   };
 
+  const goPrevStep = useCallback(() => {
+    setUploadStep((prev) => (prev > 1 ? (prev - 1) as 1 | 2 | 3 : 1));
+  }, []);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setUploadFile(file);
-    setUploadError(null);
-    setUploadPreview(null);
     parseExcelFile(file);
   };
 
@@ -155,8 +182,6 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
     setUploadFile(file);
-    setUploadError(null);
-    setUploadPreview(null);
     parseExcelFile(file);
   };
 
@@ -179,8 +204,10 @@ export function useCompanyExcel(courseGroups: CourseGroup[]) {
     uploadPreview,
     uploadError,
     setUploadError,
+    isParsing,
     resetUpload,
     goNextToPreview,
+    goPrevStep,
     handleFileChange,
     handleDropzoneDrop,
     confirmUpload,

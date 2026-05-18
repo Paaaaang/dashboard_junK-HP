@@ -36,7 +36,13 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
           company:companies(company_name, location, representative, manager, phone, email, mou_signed),
           enrollments (
             *,
-            sub_course:sub_courses(name, total_hours, course_groups(name))
+            session:sub_course_sessions (
+              *,
+              sub_course:sub_courses (
+                *,
+                group:course_groups (name)
+              )
+            )
           )
         `);
 
@@ -60,15 +66,16 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         employmentInsurance: p.employment_insurance || '미확인',
         workExperience: p.work_experience,
         documentSkill: p.document_skill,
+        review: p.review,
         enrollments: (p.enrollments || []).map((e: any) => ({
           id: e.id,
-          courseType: e.sub_course?.course_groups?.name || '미확인',
-          subCourseName: e.sub_course?.name || '알 수 없음',
-          subCourseId: e.sub_course_id,
+          courseType: e.session?.sub_course?.group?.name || '미확인',
+          subCourseName: e.session?.sub_course?.name || '알 수 없음',
+          subCourseId: e.session?.sub_course?.id,
           sessionId: e.session_id,
-          startDate: e.start_date || '',
-          endDate: e.end_date || '',
-          totalHours: e.sub_course?.total_hours || 0,
+          startDate: e.session?.start_date || '',
+          endDate: e.session?.end_date || '',
+          totalHours: e.session?.total_hours || 0,
           status: e.status || '미수료',
           completionDate: e.completion_date,
           certificateNo: e.certificate_no,
@@ -90,7 +97,10 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         .from('enrollments')
         .select(`
           *,
-          participant:participants(*)
+          participant:participants(
+            *,
+            company:companies(company_name)
+          )
         `)
         .eq('session_id', sessionId);
         
@@ -103,6 +113,7 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         phone: e.participant?.phone,
         position: e.participant?.position,
         companyId: e.participant?.company_id,
+        companyName: e.participant?.company?.company_name || '',
         enrollmentId: e.id,
         status: e.status,
         completionDate: e.completion_date
@@ -117,8 +128,13 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const updateData: any = { status };
-      if (completionDate !== undefined) {
-        updateData.completion_date = completionDate;
+      
+      // DB Check Constraint: If status is '수료', completion_date CANNOT be null.
+      if (status === '수료') {
+        updateData.completion_date = completionDate || new Date().toISOString().slice(0, 10);
+      } else {
+        // If changing back to '미수료', clear the date
+        updateData.completion_date = null;
       }
       
       const { error } = await supabase
@@ -143,7 +159,6 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         .from('enrollments')
         .insert({
           participant_id: enrollment.participantId,
-          sub_course_id: enrollment.subCourseId,
           session_id: enrollment.sessionId,
           status: enrollment.status || '미수료',
           application_date: new Date().toISOString()
@@ -200,7 +215,8 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         email: participant.email,
         employment_insurance: participant.employmentInsurance,
         work_experience: participant.workExperience,
-        document_skill: participant.documentSkill
+        document_skill: participant.documentSkill,
+        review: participant.review
       };
 
       const isNew = !participant.id || participant.id.startsWith('pt-') || participant.id.startsWith('new-');
@@ -215,18 +231,35 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         if (error) throw error;
       }
       
-      // Insert enrollments if new
-      if (isNew && participant.enrollments && participant.enrollments.length > 0) {
-        const enrollments = participant.enrollments.map(e => ({
-          participant_id: pId,
-          sub_course_id: e.subCourseId,
-          session_id: e.sessionId,
-          start_date: e.startDate,
-          end_date: e.endDate,
-          status: e.status || '미수료',
-          application_date: new Date().toISOString()
-        }));
-        await supabase.from('enrollments').insert(enrollments);
+      // Sync enrollments
+      if (participant.enrollments && participant.enrollments.length > 0) {
+        const newEnrollments = participant.enrollments.filter(e => e.id.startsWith('enr-'));
+        const existingEnrollments = participant.enrollments.filter(e => !e.id.startsWith('enr-'));
+
+        // Insert new
+        if (newEnrollments.length > 0) {
+          const toInsert = newEnrollments.map(e => ({
+            participant_id: pId,
+            session_id: e.sessionId,
+            status: e.status || '미수료',
+            application_date: e.applicationDate || new Date().toISOString()
+          }));
+          await supabase.from('enrollments').insert(toInsert);
+        }
+
+        // Update existing (if any statuses or dates changed)
+        if (existingEnrollments.length > 0) {
+          const toUpdate = existingEnrollments.map(e => ({
+            id: e.id,
+            participant_id: pId,
+            session_id: e.sessionId,
+            status: e.status,
+            completion_date: e.completionDate || null,
+            certificate_no: e.certificateNo || null,
+            application_date: e.applicationDate || null
+          }));
+          await supabase.from('enrollments').upsert(toUpdate);
+        }
       }
       
       await get().fetchParticipants();

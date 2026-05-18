@@ -37,43 +37,58 @@ interface CourseStore {
 
       if (groupsError) throw groupsError;
 
-      const baseAudiences: Record<string, AudienceOption[]> = {
-        훈련비과정: ["재직자 (고용보험 가입)", "재직자 (고용보험 미가입)"],
-        지원비과정: ["기업 대표", "임원"],
-        "공유개방 세미나": ["미래인재", "재직자 (고용보험 가입)"],
+      const AUDIENCE_DB_TO_UI: Record<string, AudienceOption> = {
+        'INSURED': "재직자 (고용보험 가입)",
+        'UNINSURED': "재직자 (고용보험 미가입)",
+        'CEO': "기업 대표",
+        'EXECUTIVE': "임원",
+        'FUTURE_TALENT': "미래인재",
       };
 
       const courseGroups: CourseGroup[] = (groupsData || []).map((g: any) => ({
         id: g.id,
         name: g.name,
-        audiences: baseAudiences[g.name] || [],
+        audiences: (g.course_group_audiences || [])
+          .map((a: any) => AUDIENCE_DB_TO_UI[a.audience_type])
+          .filter(Boolean),
         createdAt: g.created_at || g.createdAt,
         details: (g.sub_courses || [])
           .map((d: any) => {
-            const startDate = d.start_date || d.startDate;
-            const endDate = d.end_date || d.endDate;
-            const start = startDate ? new Date(startDate) : null;
-            const end = endDate ? new Date(endDate) : null;
+            const sessions = (d.sessions || []).map((s: any) => ({
+              id: s.id,
+              startDate: s.start_date || s.startDate,
+              endDate: s.end_date || s.endDate,
+              totalHours: s.total_hours || s.totalHours,
+              targetOutcome: s.target_outcome || s.targetOutcome
+            })).filter((s: any) => s !== null);
+
+            // Derive dates from sessions
+            let minDate = "";
+            let maxDate = "";
+            sessions.forEach((s: any) => {
+              if (!minDate || (s.startDate && s.startDate < minDate)) minDate = s.startDate;
+              if (!maxDate || (s.endDate && s.endDate > maxDate)) maxDate = s.endDate;
+            });
+
+            const start = minDate ? new Date(minDate) : null;
+            const end = maxDate ? new Date(maxDate) : null;
             let durationDays = 0;
             if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
               durationDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
             }
 
+            const totalHoursSum = sessions.reduce((acc: number, s: any) => acc + (s.totalHours || 0), 0);
+            const targetOutcomeSum = sessions.reduce((acc: number, s: any) => acc + (s.targetOutcome || 0), 0);
+
             return {
               id: d.id,
               name: d.name,
-              startDate: startDate || "",
-              endDate: endDate || "",
+              startDate: minDate,
+              endDate: maxDate,
               durationDays,
-              totalHours: d.total_hours || d.totalHours || 0,
-              targetOutcome: d.target_outcome || d.targetOutcome || 0,
-              sessions: (d.sessions || []).map((s: any) => ({
-                id: s.id,
-                startDate: s.start_date || s.startDate,
-                endDate: s.end_date || s.endDate,
-                totalHours: s.total_hours || s.totalHours,
-                targetOutcome: s.target_outcome || s.targetOutcome
-              })).filter((s: any) => s !== null)
+              totalHours: totalHoursSum,
+              targetOutcome: targetOutcomeSum,
+              sessions
             };
           })
       }));
@@ -97,6 +112,26 @@ interface CourseStore {
         
       if (groupError) throw groupError;
       const groupId = groupData.id;
+
+      // Add audiences
+      const AUDIENCE_UI_TO_DB: Record<string, string> = {
+        "재직자 (고용보험 가입)": 'INSURED',
+        "재직자 (고용보험 미가입)": 'UNINSURED',
+        "기업 대표": 'CEO',
+        "임원": 'EXECUTIVE',
+        "미래인재": 'FUTURE_TALENT',
+      };
+      
+      if (group.audiences && group.audiences.length > 0) {
+        const audiencesToInsert = group.audiences.map(a => ({
+          group_id: groupId,
+          audience_type: AUDIENCE_UI_TO_DB[a]
+        })).filter(a => a.audience_type);
+        
+        if (audiencesToInsert.length > 0) {
+          await supabase.from('course_group_audiences').insert(audiencesToInsert);
+        }
+      }
       
       // Add sub-courses (details)
       const finalDetails = [];
@@ -106,10 +141,6 @@ interface CourseStore {
           .insert({
             group_id: groupId,
             name: d.name,
-            start_date: d.startDate || null,
-            end_date: d.endDate || null,
-            total_hours: d.totalHours,
-            target_outcome: d.targetOutcome,
           })
           .select()
           .single();
@@ -167,6 +198,28 @@ interface CourseStore {
         
       if (groupError) throw groupError;
 
+      // Sync audiences
+      await supabase.from('course_group_audiences').delete().eq('group_id', group.id);
+      
+      const AUDIENCE_UI_TO_DB: Record<string, string> = {
+        "재직자 (고용보험 가입)": 'INSURED',
+        "재직자 (고용보험 미가입)": 'UNINSURED',
+        "기업 대표": 'CEO',
+        "임원": 'EXECUTIVE',
+        "미래인재": 'FUTURE_TALENT',
+      };
+      
+      if (group.audiences && group.audiences.length > 0) {
+        const audiencesToInsert = group.audiences.map(a => ({
+          group_id: group.id,
+          audience_type: AUDIENCE_UI_TO_DB[a]
+        })).filter(a => a.audience_type);
+        
+        if (audiencesToInsert.length > 0) {
+          await supabase.from('course_group_audiences').insert(audiencesToInsert);
+        }
+      }
+
       // 2. Sync sub-courses (details)
       const { data: existingSubCourses, error: fetchError } = await supabase
         .from('sub_courses')
@@ -197,10 +250,6 @@ interface CourseStore {
             .insert({
                 group_id: group.id,
                 name: d.name,
-                start_date: d.startDate || null,
-                end_date: d.endDate || null,
-                total_hours: d.totalHours,
-                target_outcome: d.targetOutcome,
             })
             .select()
             .single();
@@ -213,10 +262,6 @@ interface CourseStore {
             .from('sub_courses')
             .update({
                 name: d.name,
-                start_date: d.startDate || null,
-                end_date: d.endDate || null,
-                total_hours: d.totalHours,
-                target_outcome: d.targetOutcome,
             })
             .eq('id', d.id);
             
@@ -229,8 +274,9 @@ interface CourseStore {
         
         let sessions: any[] = [];
         if (d.sessions && d.sessions.length > 0) {
-           const sessionsToInsert = d.sessions.map((s: any) => ({
+           const sessionsToInsert = d.sessions.map((s: any, sIdx: number) => ({
                sub_course_id: subCourseId,
+               session_no: sIdx + 1,
                start_date: s.startDate,
                end_date: s.endDate,
                total_hours: s.totalHours,

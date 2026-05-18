@@ -4,3 +4,4 @@ export { useCourseStore } from "@/stores/useCourseStore";
 export { useStatsStore } from "@/stores/useStatsStore";
 export { useTemplateStore } from "@/stores/useTemplateStore";
 export { useToastStore } from "@/stores/useToastStore";
+export { useInstructorStore } from "@/stores/useInstructorStore";

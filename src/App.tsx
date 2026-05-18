@@ -3,18 +3,18 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import './styles/index.css';
 
 import { Sidebar, TopRail, PlaceholderPage, DebugMode, GlobalToast } from '@/components';
-import { useCompanyStore, useCourseStore, useParticipantStore, useTemplateStore, useStatsStore } from '@/stores';
+import { useCompanyStore, useCourseStore, useParticipantStore, useTemplateStore, useStatsStore, useInstructorStore } from '@/stores';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { LoginPage } from '@/pages/LoginPage';
 
 // Lazy load pages
-const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
-const CompanyManagementPage = lazy(() => import('./pages/companies'));
-const ParticipantsPage = lazy(() => import('./pages').then(m => ({ default: m.ParticipantsPage })));
-const CourseManagementPage = lazy(() => import('./pages').then(m => ({ default: m.CourseManagementPage })));
-const TemplateEditorPage = lazy(() => import('./pages/TemplateEditor').then(m => ({ default: m.TemplateEditorPage })));
-const EmailLogsPage = lazy(() => import('./pages/EmailLogsPage').then(m => ({ default: m.EmailLogsPage })));
+const Dashboard = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const CompanyManagementPage = lazy(() => import('@/pages/companies'));
+const ParticipantsPage = lazy(() => import('@/pages/participants/ParticipantsPage').then(m => ({ default: m.ParticipantsPage })));
+const CourseManagementPage = lazy(() => import('@/pages/education/CourseManagementPage').then(m => ({ default: m.CourseManagementPage })));
+const InstructorManagementPage = lazy(() => import('@/pages/education/instructors').then(m => ({ default: m.InstructorManagementPage })));
+const TemplateEditorPage = lazy(() => import('@/pages/templates').then(m => ({ default: m.TemplateEditorPage })));
 
 function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -22,6 +22,7 @@ function AppContent() {
   const { fetchCompanies, subscribeToCompanies } = useCompanyStore();
   const { fetchParticipants, subscribeToParticipants } = useParticipantStore();
   const { fetchTemplates, subscribeToTemplates } = useTemplateStore();
+  const { fetchInstructors, subscribeToInstructors } = useInstructorStore();
   const { fetchStats, subscribeToStats } = useStatsStore();
   const { isAuthenticated, checkAuth } = useAuthStore();
 
@@ -31,18 +32,18 @@ function AppContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Initial data load only when authenticated
       fetchCourseGroups();
       fetchCompanies();
       fetchParticipants();
       fetchTemplates();
+      fetchInstructors();
       fetchStats();
 
-      // Setup Realtime subscriptions
       const unsubCompanies = subscribeToCompanies();
       const unsubParticipants = subscribeToParticipants();
       const unsubCourses = subscribeToCourses();
       const unsubTemplates = subscribeToTemplates();
+      const unsubInstructors = subscribeToInstructors();
       const unsubStats = subscribeToStats();
 
       return () => {
@@ -50,6 +51,7 @@ function AppContent() {
         unsubParticipants();
         unsubCourses();
         unsubTemplates();
+        unsubInstructors();
         unsubStats();
       };
     }
@@ -59,6 +61,7 @@ function AppContent() {
     fetchCompanies, subscribeToCompanies,
     fetchParticipants, subscribeToParticipants,
     fetchTemplates, subscribeToTemplates,
+    fetchInstructors, subscribeToInstructors,
     fetchStats, subscribeToStats
   ]);
 
@@ -90,8 +93,8 @@ function AppContent() {
               <Route path="/companies" element={<ProtectedRoute><CompanyManagementPage /></ProtectedRoute>} />
               <Route path="/participants" element={<ProtectedRoute><ParticipantsPage /></ProtectedRoute>} />
               <Route path="/courses" element={<ProtectedRoute><CourseManagementPage /></ProtectedRoute>} />
+              <Route path="/instructors" element={<ProtectedRoute><InstructorManagementPage /></ProtectedRoute>} />
               <Route path="/templates" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
-              <Route path="/emails/logs" element={<ProtectedRoute><EmailLogsPage /></ProtectedRoute>} />
               <Route
                 path="/forms"
                 element={<ProtectedRoute><PlaceholderPage title="신청 폼 자동화" /></ProtectedRoute>}
@@ -113,7 +116,12 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <AppContent />
     </Router>
   );

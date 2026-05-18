@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type StatusKind = "success" | "warning" | "error" | "info" | "neutral";
 export type InsuranceTarget = "ALL" | "INSURED" | "UNINSURED";
-export type CourseType = "훈련비과정" | "지원비과정" | "공유개방 세미나";
+export type CourseType = string;
 
 export interface NavigationItem {
   to: string;
@@ -54,7 +54,7 @@ export type DocumentSkill =
   | "능숙"
   | "전문가 수준";
 
-export type ParticipantTabKey = "ALL" | CourseType;
+export type ParticipantTabKey = "ALL" | string;
 export type InsuranceFilter = "ALL" | "가입" | "미가입";
 export type CompletionFilter = "ALL" | "수료" | "미수료";
 
@@ -93,6 +93,7 @@ export interface ParticipantRecord {
   workExperience?: WorkExperience;
   documentSkill?: DocumentSkill;
   enrollments: ParticipantEnrollment[];
+  review?: string;
   newCompany?: {
     companyName: string;
     location: string;
@@ -189,46 +190,64 @@ export type AudienceOption =
   | "임원"
   | "미래인재";
 
+export type SessionStatus = "PLANNED" | "ONGOING" | "CLOSED" | "CANCELLED";
+
 export interface CourseSession {
   id: string;
+  subCourseId?: string;
+  sessionNo?: number;
   startDate: string;
   endDate: string;
   totalHours: number;
   targetOutcome: number;
+  status?: SessionStatus;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CourseDetail {
   id: string;
+  groupId?: string;
   name: string;
-  startDate: string;
-  endDate: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
   durationDays: number;
-  totalHours: number;
-  targetOutcome: number;
+  totalHours?: number;
+  targetOutcome?: number;
+  isActive?: boolean;
+  sortOrder?: number;
   sessions?: CourseSession[];
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CourseGroup {
   id: string;
   name: string;
+  description?: string;
+  sortOrder?: number;
   audiences: AudienceOption[];
   details: CourseDetail[];
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CourseGroupForm {
   name: string;
+  description?: string;
   audiences: AudienceOption[];
   details: CourseDetail[];
 }
 
 export interface CourseDetailDraft {
   name: string;
-  startDate: string;
-  endDate: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
   durationDays: string;
-  totalHours: string;
-  targetOutcome: string;
+  totalHours?: string;
+  targetOutcome?: string;
+  isActive?: boolean;
   sessions: CourseSession[];
 }

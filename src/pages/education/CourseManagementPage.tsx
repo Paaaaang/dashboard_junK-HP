@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, Check, Activity, Settings2, Target, Award, Users, ChevronDown, ChevronRight, LayoutList } from "lucide-react";
-import { CourseFloatingActionBar, PageHeader } from "@/components";
+import { Plus, Trash2, Check, Activity, Settings2, Target, Award, ChevronDown, ChevronRight, LayoutList } from "lucide-react";
+import { PageHeader } from "@/components";
 import { useCourseStore, useParticipantStore, useToastStore } from "@/stores";
 import { useCourseManager } from "@/pages/participants/hooks/useCourseManager";
 import type { AudienceOption } from "@/types/models";
@@ -34,7 +34,6 @@ export function CourseManagementPage() {
     setManagerDetailForm,
     managerEditingDetailId,
     setManagerEditingDetailId,
-    managerMessage,
     managerError,
     setManagerError,
     pendingDeleteGroupId,
@@ -59,7 +58,6 @@ export function CourseManagementPage() {
     }
   }, [managerError, addToast, setManagerError]);
 
-  // 과정 구분 리스트를 생성 날짜 순(오래된 순)으로 정렬
   const sortedCourseGroups = useMemo(() => {
     return [...courseGroups].sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -68,7 +66,6 @@ export function CourseManagementPage() {
     });
   }, [courseGroups]);
 
-  // 세부 프로그램 구성 목록을 생성 날짜 순(오래된 순)으로 정렬
   const sortedDetails = useMemo(() => {
     return [...(managerGroupForm?.details || [])].sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -125,7 +122,6 @@ export function CourseManagementPage() {
     });
   };
 
-  // 저장 핸들러 래핑 (플로팅 바용)
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -135,29 +131,41 @@ export function CourseManagementPage() {
     }
   };
 
+  const showDetailSection = !!(selectedDetail || managerEditingDetailId === ADDING_NEW_DETAIL);
+
   return (
-    <div className="flex flex-col gap-6 h-full pb-10">
-      <CourseFloatingActionBar
-        isModified={activeTab === "settings" && isManagerGroupModified}
-        onSave={handleSave}
-        isLoading={isSaving}
-      />
+    <div className="flex flex-col gap-6 h-full pb-10 animate-in fade-in duration-500">
       <PageHeader
         title="교육 과정 관리"
         className="sticky top-0 z-20 bg-background/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 pt-4 sm:pt-6"
         actions={
           <div className="flex items-center gap-3">
-            <div className="flex bg-surface-subtle p-1 rounded-xl border border-border/50">
+            {activeTab === "settings" && isManagerGroupModified && (
+              <button
+                type="button"
+                className="btn btn-primary h-10 px-5 gap-2 shadow-lg shadow-brand-primary/20 animate-in fade-in zoom-in-95 duration-300"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Check size={16} strokeWidth={3} />
+                )}
+                <span className="text-sm font-bold tabular-nums">변경 사항 전체 저장</span>
+              </button>
+            )}
+            <div className="flex bg-surface-subtle p-1 rounded-xl border border-border/50 shadow-inner">
               <button 
                 onClick={() => setActiveTab("status")} 
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${activeTab === "status" ? "bg-surface shadow-sm text-brand-primary" : "text-tertiary hover:text-secondary"}`}
+                className={`px-4 py-1.5 text-[11px] font-black rounded-lg transition-all flex items-center gap-1.5 tracking-widest ${activeTab === "status" ? "bg-surface shadow-sm text-brand-primary" : "text-tertiary hover:text-secondary"}`}
               >
                 <LayoutList size={14} />
                 교육 현황
               </button>
               <button 
                 onClick={() => setActiveTab("settings")} 
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${activeTab === "settings" ? "bg-surface shadow-sm text-brand-primary" : "text-tertiary hover:text-secondary"}`}
+                className={`px-4 py-1.5 text-[11px] font-black rounded-lg transition-all flex items-center gap-1.5 tracking-widest ${activeTab === "settings" ? "bg-surface shadow-sm text-brand-primary" : "text-tertiary hover:text-secondary"}`}
               >
                 <Settings2 size={14} />
                 과정 설정
@@ -174,515 +182,417 @@ export function CourseManagementPage() {
       )}
 
       {activeTab === "settings" && (
-        <div className="flex flex-col lg:flex-row gap-6 px-4 sm:px-6">
+        <div className="flex flex-col lg:flex-row gap-8 px-4 sm:px-6 min-h-0 flex-1">
           {/* Sidebar: Group List */}
-          <aside
-            className="w-full lg:w-[280px] lg:sticky lg:top-[70px] lg:h-[calc(100vh-130px)] flex flex-col overflow-hidden shrink-0"
-            style={{ background: "var(--color-surface)", borderRadius: 24, boxShadow: "var(--shadow-md)", border: "1px solid var(--color-border)" }}
-          >
-            <div className="p-5 space-y-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
-              <p className="text-[11px] font-black text-tertiary uppercase tracking-widest px-1">과정 구분 리스트</p>
-              <button
-                type="button"
-                className="btn btn-primary w-full justify-center gap-2"
-                onClick={startCreateCourseGroup}
-              >
-                <Plus className="w-4 h-4" strokeWidth={2.5} />
-                <span>새 구분 추가</span>
-              </button>
-            </div>
+          <aside className="w-full lg:w-[280px] flex flex-col shrink-0">
+            <div className="bg-surface rounded-2xl border border-border/40 shadow-sm flex flex-col h-full overflow-hidden">
+              <div className="p-6 space-y-4 border-b border-border/40 bg-surface-subtle/30">
+                <p className="text-[10px] font-black text-tertiary uppercase tracking-[0.2em] px-1 opacity-60">과정 그룹 리스트</p>
+                <button
+                  type="button"
+                  className="w-full py-2.5 px-4 bg-surface border border-border/60 hover:border-cta hover:bg-cta/5 text-secondary hover:text-cta rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group"
+                  onClick={startCreateCourseGroup}
+                >
+                  <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" strokeWidth={3} />
+                  <span>새 구분 추가</span>
+                </button>
+              </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {courseGroups.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-tertiary gap-3 text-center">
-                  <Settings2 size={40} className="opacity-20" strokeWidth={2.5} />
-                  <p className="text-sm font-bold italic">등록된 과정이<br />없습니다.</p>
-                </div>
-              ) : sortedCourseGroups.map((group) => {
-                const isSelected = group.id === managerSelectedGroupId;
-                const isExpanded = managerExpandedGroups.has(group.id);
-
-                return (
-                  <div key={group.id} className="space-y-1">
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                      style={isSelected
-                        ? { background: "var(--brand-primary)", color: "#fff", boxShadow: "var(--shadow-md)" }
-                        : { color: "var(--color-text-secondary)" }
-                      }
-                      onClick={() => { selectGroupForManager(group.id); setSelectedDetailId(null); }}
-                      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "var(--color-surface-subtle)"; }}
-                      onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = ""; }}
-                    >
-                      <span
-                        className="p-1 rounded-lg cursor-pointer"
-                        style={{ color: isSelected ? "rgba(255,255,255,0.7)" : "var(--color-text-tertiary)" }}
-                        onClick={(e) => toggleManagerGroup(group.id, e)}
-                      >
-                        {isExpanded ? <ChevronDown className="w-4 h-4" strokeWidth={2.5} /> : <ChevronRight className="w-4 h-4" strokeWidth={2.5} />}
-                      </span>
-                      <span className="flex-1 text-left font-black truncate text-[14px]">{group.name}</span>
-                    </button>
-
-                    {isExpanded && (
-                      <ul className="ml-10 space-y-1 pr-2 pt-1 pb-2">
-                        {group.details.map((detail) => (
-                          <li
-                            key={detail.id}
-                            onClick={() => {
-                              selectGroupForManager(group.id);
-                              setSelectedDetailId(detail.id);
-                              if (managerEditingDetailId !== detail.id) {
-                                startEditDetail(group.id, detail.id);
-                              }
-                            }}
-                            className="text-[12px] font-bold py-1.5 px-3 rounded-xl border border-transparent truncate cursor-pointer transition-colors"
-                            style={selectedDetailId === detail.id
-                              ? { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)", fontWeight: 900 }
-                              : { color: "var(--color-text-tertiary)" }
-                            }
-                            onMouseEnter={e => { if (selectedDetailId !== detail.id) (e.currentTarget as HTMLElement).style.background = "var(--color-surface-subtle)"; }}
-                            onMouseLeave={e => { if (selectedDetailId !== detail.id) (e.currentTarget as HTMLElement).style.background = ""; }}
-                          >
-                            {detail.name}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+              <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                {courseGroups.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-tertiary gap-3 text-center">
+                    <Settings2 size={40} className="opacity-10" strokeWidth={2} />
+                    <p className="text-[12px] font-bold italic opacity-40 leading-relaxed tracking-wider">등록된 과정이<br />없습니다.</p>
                   </div>
-                );
-              })}
+                ) : sortedCourseGroups.map((group) => {
+                  const isSelected = group.id === managerSelectedGroupId;
+                  const isExpanded = managerExpandedGroups.has(group.id);
+
+                  return (
+                    <div key={group.id} className="space-y-1">
+                      <button
+                        type="button"
+                        className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl transition-all cursor-pointer group/item ${
+                          isSelected ? "bg-surface-subtle border border-border/40" : "hover:bg-surface-subtle/50"
+                        }`}
+                        onClick={() => { selectGroupForManager(group.id); setSelectedDetailId(null); }}
+                      >
+                        <span
+                          className={`p-1 rounded-lg cursor-pointer transition-colors ${isSelected ? "text-brand-primary" : "text-tertiary opacity-40 hover:opacity-100"}`}
+                          onClick={(e) => { e.stopPropagation(); toggleManagerGroup(group.id, e); }}
+                        >
+                          {isExpanded ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+                        </span>
+                        <span className={`flex-1 text-left truncate text-[13px] tracking-tight ${isSelected ? "font-black text-primary" : "font-bold text-secondary"}`}>
+                          {group.name}
+                        </span>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="ml-7 pl-3 border-l-2 border-border/20 space-y-1 py-1">
+                          {group.details.map((detail) => (
+                            <button
+                              key={detail.id}
+                              onClick={() => {
+                                selectGroupForManager(group.id);
+                                setSelectedDetailId(detail.id);
+                                if (managerEditingDetailId !== detail.id) {
+                                  startEditDetail(group.id, detail.id);
+                                }
+                              }}
+                              className={`w-full text-left text-[12px] py-1.5 px-3 rounded-lg truncate cursor-pointer transition-all ${
+                                selectedDetailId === detail.id
+                                  ? "bg-brand-primary/5 text-brand-primary font-black shadow-sm"
+                                  : "text-tertiary font-bold hover:text-secondary hover:bg-surface-subtle"
+                              }`}
+                            >
+                              {detail.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </aside>
 
-          {/* Main Content */}
-          <main className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-4 sm:pb-6">
-            <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full">
-              {/* Course Group Settings Card */}
-              <section
-                className="overflow-hidden"
-                style={{ background: "var(--color-surface)", borderRadius: 24, boxShadow: "var(--shadow-md)", border: "1px solid var(--color-border)" }}
-              >
-                <header
-                  className="px-5 sm:px-6 py-4 flex items-center justify-between"
-                  style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-subtle)" }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl" style={{ background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }}>
-                      <Settings2 size={18} strokeWidth={2.5} />
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar pb-10 px-1">
+            <div className="space-y-16 max-w-6xl w-full mx-auto">
+              
+              {/* Group Base Settings */}
+              <section className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <header className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-surface-subtle border border-border/40 flex items-center justify-center text-secondary shadow-sm">
+                      <Settings2 size={20} strokeWidth={2} />
                     </div>
-                    <h4 className="text-lg font-black text-primary tracking-tight">과정 구분 설정</h4>
+                    <div>
+                      <h4 className="text-2xl font-black text-primary tracking-tight">과정 구분 설정</h4>
+                      <p className="text-[11px] font-black text-tertiary uppercase tracking-widest mt-1 opacity-50">기본 정보 및 지원 대상 설정</p>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    className="icon-btn"
+                    className="p-2.5 rounded-xl text-tertiary hover:text-error hover:bg-error/5 transition-all cursor-pointer opacity-40 hover:opacity-100"
                     onClick={() => managerSelectedGroupId && setPendingDeleteGroupId(managerSelectedGroupId)}
-                    title="구분 삭제"
-                    style={{ color: "var(--color-text-tertiary)" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-error)"; (e.currentTarget as HTMLElement).style.background = "var(--color-error-bg)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-text-tertiary)"; (e.currentTarget as HTMLElement).style.background = ""; }}
                   >
-                    <Trash2 size={18} strokeWidth={2.5} />
+                    <Trash2 size={20} strokeWidth={2} />
                   </button>
                 </header>
 
-                <div className="p-5 sm:p-8 space-y-8">
-                  {managerMessage && (
-                    <div
-                      className="p-4 rounded-xl border flex items-center gap-3 text-sm font-black"
-                      style={{ background: "var(--color-success-bg)", borderColor: "rgba(16,185,129,0.2)", color: "var(--color-success-text)" }}
-                    >
-                      <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-success)" }} />
-                      {managerMessage}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-6 lg:gap-8">
-                    <div className="form-group min-w-0">
-                      <label className="form-label ml-1">과정 구분 이름</label>
-                      <input
-                        className="form-input"
-                        value={managerGroupForm.name}
-                        onChange={(e) => setManagerGroupForm({ ...managerGroupForm, name: e.target.value })}
-                        placeholder="예: 훈련비과정, 지원비과정 등"
-                      />
-                    </div>
-
-                    <div className="form-group min-w-0">
-                      <label className="form-label ml-1">지원 대상 설정</label>
-                      <div className="flex flex-wrap gap-2 p-3 rounded-xl min-h-[56px]">
-                        {AUDIENCE_OPTIONS.map((option) => {
-                          const isChecked = managerGroupForm.audiences.includes(option);
-                          return (
-                            <label
-                              key={option}
-                              className="flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-colors"
-                              style={isChecked
-                                ? { background: "var(--brand-primary)", borderColor: "var(--brand-primary)", color: "#fff" }
-                                : { background: "var(--color-surface)", borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }
-                              }
-                            >
-                              <input
-                                type="checkbox"
-                                className="sr-only"
-                                checked={isChecked}
-                                onChange={() => toggleManagerAudience(option)}
-                              />
-                              <span className="text-[12px] font-black">{option}</span>
-                              {isChecked && <Check size={10} strokeWidth={3} />}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-[1.2fr_2fr] gap-10 items-start">
+                  <div className="form-group space-y-3">
+                    <label className="text-[10px] font-black text-tertiary uppercase tracking-widest ml-1 opacity-60">과정 구분 명칭</label>
+                    <input
+                      className="form-input bg-surface h-12 text-sm font-bold border-border/60 focus:border-brand-primary"
+                      value={managerGroupForm.name}
+                      onChange={(e) => setManagerGroupForm({ ...managerGroupForm, name: e.target.value })}
+                      placeholder="예: 지원비과정"
+                    />
                   </div>
 
-                  {/* Sub-program list */}
-                  <div className="space-y-6 pt-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
-                      <p className="form-label">세부 프로그램 구성 목록</p>
-                      <button
-                        type="button"
-                        className="btn btn-primary gap-1.5 text-[11px]"
-                        style={{ height: 36, padding: "0 16px" }}
-                        onClick={startAddDetail}
-                      >
-                        <Plus size={14} strokeWidth={2.5} /> 프로그램 추가
-                      </button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4">
-                      {sortedDetails.length === 0 ? (
-                        <div
-                          className="w-full py-12 text-center rounded-3xl border border-dashed"
-                          style={{ background: "rgba(16, 185, 129, 0.03)", borderColor: "var(--color-border)" }}
-                        >
-                          <p className="text-tertiary text-sm font-bold italic">등록된 세부 과정이 없습니다.</p>
-                        </div>
-                      ) : sortedDetails.map((detail) => {
-                        const achieved = getSubCourseTotalAchieved(detail.name);
-                        const rate = detail.targetOutcome > 0 ? Math.round((achieved / detail.targetOutcome) * 100) : 0;
-                        const isDetailSelected = detail.id === selectedDetailId;
-
+                  <div className="form-group space-y-3">
+                    <label className="text-[10px] font-black text-tertiary uppercase tracking-widest ml-1 opacity-60">주요 지원 대상</label>
+                    <div className="flex flex-wrap gap-2">
+                      {AUDIENCE_OPTIONS.map((option) => {
+                        const isChecked = managerGroupForm.audiences.includes(option);
                         return (
-                          <div
-                            key={detail.id}
-                            className="min-w-[260px] p-5 rounded-3xl border cursor-pointer group relative shrink-0 transition-colors"
-                            style={isDetailSelected
-                              ? { background: "var(--brand-primary)", borderColor: "var(--brand-primary)", color: "#fff", boxShadow: "var(--shadow-xl)" }
-                              : { background: "var(--color-surface)", borderColor: "var(--color-border)" }
-                            }
-                            onClick={() => {
-                              setSelectedDetailId(detail.id);
-                              if (managerEditingDetailId !== detail.id) {
-                                startEditDetail(managerSelectedGroupId ?? "", detail.id);
-                              }
-                            }}
+                          <label
+                            key={option}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all cursor-pointer ${
+                              isChecked 
+                                ? "bg-cta border-cta text-white shadow-md shadow-cta/20" 
+                                : "bg-surface border-border/60 text-secondary hover:border-secondary text-[12px] font-bold"
+                            }`}
                           >
-                            <div className="flex justify-between items-center mb-4">
-                              <h5 className="text-[14px] font-black leading-tight">{detail.name}</h5>                          
-                            </div>
-
-                            <div className="flex items-center gap-6">
-                              <div className="flex items-center gap-1.5">
-                                <Target size={12} strokeWidth={2.5} style={{ color: isDetailSelected ? "rgba(255,255,255,0.6)" : "var(--color-text-tertiary)" }} />
-                                <span className="text-[12px] font-black">{detail.targetOutcome}명</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Award size={12} strokeWidth={2.5} style={{ color: isDetailSelected ? "rgba(255,255,255,0.6)" : "var(--color-text-tertiary)" }} />
-                                <span className="text-[12px] font-black">{achieved}명</span>
-                              </div>
-                              <div
-                                className="px-2 py-0.5 rounded-lg text-[10px] font-black"
-                                style={isDetailSelected
-                                  ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
-                                  : { background: "rgba(16, 185, 129, 0.1)", color: "var(--brand-primary)" }
-                                }
-                              >
-                                {rate}%
-                              </div>
-                              <div className="flex-1" />
-                              <button
-                                type="button"
-                                className="p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                                style={{ color: isDetailSelected ? "rgba(255,255,255,0.6)" : "var(--color-text-tertiary)" }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPendingDeleteDetail({ groupId: managerSelectedGroupId ?? "", detailId: detail.id, detailName: detail.name });
-                                }}
-                                onMouseEnter={e => {
-                                  if (!isDetailSelected) {
-                                    (e.currentTarget as HTMLElement).style.color = "var(--color-error)";
-                                    (e.currentTarget as HTMLElement).style.background = "var(--color-error-bg)";
-                                  }
-                                }}
-                                onMouseLeave={e => {
-                                  if (!isDetailSelected) {
-                                    (e.currentTarget as HTMLElement).style.color = "var(--color-text-tertiary)";
-                                    (e.currentTarget as HTMLElement).style.background = "";
-                                  }
-                                }}
-                              >
-                                <Trash2 size={12} strokeWidth={2.5} />
-                              </button>
-                            </div>
-                          </div>
+                            <input type="checkbox" className="sr-only" checked={isChecked} onChange={() => toggleManagerAudience(option)} />
+                            <span className="text-[12px] font-bold">{option}</span>
+                            {isChecked && <Check size={12} strokeWidth={4} />}
+                          </label>
                         );
                       })}
                     </div>
                   </div>
                 </div>
-              </section>
 
-              {/* Sub-program Detail & Sessions */}
-              <section
-                className="overflow-hidden"
-                style={{ background: "var(--color-surface)", borderRadius: 24, boxShadow: "var(--shadow-md)", border: "1px solid var(--color-border)", minHeight: 400 }}
-              >
-                {selectedDetail || managerEditingDetailId === ADDING_NEW_DETAIL ? (
-                  <>
-                    <header
-                      className="px-5 sm:px-6 py-4 flex items-center justify-between"
-                      style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-subtle)" }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl" style={{ background: "var(--color-info-bg)", color: "var(--color-info)" }}>
-                          <Activity size={18} strokeWidth={2.5} />
-                        </div>
-                        <h4 className="text-lg font-black text-primary tracking-tight">세부 과정 상세 및 회차 관리</h4>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-primary gap-1.5 text-[11px]"
-                        style={{ height: 36, padding: "0 16px", background: "var(--color-info)" }}
-                        onClick={addSession}
-                      >
-                        <Plus size={14} strokeWidth={2.5} /> 회차 추가
-                      </button>
-                    </header>
+                {/* Program List (Skeleton Style Adding) */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 ml-1">
+                    <LayoutList size={14} className="text-cta" />
+                    <h5 className="text-sm font-black text-primary uppercase tracking-tight">세부 프로그램 구성 목록</h5>
+                  </div>
 
-                    <div className="p-5 sm:p-8">
-                      {managerDetailForm && (
-                        <div className="space-y-10">
-                          <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
-                            <div className="flex-1 form-group">
-                              <label className="form-label ml-1">세부 과정명</label>
-                              <input
-                                className="form-input"
-                                value={managerDetailForm.name}
-                                onChange={(e) => setManagerDetailForm({ ...managerDetailForm, name: e.target.value })}
-                                placeholder="과정 이름을 입력하세요"
-                              />
-                            </div>
-                            <div
-                              className="w-full sm:w-[110px] p-3.5 rounded-2xl text-center"
-                              style={{ background: "var(--color-info-bg)" }}
-                            >
-                              <span className="block text-[10px] font-black tracking-wider mb-1" style={{ color: "var(--color-info-text)", opacity: 0.7 }}>TOTAL SESSIONS</span>
-                              <span className="text-lg font-black" style={{ color: "var(--color-info)" }}>{managerDetailForm.sessions.length}</span>
-                            </div>
-                          </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    {sortedDetails.map((detail) => {
+                      const ach = getSubCourseTotalAchieved(detail.name);
+                      const target = detail.targetOutcome || 0;
+                      const rate = target > 0 ? Math.round((ach / target) * 100) : 0;
+                      const isSel = detail.id === selectedDetailId;
 
-                          {/* Session Table */}
-                          <div className="rounded-3xl overflow-hidden" style={{ background: "var(--color-surface-subtle)" }}>
-                            <div className="overflow-x-auto">
-                              <table className="min-w-[820px] w-full text-left border-collapse">
-                                <thead>
-                                  <tr style={{ background: "var(--color-surface-subtle)", borderBottom: "1px solid var(--color-border)" }}>
-                                    <th className="px-4 sm:px-5 py-3 text-[11px] font-black text-tertiary tracking-wider w-[70px] text-center">회차</th>
-                                    <th className="px-4 sm:px-5 py-3 text-[11px] font-black text-tertiary tracking-wider min-w-[260px]">교육 기간</th>
-                                    <th className="px-4 sm:px-5 py-3 text-[11px] font-black text-tertiary tracking-wider text-center">시간</th>
-                                    <th className="px-4 sm:px-5 py-3 text-[11px] font-black text-tertiary tracking-wider text-center">목표</th>
-                                    <th className="px-4 sm:px-5 py-3 text-[11px] font-black text-tertiary tracking-wider text-center">수료</th>
-                                    <th className="px-4 sm:px-5 py-3 text-[11px] font-black text-tertiary tracking-wider text-center">달성률</th>
-                                    <th className="px-4 sm:px-5 py-3 w-[50px]" />
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {managerDetailForm.sessions.map((session, idx) => {
-                                    const achv = getSessionStats(managerDetailForm.name, session.id);
-                                    const rate = session.targetOutcome > 0 ? Math.round((achv / session.targetOutcome) * 100) : 0;
-
-                                    return (
-                                      <tr
-                                        key={session.id}
-                                        style={{ borderBottom: "1px solid var(--color-border)" }}
-                                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--color-surface-subtle)"}
-                                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ""}
-                                      >
-                                        <td className="px-4 sm:px-6 py-4 text-center">
-                                          <span
-                                            className="text-sm font-black w-7 h-7 inline-flex items-center justify-center rounded-lg"
-                                            style={{ background: "var(--color-surface-subtle)", color: "var(--color-text-primary)" }}
-                                          >{idx + 1}</span>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4">
-                                          <Calendar
-                                            value={{
-                                              start: session.startDate ? new Date(session.startDate) : null,
-                                              end: session.endDate ? new Date(session.endDate) : null
-                                            }}
-                                            onChange={(val) => updateSession(idx, {
-                                              startDate: val?.start ? format(val.start, "yyyy-MM-dd") : "",
-                                              endDate: val?.end ? format(val.end, "yyyy-MM-dd") : ""
-                                            })}
-                                            placeholder="기간 선택"
-                                          />
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 text-center">
-                                          <div className="flex items-center justify-center gap-1.5">
-                                            <input
-                                              type="number"
-                                              className="form-input text-center"
-                                              style={{ width: 64, padding: "6px 8px", fontSize: 13 }}
-                                              value={session.totalHours}
-                                              onChange={(e) => updateSession(idx, { totalHours: Number(e.target.value) })}
-                                            />
-                                            <span className="text-[10px] font-bold text-tertiary">H</span>
-                                          </div>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 text-center">
-                                          <div className="flex items-center justify-center gap-1.5">
-                                            <input
-                                              type="number"
-                                              className="form-input text-center"
-                                              style={{ width: 64, padding: "6px 8px", fontSize: 13, borderColor: "rgba(16, 185, 129, 0.3)", color: "var(--brand-primary)" }}
-                                              value={session.targetOutcome}
-                                              onChange={(e) => updateSession(idx, { targetOutcome: Number(e.target.value) })}
-                                            />
-                                            <span className="text-[10px] font-bold text-tertiary">명</span>
-                                          </div>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 text-center">
-                                          <div className="flex flex-col items-center gap-0.5">
-                                            <span className="text-[15px] font-black text-text-primary">{achv}</span>
-                                            <p className="text-[9px] font-bold text-tertiary uppercase tracking-tighter">Current</p>
-                                          </div>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 text-center">
-                                          <div className="flex flex-col items-center gap-1.5">
-                                            <span
-                                              className="text-[13px] font-black"
-                                              style={{ color: rate >= 100 ? "var(--color-success)" : "var(--color-text-primary)" }}
-                                            >{rate}%</span>
-                                            <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--color-surface-subtle)" }}>
-                                              <div
-                                                className="h-full"
-                                                style={{ width: `${Math.min(100, rate)}%`, background: "var(--brand-primary)" }}
-                                              />
-                                            </div>
-                                          </div>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 text-right">
-                                          <button
-                                            type="button"
-                                            className="icon-btn cursor-pointer"
-                                            style={{ color: "var(--color-text-tertiary)" }}
-                                            onClick={() => removeSession(idx)}
-                                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-error)"; (e.currentTarget as HTMLElement).style.background = "var(--color-error-bg)"; }}
-                                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-text-tertiary)"; (e.currentTarget as HTMLElement).style.background = ""; }}
-                                          >
-                                            <Trash2 size={16} strokeWidth={2.5} />
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                            {managerDetailForm.sessions.length === 0 && (
-                              <div className="py-16 text-center">
-                                <Users size={32} strokeWidth={2.5} className="mx-auto mb-3" style={{ color: "var(--color-text-tertiary)", opacity: 0.3 }} />
-                                <p className="text-tertiary text-sm font-bold">등록된 회차가 없습니다. 상단의 '회차 추가' 버튼을 눌러주세요.</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Footer Actions */}
-                          <footer className="pt-6 flex flex-col sm:flex-row gap-3 sm:gap-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+                      return (
+                        <div
+                          key={detail.id}
+                          className={`p-4 rounded-xl transition-all cursor-pointer group border-2 ${
+                            isSel
+                              ? "bg-surface-subtle border-brand-primary shadow-md ring-4 ring-brand-primary/5"
+                              : "bg-surface border-transparent hover:bg-surface-subtle/50 hover:border-border/40"
+                          }`}
+                          onClick={() => {
+                            setSelectedDetailId(detail.id);
+                            if (managerEditingDetailId !== detail.id) startEditDetail(managerSelectedGroupId ?? "", detail.id);
+                          }}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <h5 className={`text-sm leading-tight break-keep flex-1 pr-2 ${isSel ? "font-black text-brand-primary" : "font-bold text-primary"}`}>
+                              {detail.name}
+                            </h5>
                             <button
                               type="button"
-                              className="btn btn-primary flex-1 h-14 gap-3 text-base rounded-3xl"
-                              onClick={() => {
-                                if (applyDetailDraft()) {
-                                  addToast("적용되었습니다. 상단의 \"변경 사항 전체 저장\"을 눌러주세요.", "info");
-                                }
+                              className="p-1 rounded-lg text-tertiary hover:text-error hover:bg-error/5 transition-all opacity-0 group-hover:opacity-100 cursor-pointer -mt-1 -mr-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPendingDeleteDetail({ groupId: managerSelectedGroupId ?? "", detailId: detail.id, detailName: detail.name });
                               }}
                             >
-                              <Check size={22} strokeWidth={3} style={{ color: "var(--color-cta)" }} />
-                              <span>프로그램 구성 내용 적용하기</span>
+                              <Trash2 size={14} strokeWidth={2.5} />
                             </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary px-8 h-14 rounded-3xl"
-                              onClick={() => { setManagerDetailForm(null); setManagerEditingDetailId(null); setSelectedDetailId(null); }}
-                            >
-                              취소
-                            </button>
-                          </footer>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1 opacity-50">
+                              <Target size={10} strokeWidth={3} />
+                              <span className="text-[11px] font-black tabular-nums">{detail.targetOutcome}</span>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-50">
+                              <Award size={10} strokeWidth={3} />
+                              <span className="text-[11px] font-black tabular-nums">{ach}</span>
+                            </div>
+                            <div className="flex-1" />
+                            <div className={`px-2 py-0.5 rounded text-[9px] font-black tabular-nums ${
+                              isSel ? "bg-brand-primary/10 text-brand-primary" : "bg-border/30 text-tertiary"
+                            }`}>
+                              {rate}%
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6">
-                    <div
-                      className="w-24 h-24 rounded-[40px] flex items-center justify-center"
-                      style={{ background: "var(--color-surface-subtle)", color: "var(--color-text-tertiary)", opacity: 0.4 }}
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      className={`p-4 rounded-xl border-2 border-dashed border-border/40 bg-transparent hover:bg-surface-subtle hover:border-cta/40 hover:bg-cta/[0.02] transition-all cursor-pointer flex flex-col items-center justify-center min-h-[100px] group ${sortedDetails.length === 0 ? 'col-span-full py-12' : ''}`}
+                      onClick={startAddDetail}
                     >
-                      <Activity size={48} strokeWidth={2.5} />
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="text-xl font-black text-primary tracking-tight">세부 프로그램 정보를 구성해 주세요</h4>
-                      <p className="text-[13px] text-tertiary font-medium leading-relaxed max-w-xs mx-auto">
-                        상단 탭에서 구분 그룹을 선택하거나<br />
-                        <span className="font-bold" style={{ color: "var(--brand-primary)" }}>'프로그램 추가'</span> 버튼을 눌러 새로운 과정을 설계할 수 있습니다.
+                      <div className="w-8 h-8 rounded-full bg-surface-subtle group-hover:bg-cta/10 group-hover:scale-110 flex items-center justify-center mb-2 transition-all border border-border/20 group-hover:border-cta/20">
+                        <Plus className="text-tertiary group-hover:text-cta w-4 h-4" strokeWidth={3} />
+                      </div>
+                      <p className="text-[12px] font-black text-tertiary group-hover:text-cta tracking-tight">
+                        {sortedDetails.length === 0 ? "첫 번째 세부 프로그램을 설계하세요" : "새 프로그램 추가"}
                       </p>
-                    </div>
+                    </button>
                   </div>
-                )}
+                </div>
               </section>
+
+              {/* Contextual Detail & Session Management */}
+              {showDetailSection && (
+                <section className="space-y-10 pt-16 border-t border-border/40 animate-in fade-in slide-in-from-top-4 duration-700">
+                  <header className="flex items-center gap-4 px-1">
+                    <div className="w-10 h-10 rounded-xl bg-cta/5 border border-cta/20 flex items-center justify-center text-cta shadow-sm">
+                      <Activity size={20} strokeWidth={2} />
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-black text-primary tracking-tight">상세 구성 및 회차 관리</h4>
+                      <p className="text-[10px] font-black text-cta uppercase tracking-[0.2em] mt-1 opacity-70">실시간 편집 중 (Editing)</p>
+                    </div>
+                  </header>
+
+                  {managerDetailForm && (
+                    <div className="space-y-12">
+                      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-end">
+                        <div className="form-group space-y-3">
+                          <label className="text-[10px] font-black text-tertiary uppercase tracking-widest ml-1 opacity-60">세부 과정 명칭</label>
+                          <input
+                            className="form-input bg-surface h-14 text-base font-black border-border/40 focus:border-cta"
+                            value={managerDetailForm.name}
+                            onChange={(e) => setManagerDetailForm({ ...managerDetailForm, name: e.target.value })}
+                            placeholder="예: AI 기초 역량 강화 과정"
+                          />
+                        </div>
+                        <div className="p-5 px-10 rounded-2xl bg-surface shadow-sm border border-border/40 text-center flex flex-col justify-center min-w-[140px]">
+                          <span className="block text-[9px] font-black text-tertiary tracking-[0.2em] mb-1 opacity-50">총 회차 수</span>
+                          <span className="text-2xl font-black text-primary tabular-nums">{managerDetailForm.sessions.length}회</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-surface rounded-2xl border border-border/40 overflow-hidden shadow-xl shadow-brand-dark/5">
+                        <div className="overflow-x-auto custom-scrollbar">
+                          <table className="w-full text-left border-collapse min-w-[900px]">
+                            <thead>
+                              <tr className="bg-surface-subtle/40 border-b border-border/40">
+                                <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest w-20 text-center">번호</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest min-w-[320px]">교육 일정 (Education Period)</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest text-center w-32">시간 (Hours)</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest text-center w-32">목표 (Target)</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest text-center">진행 현황</th>
+                                <th className="px-6 py-4 w-20" />
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/20">
+                              {managerDetailForm.sessions.map((session, idx) => {
+                                const achv = getSessionStats(managerDetailForm.name, session.id);
+                                const rate = session.targetOutcome > 0 ? Math.round((achv / session.targetOutcome) * 100) : 0;
+
+                                return (
+                                  <tr key={session.id} className="group hover:bg-surface-subtle/20 transition-colors">
+                                    <td className="px-6 py-6 text-center">
+                                      <span className="text-xs font-black text-tertiary opacity-40 tabular-nums">0{idx + 1}</span>
+                                    </td>
+                                    <td className="px-6 py-6">
+                                      <Calendar
+                                        value={{
+                                          start: session.startDate ? new Date(session.startDate) : null,
+                                          end: session.endDate ? new Date(session.endDate) : null
+                                        }}
+                                        onChange={(val) => updateSession(idx, {
+                                          startDate: val?.start ? format(val.start, "yyyy-MM-dd") : "",
+                                          endDate: val?.end ? format(val.end, "yyyy-MM-dd") : ""
+                                        })}
+                                      />
+                                    </td>
+                                    <td className="px-6 py-6">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <input
+                                          type="number"
+                                          className="w-16 py-1.5 bg-surface-subtle border border-border/40 rounded-lg text-center text-sm font-bold tabular-nums"
+                                          value={session.totalHours === 0 ? "" : session.totalHours}
+                                          onChange={(e) => updateSession(idx, { totalHours: Number(e.target.value) || 0 })}
+                                          onFocus={(e) => e.target.select()}
+                                          placeholder="0"
+                                        />
+                                        <span className="text-[10px] font-black text-tertiary uppercase opacity-60">H</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-6">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <input
+                                          type="number"
+                                          className="w-16 py-1.5 bg-surface-subtle border border-border/40 rounded-lg text-center text-sm font-black text-cta tabular-nums"
+                                          value={session.targetOutcome === 0 ? "" : session.targetOutcome}
+                                          onChange={(e) => updateSession(idx, { targetOutcome: Number(e.target.value) || 0 })}
+                                          onFocus={(e) => e.target.select()}
+                                          placeholder="0"
+                                        />
+                                        <span className="text-[10px] font-black text-tertiary uppercase opacity-60">명</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-6">
+                                      <div className="flex flex-col items-center gap-2">
+                                        <div className="flex items-center gap-3">
+                                          <span className="text-[11px] font-black text-secondary tabular-nums">{achv} / {session.targetOutcome}</span>
+                                          <span className={`text-[11px] font-black tabular-nums ${rate >= 100 ? "text-cta" : "text-primary"}`}>{rate}%</span>
+                                        </div>
+                                        <div className="w-32 h-1.5 bg-border/20 rounded-full overflow-hidden">
+                                          <div className={`h-full transition-all duration-700 ${rate >= 100 ? "bg-cta" : "bg-brand-primary"}`} style={{ width: `${Math.min(100, rate)}%` }} />
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-6 text-right">
+                                      <button
+                                        type="button"
+                                        className="p-2 rounded-xl text-tertiary hover:text-error hover:bg-error/5 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                                        onClick={() => removeSession(idx)}
+                                      >
+                                        <Trash2 size={16} strokeWidth={2.5} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              
+                              {/* Skeleton Row for Adding Session */}
+                              <tr 
+                                className="group cursor-pointer hover:bg-cta/[0.02] transition-colors"
+                                onClick={addSession}
+                              >
+                                <td colSpan={6} className="px-6 py-8">
+                                  <div className="flex items-center justify-center gap-3 text-tertiary group-hover:text-cta transition-all">
+                                    <div className="w-8 h-8 rounded-full bg-surface-subtle group-hover:bg-cta/10 group-hover:scale-110 flex items-center justify-center transition-all border border-border/20">
+                                      <Plus size={18} strokeWidth={3} />
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase tracking-[0.1em]">새로운 교육 회차 추가하기</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <footer className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6">
+                        <button
+                          type="button"
+                          className="btn btn-primary h-14 px-12 gap-3 text-base rounded-2xl shadow-xl shadow-brand-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                          onClick={() => {
+                            if (applyDetailDraft()) addToast("설계 내용이 임시 적용되었습니다. 상단의 [전체 저장]을 눌러주세요.", "info");
+                          }}
+                        >
+                          <Check size={24} strokeWidth={4} />
+                          <span className="font-black">구성 내용 임시 적용하기</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="px-8 py-3 text-tertiary hover:text-secondary font-black text-sm transition-all cursor-pointer uppercase tracking-widest"
+                          onClick={() => { setManagerDetailForm(null); setManagerEditingDetailId(null); setSelectedDetailId(null); }}
+                        >
+                          취소하기 (Cancel)
+                        </button>
+                      </footer>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {!showDetailSection && (
+                <div className="py-32 flex flex-col items-center justify-center text-center opacity-20">
+                  <Activity size={80} strokeWidth={1} className="text-tertiary mb-6" />
+                  <p className="text-sm font-black text-tertiary uppercase tracking-[0.3em]">과정을 선택하여 상세 구성을 시작하세요</p>
+                </div>
+              )}
             </div>
           </main>
         </div>
       )}
 
-      {/* Delete Detail Confirm Modal */}
+      {/* Delete Modals - Maintain same logic but apply design polish */}
       {pendingDeleteDetail && (
-        <div className="modal-backdrop">
-          <div className="modal-panel modal-panel-sm" style={{ borderRadius: 32, padding: 40, textAlign: "center" }}>
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-              style={{ background: "var(--color-error-bg)", color: "var(--color-error)" }}
-            >
-              <Trash2 size={32} strokeWidth={2.5} />
+        <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-surface rounded-3xl shadow-2xl max-w-md w-full p-10 text-center animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 rounded-[32px] bg-error/10 text-error flex items-center justify-center mx-auto mb-8">
+              <Trash2 size={40} strokeWidth={2} />
             </div>
-            <h3 className="text-2xl font-black text-primary mb-2">세부 과정 삭제</h3>
-            <p className="text-secondary font-bold mb-6 leading-relaxed">
-              <span className="text-text-primary">'{pendingDeleteDetail.detailName}'</span> 과정을 삭제 목록에 추가하시겠습니까?
+            <h3 className="text-2xl font-black text-primary mb-4 tracking-tight">세부 과정 삭제</h3>
+            <p className="text-secondary font-bold mb-8 leading-relaxed">
+              <span className="text-primary">'{pendingDeleteDetail.detailName}'</span> 과정을<br />삭제 목록에 추가하시겠습니까?
             </p>
-            <div
-              className="rounded-2xl p-4 mb-8 text-left flex items-start gap-3"
-              style={{ background: "var(--color-warning-bg)", border: "1px solid rgba(245,158,11,0.2)" }}
-            >
-              <Activity size={16} strokeWidth={3} style={{ color: "var(--color-warning)", marginTop: 2 }} />
-              <p className="text-[12px] font-bold leading-relaxed" style={{ color: "var(--color-warning-text)" }}>
-                이 작업은 임시 삭제 상태로 설정합니다.<br />
-                상단의 <span className="font-black">"변경 사항 전체 저장"</span> 버튼을 눌러야 실제 데이터베이스에서 영구 삭제됩니다.
+            <div className="bg-warning/5 border border-warning/20 rounded-2xl p-5 mb-10 text-left flex items-start gap-4">
+              <Activity size={18} className="text-warning shrink-0 mt-0.5" strokeWidth={3} />
+              <p className="text-[12px] font-bold text-warning-text leading-relaxed">
+                이 작업은 임시 상태입니다. 상단의 <span className="font-black text-primary">"변경 사항 전체 저장"</span> 버튼을 눌러야 실제 DB에서 삭제됩니다.
               </p>
             </div>
             <div className="flex gap-4">
-              <button className="btn btn-secondary flex-1 h-12" onClick={() => setPendingDeleteDetail(null)}>취소</button>
+              <button className="flex-1 h-14 rounded-2xl bg-surface-subtle text-secondary font-black text-sm hover:bg-surface-active transition-all" onClick={() => setPendingDeleteDetail(null)}>취소</button>
               <button
-                className="btn btn-primary flex-1 h-12"
-                style={{ background: "var(--color-error)" }}
+                className="flex-1 h-14 rounded-2xl bg-error text-white font-black text-sm shadow-lg shadow-error/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 onClick={() => {
                   removeDetailFromForm(pendingDeleteDetail.groupId, pendingDeleteDetail.detailId);
                   if (selectedDetailId === pendingDeleteDetail.detailId) setSelectedDetailId(null);
                   setPendingDeleteDetail(null);
-                  addToast("삭제 목록에 추가되었습니다. 상단의 '전체 저장'을 눌러주세요.", "info");
+                  addToast("삭제 목록에 추가되었습니다. 상단의 [전체 저장]을 잊지 마세요.", "info");
                 }}
               >
                 삭제 추가
@@ -692,29 +602,22 @@ export function CourseManagementPage() {
         </div>
       )}
 
-      {/* Delete Group Confirm Modal */}
       {pendingDeleteGroupId && (
-        <div className="modal-backdrop">
-          <div className="modal-panel modal-panel-sm" style={{ borderRadius: 32, padding: 40, textAlign: "center" }}>
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-              style={{ background: "var(--color-error-bg)", color: "var(--color-error)" }}
-            >
-              <Trash2 size={32} strokeWidth={2.5} />
+        <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-surface rounded-3xl shadow-2xl max-w-md w-full p-10 text-center animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 rounded-[32px] bg-error/10 text-error flex items-center justify-center mx-auto mb-8">
+              <AlertCircle size={40} strokeWidth={2} />
             </div>
-            <h3 className="text-2xl font-black text-primary mb-2">과정 구분 삭제</h3>
+            <h3 className="text-2xl font-black text-primary mb-4 tracking-tight">과정 구분 삭제</h3>
             <p className="text-secondary font-bold mb-10 leading-relaxed">
               이 과정 구분을 삭제하시겠습니까? <br />
-              <span className="font-black" style={{ color: "var(--color-error)" }}>* 소속된 모든 세부 과정 및 데이터가 영구 삭제됩니다.</span>
+              <span className="text-error font-black">* 소속된 모든 과정과 데이터가 즉시 삭제됩니다.</span>
             </p>
             <div className="flex gap-4">
-              <button className="btn btn-secondary flex-1 h-12" onClick={() => setPendingDeleteGroupId(null)}>
-                아니오, 취소
-              </button>
+              <button className="flex-1 h-14 rounded-2xl bg-surface-subtle text-secondary font-black text-sm hover:bg-surface-active transition-all" onClick={() => setPendingDeleteGroupId(null)}>취소</button>
               <button
-                className="btn btn-primary flex-1 h-12"
-                style={{ background: "var(--color-error)" }}
-                onClick={() => { confirmDeleteCourseGroup(); setSelectedDetailId(null); }}
+                className="flex-1 h-14 rounded-2xl bg-error text-white font-black text-sm shadow-lg shadow-error/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                onClick={() => { confirmDeleteCourseGroup(); setSelectedDetailId(null); setPendingDeleteGroupId(null); }}
               >
                 네, 삭제합니다
               </button>
@@ -723,5 +626,26 @@ export function CourseManagementPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Helper icons that were missing
+function AlertCircle({ size, strokeWidth, className }: { size: number, strokeWidth: number, className?: string }) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth={strokeWidth} 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
   );
 }

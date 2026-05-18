@@ -205,10 +205,10 @@ export function useCourseManager() {
         ? detail.sessions 
         : [{
             id: createLocalId("session"),
-            startDate: detail.startDate,
-            endDate: detail.endDate,
-            totalHours: detail.totalHours,
-            targetOutcome: detail.targetOutcome
+            startDate: detail.startDate || "",
+            endDate: detail.endDate || "",
+            totalHours: detail.totalHours || 0,
+            targetOutcome: detail.targetOutcome || 0
           }]
     });
   };

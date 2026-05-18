@@ -183,7 +183,7 @@ export function AddParticipantModal({
               <input
                 id="add-name"
                 type="text"
-                className={`w-full px-4 py-3 rounded-xl border bg-surface text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
+                className={`w-full px-4 py-3 rounded-xl border bg-surface placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
                   errors.name ? "border-error/50" : "border-border"
                 }`}
                 value={form.name}
@@ -203,7 +203,7 @@ export function AddParticipantModal({
               <label className="block text-sm font-semibold text-secondary">직위</label>
               <input
                 type="text"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-surface placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
                 value={form.position}
                 onChange={(e) => set("position", e.target.value)}
                 placeholder="선임연구원"
@@ -216,7 +216,7 @@ export function AddParticipantModal({
               </label>
               <input
                 type="text"
-                className={`w-full px-4 py-3 rounded-xl border bg-surface text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
+                className={`w-full px-4 py-3 rounded-xl border bg-surface placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
                   errors.companyName ? "border-error/50" : "border-border"
                 }`}
                 value={companySearch || form.companyName}
@@ -327,7 +327,7 @@ export function AddParticipantModal({
               <input
                 id="add-phone"
                 type="tel"
-                className={`w-full px-4 py-3 rounded-xl border bg-surface text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
+                className={`w-full px-4 py-3 rounded-xl border bg-surface placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
                   errors.phone ? "border-error/50" : "border-border"
                 }`}
                 value={form.phone}
@@ -349,7 +349,7 @@ export function AddParticipantModal({
               </label>
               <input
                 type="email"
-                className={`w-full px-4 py-3 rounded-xl border bg-surface text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
+                className={`w-full px-4 py-3 rounded-xl border bg-surface placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${
                   errors.email ? "border-error/50" : "border-border"
                 }`}
                 value={form.email}

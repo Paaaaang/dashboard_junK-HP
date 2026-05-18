@@ -2,14 +2,7 @@ import { useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { CompanyRecord } from "@/types/models";
 
-export type TabKey = "ALL" | "TRAINING" | "SUPPORT" | "SEMINAR";
-
-export const TAB_ITEMS: Array<{ key: TabKey; label: string }> = [
-  { key: "ALL", label: "전체" },
-  { key: "TRAINING", label: "훈련비" },
-  { key: "SUPPORT", label: "지원비" },
-  { key: "SEMINAR", label: "세미나" },
-];
+export type TabKey = "ALL" | string;
 
 export function useCompanyFilters() {
   const [activeTab, setActiveTab] = useState<TabKey>("ALL");

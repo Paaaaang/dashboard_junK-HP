@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { X, Send, Mail, Check, AlertCircle, ChevronRight, Users, Loader2, Paperclip } from "lucide-react";
-import { useTemplateStore } from "@/stores/useTemplateStore";
-import { useToastStore } from "@/stores/useToastStore";
+import { X, Send, Mail, Check, AlertCircle, ChevronRight, Users, Loader2, Paperclip, Search, Calendar as CalendarIcon, BookOpen } from "lucide-react";
+import { useTemplateStore, useCourseStore, useToastStore } from "@/stores";
 import type { ParticipantRecord } from "@/types/models";
 
 interface BulkEmailModalProps {
@@ -12,20 +11,27 @@ interface BulkEmailModalProps {
 
 export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModalProps) {
   const { templates, fetchTemplates, sendBatch, fetchJobStatus, activeJob, subscribeToTemplates, setActiveJob, logs, fetchLogs } = useTemplateStore();
+  const { courseGroups, fetchCourseGroups } = useCourseStore();
   const { addToast } = useToastStore();
   
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [isSending, setIsSending] = useState(false);
 
+  // Dynamic Variable Selection State
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+
   useEffect(() => {
     fetchTemplates();
+    fetchCourseGroups();
     const unsubscribe = subscribeToTemplates();
     return () => {
       unsubscribe();
-      setActiveJob(null); // Clear active job when modal closes
+      setActiveJob(null);
     };
-  }, [fetchTemplates, subscribeToTemplates, setActiveJob]);
+  }, [fetchTemplates, fetchCourseGroups, subscribeToTemplates, setActiveJob]);
 
   // Fetch logs when job status is completed or has failures to show details
   useEffect(() => {
@@ -45,6 +51,28 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
     templates.find(t => t.id === selectedTemplateId),
     [templates, selectedTemplateId]
   );
+
+  const needsVariableSelection = useMemo(() => {
+    if (!selectedTemplate) return false;
+    const combined = selectedTemplate.subject + selectedTemplate.body;
+    return combined.includes("{{subCourseName}}") || combined.includes("{{courseDate}}");
+  }, [selectedTemplate]);
+
+  const selectedGroup = useMemo(() => courseGroups.find(g => g.id === selectedGroupId), [courseGroups, selectedGroupId]);
+  const selectedProgram = useMemo(() => selectedGroup?.details.find(d => d.id === selectedProgramId), [selectedGroup, selectedProgramId]);
+  const selectedSession = useMemo(() => selectedProgram?.sessions?.find(s => s.id === selectedSessionId), [selectedProgram, selectedSessionId]);
+
+  const canGoToNext = useMemo(() => {
+    if (!selectedTemplateId) return false;
+    if (needsVariableSelection) {
+      const combined = selectedTemplate!.subject + selectedTemplate!.body;
+      const needsProg = combined.includes("{{subCourseName}}");
+      const needsDate = combined.includes("{{courseDate}}");
+      if (needsProg && !selectedProgramId) return false;
+      if (needsDate && !selectedSessionId) return false;
+    }
+    return true;
+  }, [selectedTemplateId, needsVariableSelection, selectedTemplate, selectedProgramId, selectedSessionId]);
 
   const failureLogs = useMemo(() => 
     logs.filter(log => log.status === 'failed' && log.jobId === activeJob?.id),
@@ -67,14 +95,17 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
     setIsSending(true);
     try {
       const recipients = selectedParticipants.map(p => ({
-        email: p.email,
+        email: p?.email || "",
         variables: {
-          name: p.name,
-          companyName: p.companyName,
-          position: p.position || "",
-          phone: p.phone || ""
+          companyName: p?.companyName || "",
+          subCourseName: selectedProgram?.name || "",
+          courseDate: selectedSession ? `${selectedSession?.startDate || ""} ~ ${selectedSession?.endDate || ""}` : ""
         }
-      }));
+      })).filter(r => r.email);
+
+      if (recipients.length === 0) {
+        throw new Error("이메일 주소가 등록된 참여자가 없습니다.");
+      }
 
       await sendBatch(selectedTemplateId, recipients);
       setStep(3);
@@ -123,22 +154,23 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-surface-subtle/30 custom-scrollbar">
           {step === 1 ? (
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-xs font-black text-tertiary uppercase tracking-widest px-1">1. 템플릿 선택</label>
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <label className="text-[11px] font-black text-tertiary uppercase tracking-widest px-1 opacity-60">1. 템플릿 선택</label>
                 <div className="grid grid-cols-1 gap-3">
                   {!templates || templates.length === 0 ? (
-                    <div className="p-8 border-2 border-dashed border-border/50 rounded-2xl text-center bg-surface">
-                      <p className="text-sm text-secondary font-medium">저장된 템플릿이 없습니다.</p>
+                    <div className="p-12 border-2 border-dashed border-border/40 rounded-[28px] text-center bg-surface-subtle/30">
+                      <Mail size={40} className="mx-auto text-tertiary/20 mb-3" />
+                      <p className="text-sm text-secondary font-bold">저장된 템플릿이 없습니다.</p>
                     </div>
                   ) : (
                     templates.map(t => (
                       <label
                         key={t.id}
-                        className={`relative flex flex-col p-4 cursor-pointer rounded-2xl border-2 transition-all duration-200 ${
+                        className={`relative flex flex-col p-5 cursor-pointer rounded-2xl border-2 transition-all duration-300 ${
                           selectedTemplateId === t.id 
-                            ? "border-brand-primary bg-brand-primary/5 shadow-md ring-2 ring-brand-primary/10" 
-                            : "border-border/50 bg-surface hover:border-brand-primary/30"
+                            ? "border-brand-primary bg-brand-primary/[0.03] shadow-lg shadow-brand-primary/5 ring-4 ring-brand-primary/5" 
+                            : "border-border/40 bg-surface hover:border-brand-primary/30"
                         }`}
                       >
                         <input
@@ -147,27 +179,101 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
                           className="sr-only"
                           value={t.id}
                           checked={selectedTemplateId === t.id}
-                          onChange={() => setSelectedTemplateId(t.id)}
+                          onChange={() => {
+                            setSelectedTemplateId(t.id);
+                            setSelectedGroupId("");
+                            setSelectedProgramId("");
+                            setSelectedSessionId("");
+                          }}
                         />
-                        <div className="flex items-center justify-between mb-1 pr-6">
-                          <span className="text-sm font-bold text-primary tracking-tight">{t.name}</span>
-                          <div className={`absolute right-4 top-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            selectedTemplateId === t.id ? "border-brand-primary bg-brand-primary" : "border-border"
+                        <div className="flex items-center justify-between mb-1.5 pr-8">
+                          <span className={`text-[15px] ${selectedTemplateId === t.id ? "font-black text-brand-primary" : "font-bold text-primary"}`}>{t.name}</span>
+                          <div className={`absolute right-5 top-6 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+                            selectedTemplateId === t.id ? "border-brand-primary bg-brand-primary rotate-0 scale-100" : "border-border/60 rotate-90 scale-90"
                           }`}>
-                            {selectedTemplateId === t.id && <Check size={12} className="text-white" strokeWidth={3} />}
+                            {selectedTemplateId === t.id && <Check size={14} className="text-white" strokeWidth={4} />}
                           </div>
                         </div>
-                        <p className="text-xs text-secondary line-clamp-1">{t.subject || "제목 없음"}</p>
+                        <p className="text-xs text-tertiary font-medium line-clamp-1 opacity-70">{t.subject || "제목 없음"}</p>
                       </label>
                     ))
                   )}
                 </div>
               </div>
+
+              {needsVariableSelection && (
+                <div className="space-y-4 pt-4 border-t border-border/40 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="w-1.5 h-4 bg-brand-primary rounded-full" />
+                    <label className="text-[11px] font-black text-primary uppercase tracking-widest">2. 변수 데이터 선택 (프로그램/회차)</label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4 p-6 bg-brand-primary/[0.02] border border-brand-primary/10 rounded-[28px]">
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black text-tertiary uppercase tracking-wider ml-1">과정 구분</span>
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-tertiary" size={14} />
+                        <select 
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-border/60 rounded-xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
+                          value={selectedGroupId}
+                          onChange={(e) => {
+                            setSelectedGroupId(e.target.value);
+                            setSelectedProgramId("");
+                            setSelectedSessionId("");
+                          }}
+                        >
+                          <option value="">과정 그룹 선택</option>
+                          {courseGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-black text-tertiary uppercase tracking-wider ml-1">프로그램명</span>
+                        <div className="relative">
+                          <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-tertiary" size={14} />
+                          <select 
+                            className="w-full pl-10 pr-4 py-3 bg-white border border-border/60 rounded-xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all disabled:opacity-40"
+                            value={selectedProgramId}
+                            disabled={!selectedGroupId}
+                            onChange={(e) => {
+                              setSelectedProgramId(e.target.value);
+                              setSelectedSessionId("");
+                            }}
+                          >
+                            <option value="">프로그램 선택</option>
+                            {selectedGroup?.details.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-black text-tertiary uppercase tracking-wider ml-1">회차(일정)</span>
+                        <div className="relative">
+                          <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-tertiary" size={14} />
+                          <select 
+                            className="w-full pl-10 pr-4 py-3 bg-white border border-border/60 rounded-xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all disabled:opacity-40"
+                            value={selectedSessionId}
+                            disabled={!selectedProgramId}
+                            onChange={(e) => setSelectedSessionId(e.target.value)}
+                          >
+                            <option value="">회차 선택</option>
+                            {selectedProgram?.sessions?.map((s, idx) => (
+                              <option key={s.id} value={s.id}>{idx + 1}회차 ({s.startDate} ~ {s.endDate})</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : step === 2 ? (
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-xs font-black text-tertiary uppercase tracking-widest px-1">2. 최종 확인</label>
+                <label className="text-xs font-black text-tertiary uppercase tracking-widest px-1">3. 최종 확인</label>
                 <div className="p-6 bg-surface border border-border/50 rounded-2xl shadow-sm space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -179,6 +285,21 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
                       <p className="text-sm font-bold text-brand-primary">{selectedParticipants?.length || 0}명</p>
                     </div>
                   </div>
+
+                  {selectedProgram && (
+                    <div className="p-4 bg-surface-subtle/50 rounded-xl border border-border/40 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-tertiary uppercase">선택된 프로그램</span>
+                        <span className="text-xs font-bold text-primary">{selectedProgram.name}</span>
+                      </div>
+                      {selectedSession && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black text-tertiary uppercase">선택된 일정</span>
+                          <span className="text-xs font-bold text-primary">{selectedSession.startDate} ~ {selectedSession.endDate}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {selectedTemplate?.attachments && selectedTemplate.attachments.length > 0 && (
                     <div>
@@ -290,7 +411,7 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
           {step === 1 ? (
             <>
               <button onClick={onClose} className="flex-1 py-3.5 text-sm font-bold text-secondary bg-surface-subtle hover:bg-border/30 rounded-xl transition-all">취소</button>
-              <button onClick={() => setStep(2)} disabled={!selectedTemplateId} className="flex-[2] py-3.5 text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+              <button onClick={() => setStep(2)} disabled={!canGoToNext} className="flex-[2] py-3.5 text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale">
                 다음 단계로 <ChevronRight size={16} strokeWidth={2.5} />
               </button>
             </>

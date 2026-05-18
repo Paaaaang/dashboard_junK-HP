@@ -64,10 +64,6 @@ export function AddCompanyModal({
             <ChevronRight className="w-5 h-5 text-tertiary group-hover:text-brand-primary transition-all duration-200" strokeWidth={2.5} />
           </button>
         </div>
-
-        <div className="px-8 py-5 bg-surface-subtle/50 text-center">
-          <p className="text-xs text-tertiary font-medium tracking-tight uppercase">Dashboard Company Management</p>
-        </div>
       </div>
     </div>
   );

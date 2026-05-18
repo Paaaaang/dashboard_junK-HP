@@ -93,7 +93,7 @@ export function Dashboard() {
       </header>
 
       {/* Summary Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-6" aria-label="핵심 지표 요약 카드">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6" aria-label="핵심 지표 요약 카드">
         {summary.map((card, idx) => {
           const Icon = getIcon(card.label);
           const TrendIcon = card.trend === 'up' ? TrendingUp : TrendingDown;
@@ -157,8 +157,8 @@ export function Dashboard() {
               <TrendingUp size={18} strokeWidth={2.5} style={{ color: "var(--brand-primary)" }} />
             </div>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full min-h-[300px]">
+            <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={charts?.monthlyParticipation || []}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -185,8 +185,8 @@ export function Dashboard() {
             <h3 className="text-lg font-black text-text-primary tracking-tight">고용보험 가입 현황</h3>
             <p className="text-xs text-tertiary font-bold mt-0.5 uppercase tracking-wide">Insurance Distribution</p>
           </div>
-          <div className="h-[300px] w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full relative min-h-[300px]">
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={charts?.insuranceDistribution || []} cx="50%" cy="45%" innerRadius={60} outerRadius={100} paddingAngle={8} dataKey="value">
                   {(charts?.insuranceDistribution || []).map((_, index) => (
@@ -214,8 +214,8 @@ export function Dashboard() {
               <Users size={18} style={{ color: "var(--brand-primary)" }} />
             </div>
           </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] w-full min-h-[250px]">
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={charts?.courseCompanies || []} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
                 <XAxis type="number" axisLine={false} tickLine={false} hide />
@@ -245,8 +245,8 @@ export function Dashboard() {
               <Activity size={18} style={{ color: "var(--color-info)" }} />
             </div>
           </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] w-full min-h-[250px]">
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={charts?.subCourseParticipation || []} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
                 <XAxis type="number" axisLine={false} tickLine={false} hide />

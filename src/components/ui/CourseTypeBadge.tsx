@@ -12,7 +12,12 @@ interface CourseTypeBadgeProps {
 }
 
 export function CourseTypeBadge({ type, count }: CourseTypeBadgeProps) {
-  const colors = COURSE_TYPE_COLORS[type];
+  const colors = COURSE_TYPE_COLORS[type] || { 
+    bg: "bg-surface-subtle", 
+    dot: "bg-disabled", 
+    text: "text-secondary" 
+  };
+  
   return (
     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${colors.bg} ${colors.text} font-bold text-xs`}>
       <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />

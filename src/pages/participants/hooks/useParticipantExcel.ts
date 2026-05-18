@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParticipantStore } from "@/stores";
 import type { ParticipantRecord, CompanyRecord } from "@/types/models";
 
@@ -10,6 +10,7 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [uploadPreview, setUploadPreview] = useState<ParticipantRecord[] | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
 
   const openUploadModal = () => {
     setUploadFile(null);
@@ -18,6 +19,7 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setColumnMapping({});
     setUploadPreview(null);
     setUploadError(null);
+    setIsParsing(false);
     setShowUploadModal(true);
   };
 
@@ -27,7 +29,17 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setUploadError(null);
   };
 
-  const parseExcelFile = (file: File) => {
+  const parseExcelFile = useCallback(async (file: File) => {
+    // 1. Extension Validation
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "xlsx" && ext !== "xls") {
+      setUploadError("지원하지 않는 파일 형식입니다. (.xlsx, .xls 파일만 가능)");
+      return;
+    }
+
+    setIsParsing(true);
+    setUploadError(null);
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -39,6 +51,7 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
 
         if (rows.length === 0) {
           setUploadError("인식된 데이터가 없습니다.");
+          setIsParsing(false);
           return;
         }
 
@@ -54,6 +67,9 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
           else if (lower.includes("고용보험") || lower.includes("보험")) initialMapping[h] = "employmentInsurance";
           else if (lower.includes("경력")) initialMapping[h] = "workExperience";
           else if (lower.includes("역량")) initialMapping[h] = "documentSkill";
+          else if (lower.includes("과정 수")) initialMapping[h] = "enrollmentCount";
+          else if (lower.includes("수료 수")) initialMapping[h] = "completionCount";
+          else if (lower.includes("요약")) initialMapping[h] = "enrollmentSummary";
           else initialMapping[h] = "__skip__";
         });
 
@@ -62,10 +78,12 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
         setUploadStep(2);
       } catch (err) {
         setUploadError("파일 파싱 실패. 형식을 확인해 주세요.");
+      } finally {
+        setIsParsing(false);
       }
     };
     reader.readAsArrayBuffer(file);
-  };
+  }, []);
 
   const goNextToPreview = () => {
     const nextPreview: ParticipantRecord[] = rawRows.map((row, idx) => {
@@ -98,6 +116,10 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setUploadStep(3);
   };
 
+  const goPrevStep = useCallback(() => {
+    setUploadStep((prev) => (prev > 1 ? (prev - 1) as 1 | 2 | 3 : 1));
+  }, []);
+
   const confirmUpload = async () => {
     if (!uploadPreview) return;
     try {
@@ -116,6 +138,7 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setColumnMapping({});
     setUploadPreview(null);
     setUploadError(null);
+    setIsParsing(false);
   };
 
   return {
@@ -130,8 +153,10 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setColumnMapping,
     uploadPreview,
     uploadError,
+    isParsing,
     parseExcelFile,
     goNextToPreview,
+    goPrevStep,
     confirmUpload,
     resetUpload,
   };

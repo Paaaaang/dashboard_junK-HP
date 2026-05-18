@@ -253,7 +253,8 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  padding: 16px;
+  padding: 14px;
+  max-width: 280px;
   box-shadow: var(--shadow-card);
   transition: all 0.15s ease-out;
 }
@@ -268,19 +269,19 @@
   justify-content: space-between;
   align-items: center;
   color: var(--color-text-secondary);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .kpi-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .kpi-value {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  line-height: 1.1;
-  margin: 0 0 10px;
+  line-height: 1;
+  margin: 0 0 8px;
   color: var(--color-cta);
 }
 
@@ -395,12 +396,3 @@
   gap: 8px;
 }
 
-/*
-npm 로컬 서버 실행 명령어
-백엔드: npm run dev
-port:3001
-
-프론트엔드: npm start
-port:3000
-
-*/

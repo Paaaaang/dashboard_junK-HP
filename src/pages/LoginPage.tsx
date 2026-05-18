@@ -75,7 +75,7 @@ export function LoginPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-surface-subtle border border-border rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold text-primary placeholder:text-disabled outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    className="w-full bg-surface-subtle border border-border rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold placeholder:text-disabled outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                     placeholder="아이디를 입력하세요"
                     required
                     autoComplete="username"
@@ -95,7 +95,7 @@ export function LoginPage() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-surface-subtle border border-border rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold text-primary placeholder:text-disabled outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    className="w-full bg-surface-subtle border border-border rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold placeholder:text-disabled outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                     placeholder="••••••••"
                     required
                     autoComplete="current-password"

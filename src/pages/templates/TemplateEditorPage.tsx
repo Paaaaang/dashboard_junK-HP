@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { templateVariableMetadata } from "@/constants";
 import { PageHeader } from "@/components";
-import { applyTemplateVariables } from "@/utils/templateVariables";
+import { applyTemplateVariables, renderEmailTemplate } from "@/utils/templateVariables";
 import { useTemplateStore } from "@/stores/useTemplateStore";
 import { useToastStore } from "@/stores/useToastStore";
 import { AttachmentUploader } from "@/components/email/AttachmentUploader";
@@ -372,11 +372,13 @@ export function TemplateEditorPage() {
       managerName: "김관리",
     };
     try {
+      const renderedBody = renderEmailTemplate(applyTemplateVariables(draftTemplate.body, mockDataForSend));
+
       await testEmail(
         draftTemplate.id,
         testEmailAddr,
         applyTemplateVariables(draftTemplate.subject, mockDataForSend),
-        applyTemplateVariables(draftTemplate.body, mockDataForSend),
+        renderedBody,
         draftTemplate.attachments
       );
       addToast("테스트 메일이 발송되었습니다.", "success");
@@ -476,14 +478,9 @@ export function TemplateEditorPage() {
   }, [undo, redo, saveTemplate, applyFormat]);
 
   const mockData = useMemo(() => ({
-    name: "박소영",
     companyName: "한빛테크",
-    courseName: "지원비과정",
     subCourseName: "의료기기 사용적합성 엔지니어링파일 작성 실무",
-    courseDate: "4/30",
-    deadline: "2026.04.28",
-    contactPhone: "062-710-2896",
-    managerName: "김관리",
+    courseDate: "1회차 (2026-04-30 ~ 2026-05-02)",
   }), []);
 
   const previewSubject = useMemo(() => 
@@ -507,26 +504,10 @@ export function TemplateEditorPage() {
   }, [draftTemplate, mockData]);
 
   const renderBodyWithHighlights = (text: string) => {
-    let html = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    // Use the shared renderer
+    let html = renderEmailTemplate(text);
 
-    // Support multiline with [\s\S]
-    html = html
-      .replace(/&lt;b&gt;([\s\S]*?)&lt;\/b&gt;/g, '<b style="font-weight: 800">$1</b>')
-      .replace(/&lt;i&gt;([\s\S]*?)&lt;\/i&gt;/g, "<i>$1</i>")
-      .replace(/&lt;u&gt;([\s\S]*?)&lt;\/u&gt;/g, "<u>$1</u>")
-      .replace(/&lt;s&gt;([\s\S]*?)&lt;\/s&gt;/g, "<s>$1</s>")
-      .replace(/&lt;mark&gt;([\s\S]*?)&lt;\/mark&gt;/g, '<mark style="background-color: #fef08a; padding: 0 2px; border-radius: 4px;">$1</mark>')
-      .replace(/&lt;li&gt;([\s\S]*?)&lt;\/li&gt;/g, '<div style="display: flex; gap: 8px; margin: 4px 0;"><span style="color: #10b981">•</span><span>$1</span></div>')
-      .replace(/&lt;a href=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/a&gt;/g, '<a href="$1" target="_blank" style="color: #3b82f6; text-decoration: underline;">$2</a>')
-      .replace(/&lt;color hex=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/color&gt;/g, '<span style="color: $1">$2</span>')
-      .replace(/&lt;font face=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/font&gt;/g, '<span style="font-family: $1">$2</span>')
-      .replace(/&lt;size value=&quot;([\s\S]*?)&quot;&gt;([\s\S]*?)&lt;\/size&gt;/g, '<span style="font-size: $1">$2</span>');
-
+    // Apply variable highlighting for the preview
     const parts = html.split(/({{\s*[a-zA-Z0-9_]+\s*}})/g);
     return parts.map((part) => {
       if (part.startsWith('{{') && part.endsWith('}}')) {
@@ -554,7 +535,7 @@ export function TemplateEditorPage() {
       name: "새 템플릿",
       audience: "ALL",
       subject: "새 메일 제목",
-      body: "본문 내용을 입력하세요.",
+      body: "",
       attachments: []
     };
     setActiveTemplateId(newId);
@@ -619,15 +600,16 @@ export function TemplateEditorPage() {
                   <div className="px-6 py-2.5 bg-surface-subtle/50 border-b border-border flex items-center gap-4">
                     <div className="flex items-center gap-2.5 flex-1 max-w-md">
                       <div className="w-7 h-7 bg-brand-primary/10 rounded-lg flex items-center justify-center text-brand-primary shrink-0"><Settings size={14} /></div>
-                      <input className="flex-1 bg-transparent border-none text-[13px] font-black text-primary focus:ring-0 p-0 placeholder:text-disabled" placeholder="템플릿 명칭" value={draftTemplate.name} onChange={(e) => setDraftTemplate(cur => cur ? ({ ...cur, name: e.target.value }) : null)} />
+                      <input className="flex-1 bg-transparent border-none text-[13px] font-black focus:ring-0 p-0 placeholder:text-disabled" 
+ placeholder="템플릿 명칭" value={draftTemplate.name} onChange={(e) => setDraftTemplate(cur => cur ? ({ ...cur, name: e.target.value }) : null)} />
                     </div>
                     <div className="h-4 w-px bg-border/60" />
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black text-tertiary uppercase tracking-wider">대상</span>
                       <select className="bg-white/50 border border-border rounded-lg px-2.5 py-1 text-[11px] font-bold text-secondary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all cursor-pointer appearance-none pr-7 relative" value={draftTemplate.audience} onChange={(e) => setDraftTemplate(cur => cur ? ({ ...cur, audience: e.target.value as InsuranceTarget }) : null)}>
                         <option value="ALL">전체</option>
-                        <option value="INSURED">가입자</option>
-                        <option value="UNINSURED">미가입자</option>
+                        <option value="INSURED">고용보험 가입자</option>
+                        <option value="UNINSURED">고용보험 미가입자</option>
                       </select>
                     </div>
                     <button type="button" className="ml-auto px-4 py-1.5 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl font-black text-[11px] shadow-md shadow-brand-primary/10 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2" onClick={saveTemplate} disabled={isSaving}>{isSaving ? <Clock size={12} className="animate-spin" /> : <Save size={12} />}변경사항 저장</button>
@@ -637,7 +619,7 @@ export function TemplateEditorPage() {
                       <div className="w-10 h-10 bg-brand-primary/5 rounded-2xl flex items-center justify-center text-brand-primary/30 shrink-0"><Mail size={18} /></div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2"><span className="text-[11px] font-bold text-disabled uppercase tracking-widest">Subject</span><div className="flex-1 h-px bg-border/20" /></div>
-                        <input className="w-full bg-transparent border-none text-lg font-black text-primary focus:ring-0 p-0 placeholder:text-disabled tracking-tight" placeholder="메일 제목 입력" value={draftTemplate.subject} onChange={(e) => setDraftTemplate(cur => cur ? ({ ...cur, subject: e.target.value }) : null)} />
+                        <input className="w-full bg-transparent border-none text-lg font-black focus:ring-0 p-0 placeholder:text-disabled tracking-tight" placeholder="메일 제목 입력" value={draftTemplate.subject} onChange={(e) => setDraftTemplate(cur => cur ? ({ ...cur, subject: e.target.value }) : null)} />
                       </div>
                     </div>
                     <div className="pl-14"><AttachmentUploader attachments={draftTemplate.attachments || []} onUpload={handleUpload} onDelete={handleDeleteAttachment} isLoading={isLoading} /></div>
@@ -657,14 +639,36 @@ export function TemplateEditorPage() {
                       </div>
                       <div className="flex items-center gap-2 group relative z-50"><HelpCircle size={14} className="text-tertiary cursor-help" /><div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-brand-dark text-white text-[11px] font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-xl">텍스트를 드래그하여 서식을 지정하거나, 상단 버튼으로 변수를 삽입하세요.</div></div>
                     </div>
-                    <div className="flex flex-wrap gap-2 p-3 mb-5 bg-surface-subtle/50 rounded-2xl border border-border/50 relative z-30">
-                      <div className="flex items-center gap-2 mr-2 pr-3 border-r border-border/50"><span className="text-xs font-black text-tertiary uppercase tracking-widest">Variables</span></div>
+                    <div className="variable-toolbar">
+                      <div className="flex items-center gap-2 mr-2 pr-3 border-r border-border/50">
+                        <span className="text-[10px] font-black text-tertiary uppercase tracking-widest">Variables</span>
+                      </div>
                       {templateVariableMetadata.map((v) => (
-                        <button key={v.key} type="button" onMouseDown={(e) => e.preventDefault()} className="group relative px-3 py-1.5 bg-white border border-border hover:border-brand-primary hover:text-brand-primary text-[11px] font-black rounded-xl transition-all shadow-sm active:scale-95" onClick={() => insertVariable(v.key)}>{v.label}<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] p-2 bg-brand-dark text-white text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-xl">{v.description}<div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-brand-dark" /></div></button>
+                        <button 
+                          key={v.key} 
+                          type="button" 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="variable-btn group relative"
+                          onClick={() => insertVariable(v.key)}
+                        >
+                          {v.label}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] p-2 bg-brand-dark text-white text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] shadow-xl">
+                            {v.description}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-brand-dark" />
+                          </div>
+                        </button>
                       ))}
                     </div>
                     <div className="flex-1 relative flex flex-col min-h-0">
-                      <textarea ref={textareaRef} className="flex-1 w-full p-0 bg-transparent border-none text-[13px] font-medium leading-relaxed focus:ring-0 outline-none transition-all resize-none custom-scrollbar" placeholder="이메일 본문 내용을 입력하세요..." value={draftTemplate.body} onChange={(e) => handleBodyChange(e.target.value)} onMouseUp={handleSelection} onKeyUp={handleSelection} />
+                      <textarea 
+                        ref={textareaRef} 
+                        className="flex-1 w-full p-0 bg-transparent border-none text-[13px] font-medium leading-relaxed focus:ring-0 outline-none transition-all resize-none custom-scrollbar" 
+                        placeholder="이메일 본문 내용을 입력하세요..." 
+                        value={draftTemplate.body} 
+                        onChange={(e) => handleBodyChange(e.target.value)} 
+                        onMouseUp={handleSelection} 
+                        onKeyUp={handleSelection} 
+                      />
                       {selectionToolbar.show && (
                         <div className="fixed z-[200] animate-in fade-in zoom-in-95 duration-200 floating-toolbar" style={{ left: selectionToolbar.x, top: selectionToolbar.y }}>
                           <div className="bg-[#0f172a] rounded-[14px] px-1 py-1 shadow-2xl flex items-center gap-0.5 border border-white/20">
@@ -716,38 +720,57 @@ export function TemplateEditorPage() {
                       )}
                     </div>
                   </div>
-                  <div className="vertical-divider" />
-                  <div className="editor-section bg-surface-subtle/20">
+                  
+                  <div className="editor-section">
                     <div className="editor-section-header">
-                      <div className="flex items-center gap-2.5"><div className="p-1.5 bg-success/10 rounded-lg text-success"><HelpCircle size={14} strokeWidth={3} /></div><h3 className="text-xs font-black text-brand-primary uppercase tracking-widest">미리보기 (Preview)</h3></div>
-                      <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span><span className="text-[11px] font-bold text-success">실시간 렌더링</span></div>
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 bg-brand-primary/10 rounded-lg text-brand-primary"><HelpCircle size={14} strokeWidth={3} /></div>
+                        <h3 className="text-[11px] font-black text-brand-primary uppercase tracking-widest">미리보기 (Preview)</h3>
+                      </div>
+                      <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span><span className="text-[10px] font-black text-brand-primary uppercase tracking-tighter">Live Rendering</span></div>
                     </div>
-                    <div className="flex-1 flex flex-col min-h-0 bg-white rounded-3xl border border-border/50 shadow-xl overflow-hidden mb-5">
-                      <div className="px-8 py-6 border-b border-border/30 space-y-2">
-                        <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-disabled uppercase tracking-widest italic">To: {mockData.name} ({mockData.companyName})</span><span className="text-[11px] font-bold text-tertiary">{toDotDate(new Date().toISOString())}</span></div>
+                    
+                    <div className="template-preview-card">
+                      <div className="template-preview-header">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black text-disabled uppercase tracking-widest italic">To: {mockData.companyName}</span>
+                          <span className="text-[10px] font-black text-tertiary">{toDotDate(new Date().toISOString())}</span>
+                        </div>
                         <p className="text-sm font-black text-primary leading-tight">제목: {previewSubject || "제목을 입력하세요"}</p>
                       </div>
-                      <div className="px-8 py-6 text-[13px] text-secondary font-medium whitespace-pre-wrap leading-relaxed font-sans flex-1 overflow-auto custom-scrollbar">
+                      
+                      <div className="template-preview-body custom-scrollbar">
                         {unresolvedVars.length > 0 && (
-                          <div className="mb-4 flex items-center gap-2 p-3.5 bg-error/10 text-error rounded-2xl border border-error/20 animate-in slide-in-from-top-2">
+                          <div className="mb-6 flex items-center gap-3 p-4 bg-error/5 text-error rounded-2xl border border-error/10 animate-in slide-in-from-top-2">
                             <AlertCircle size={18} className="shrink-0" />
-                            <span className="text-xs font-bold leading-tight">해결되지 않은 변수 {unresolvedVars.length}개 발견</span>
+                            <span className="text-[11px] font-bold leading-tight">해결되지 않은 변수 {unresolvedVars.length}개 발견</span>
                           </div>
                         )}
                         <div dangerouslySetInnerHTML={{ __html: renderBodyWithHighlights(draftTemplate.body) }} />
-                      </div>
-                      {(draftTemplate.attachments?.length || 0) > 0 && (
-                        <div className="px-8 py-5 border-t border-border/30 bg-surface-subtle/30">
-                          <p className="text-[11px] font-black text-tertiary uppercase tracking-widest mb-3">첨부파일 ({draftTemplate.attachments?.length})</p>
-                          <div className="flex flex-wrap gap-2">
-                            {draftTemplate.attachments?.map((att: AttachmentMeta) => (
-                              <div key={att.id} className="flex items-center gap-2 px-2.5 py-1 bg-white rounded-lg border border-border/50 text-[10px] font-black text-secondary shadow-sm"><Paperclip size={12} className="text-tertiary" />{att.originalName}</div>
-                            ))}
+                        
+                        {(draftTemplate.attachments?.length || 0) > 0 && (
+                          <div className="mt-10 pt-6 border-t border-border/40">
+                            <p className="text-[10px] font-black text-tertiary uppercase tracking-widest mb-4">첨부파일 ({draftTemplate.attachments?.length})</p>
+                            <div className="flex flex-wrap gap-2">
+                              {draftTemplate.attachments?.map((att: AttachmentMeta) => (
+                                <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 bg-surface-subtle/50 rounded-xl border border-border/40 text-[10px] font-black text-secondary shadow-sm hover:border-brand-primary/30 transition-all">
+                                  <Paperclip size={12} className="text-tertiary" />
+                                  {att.originalName}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                    <button type="button" className="w-full h-14 bg-white border border-border hover:border-brand-primary hover:text-brand-primary text-secondary rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm" onClick={() => setShowTestModal(true)}><Send size={18} /> 테스트 메일 발송</button>
+                    
+                    <button 
+                      type="button" 
+                      className="mt-6 w-full h-14 bg-white border border-border hover:border-brand-primary hover:text-brand-primary text-secondary rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-sm" 
+                      onClick={() => setShowTestModal(true)}
+                    >
+                      <Send size={18} /> 테스트 메일 발송
+                    </button>
                   </div>
                 </div>
               </div>
