@@ -1,4 +1,4 @@
-import { Search, Edit2, Trash2, Phone, Mail } from "lucide-react";
+import { Search } from "lucide-react";
 import { EmptyState } from "@/components";
 import type { InstructorRecord } from "@/stores/useInstructorStore";
 
@@ -7,8 +7,6 @@ interface InstructorTableProps {
   isLoading: boolean;
   searchQuery: string;
   onOpenDrawer: (id?: string) => void;
-  onEdit: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
 }
 
 export function InstructorTable({
@@ -16,8 +14,6 @@ export function InstructorTable({
   isLoading,
   searchQuery,
   onOpenDrawer,
-  onEdit,
-  onDelete,
 }: InstructorTableProps) {
   return (
     <div className="bg-surface border border-border/50 rounded-[32px] overflow-hidden shadow-sm">
@@ -26,16 +22,15 @@ export function InstructorTable({
           <thead>
             <tr className="bg-surface-subtle/50">
               <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center w-16">No</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50">구분</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50">강사명</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50">연락처</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50">이메일</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50">최근/예정 일자</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50">배정 과정명</th>
-              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center w-24">관리</th>
+              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center">구분</th>
+              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center">강사명</th>
+              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center">연락처</th>
+              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center">이메일</th>
+              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center">최근/예정 일자</th>
+              <th className="px-6 py-4 text-[10px] font-black text-tertiary uppercase tracking-widest border-b border-border/50 text-center">배정 과정명</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/30 bg-white">
+          <tbody className="divide-y divide-border/30 bg-white text-center">
             {instructors.length === 0 && !isLoading ? (
               <EmptyState
                 icon={Search}
@@ -69,14 +64,12 @@ export function InstructorTable({
                       <span className="text-sm font-black text-primary">{instructor.name}</span>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-1.5 text-secondary text-[13px]">
-                        <Phone size={14} className="text-tertiary" />
+                      <div className="flex items-center gap-1.5 text-secondary text-[13px] justify-center">
                         <span className="font-mono font-medium">{instructor.phone || "-"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-1.5 text-secondary text-[13px]">
-                        <Mail size={14} className="text-tertiary" />
+                      <div className="flex items-center gap-1.5 text-secondary text-[13px] justify-center">
                         <span className="font-medium">{instructor.email || "-"}</span>
                       </div>
                     </td>
@@ -97,22 +90,6 @@ export function InstructorTable({
                           <span className="text-[10px] text-tertiary font-medium">{latestSession.groupName}</span>
                         </div>
                       ) : <span className="text-disabled italic text-xs">-</span>}
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onEdit(instructor.id); }}
-                          className="p-2 text-tertiary hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                        >
-                          <Edit2 size={16} strokeWidth={2.5} />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onDelete(instructor.id, instructor.name); }}
-                          className="p-2 text-tertiary hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} strokeWidth={2.5} />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 );

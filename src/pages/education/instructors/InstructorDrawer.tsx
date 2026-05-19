@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Edit2, Plus, Calendar as CalendarIcon, X } from "lucide-react";
+import { Edit2, Plus, Calendar as CalendarIcon, X, Trash2 } from "lucide-react";
 import { SideDrawer, DrawerSection, DrawerField } from "@/components/shared";
 import { formatPhone } from "@/pages/companies/utils/companyUtils";
 import type { InstructorRecord } from "@/stores/useInstructorStore";
@@ -12,6 +12,7 @@ interface InstructorDrawerProps {
   onClose: () => void;
   isClosing: boolean;
   onUpdate: (data: Partial<InstructorRecord>) => Promise<void>;
+  onDelete: (id: string, name: string) => Promise<void>;
 }
 
 export function InstructorDrawer({
@@ -20,9 +21,11 @@ export function InstructorDrawer({
   onClose,
   isClosing,
   onUpdate,
+  onDelete,
 }: InstructorDrawerProps) {
   const [isEditMode, setIsEditMode] = useState(!instructor?.id);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [draft, setDraft] = useState<Partial<InstructorRecord>>({
     name: "",
@@ -52,6 +55,17 @@ export function InstructorDrawer({
     }
   };
 
+  const handleDelete = async () => {
+    if (!instructor?.id) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(instructor.id, instructor.name);
+      onClose();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleRemoveAssignment = async (sessionId: string, sessionName: string) => {
     if (!instructor?.id || !confirm(`'${sessionName}' 과정 배정을 취소하시겠습니까?`)) return;
     try {
@@ -62,21 +76,33 @@ export function InstructorDrawer({
   };
 
   const footer = isEditMode ? (
-    <>
-      <button
-        className="flex-1 py-3 text-sm font-bold text-secondary bg-surface-subtle hover:bg-surface-active rounded-2xl transition-all"
-        onClick={() => instructor?.id ? setIsEditMode(false) : onClose()}
-      >
-        취소
-      </button>
-      <button
-        className="flex-[2] py-3 text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-2xl shadow-lg shadow-brand-primary/20 transition-all disabled:opacity-50"
-        onClick={handleSave}
-        disabled={isSaving}
-      >
-        {isSaving ? "저장 중..." : "저장 완료"}
-      </button>
-    </>
+    <div className="flex flex-col w-full gap-3">
+      {instructor?.id && (
+        <button
+          className="w-full py-2.5 text-xs font-bold text-error bg-error/5 hover:bg-error/10 rounded-xl transition-all flex items-center justify-center gap-2 border border-error/20"
+          onClick={handleDelete}
+          disabled={isDeleting || isSaving}
+        >
+          <Trash2 size={14} strokeWidth={2.5} />
+          {isDeleting ? "삭제 중..." : "강사 정보 삭제"}
+        </button>
+      )}
+      <div className="flex gap-3">
+        <button
+          className="flex-1 py-3 text-sm font-bold text-secondary bg-surface-subtle hover:bg-surface-active rounded-2xl transition-all"
+          onClick={() => instructor?.id ? setIsEditMode(false) : onClose()}
+        >
+          취소
+        </button>
+        <button
+          className="flex-[2] py-3 text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary-hover rounded-2xl shadow-lg shadow-brand-primary/20 transition-all disabled:opacity-50"
+          onClick={handleSave}
+          disabled={isSaving || isDeleting}
+        >
+          {isSaving ? "저장 중..." : "저장 완료"}
+        </button>
+      </div>
+    </div>
   ) : (
     <button
       className="w-full py-3 text-sm font-bold text-secondary hover:bg-surface-subtle rounded-2xl transition-all"

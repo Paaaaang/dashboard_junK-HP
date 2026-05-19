@@ -44,3 +44,7 @@ Thumbs.db
 supabase/
 
 plan.md
+
+# Bundled binary assets (download manually)
+public/fonts/*.otf
+public/fonts/*.ttf

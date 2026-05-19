@@ -1,0 +1,1 @@
+export { CertificateTemplatePage } from "./CertificateTemplatePage";

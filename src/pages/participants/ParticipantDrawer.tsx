@@ -195,6 +195,15 @@ export function ParticipantDrawer({
                 } isEditMode />
               </div>
 
+              <DrawerField label="생년월일" value={
+                <input
+                  type="date"
+                  className="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-primary focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all"
+                  value={draft.birthDate || ""}
+                  onChange={(e) => setDraft({ ...draft, birthDate: e.target.value || undefined })}
+                />
+              } isEditMode />
+
               <div className="relative">
                 <DrawerField label="소속 기업" value={
                   <div className="relative">
@@ -258,10 +267,10 @@ export function ParticipantDrawer({
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <DrawerField label="직위" value={participant.position || "-"} />
-                <DrawerField label="고용보험" value={
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-black ${participant.employmentInsurance === "가입" ? "bg-brand-primary/20 text-brand-primary" : "bg-surface-subtle text-secondary"}`}>
-                    {participant.employmentInsurance}
-                  </span>
+                <DrawerField label="생년월일" value={
+                  participant.birthDate
+                    ? participant.birthDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1년 $2월 $3일")
+                    : "-"
                 } />
               </div>
               <div className="grid grid-cols-2 gap-6">

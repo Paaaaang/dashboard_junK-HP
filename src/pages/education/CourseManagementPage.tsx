@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, Check, Activity, Settings2, Target, Award, ChevronDown, ChevronRight, LayoutList } from "lucide-react";
+import { Plus, Trash2, Check, Activity, Settings2, Target, Award, ChevronDown, ChevronRight, LayoutList, FileText, X } from "lucide-react";
 import { PageHeader } from "@/components";
 import { useCourseStore, useParticipantStore, useToastStore } from "@/stores";
 import { useCourseManager } from "@/pages/participants/hooks/useCourseManager";
@@ -7,6 +7,7 @@ import type { AudienceOption } from "@/types/models";
 import { Calendar } from "@/components/ui/Calendar";
 import { format } from "date-fns";
 import { CourseStatusTable } from "@/pages/education/CourseStatusTable";
+import { CertificateTemplatePage } from "@/pages/education/certificates";
 
 const AUDIENCE_OPTIONS: AudienceOption[] = [
   "재직자 (고용보험 가입)",
@@ -24,6 +25,7 @@ export function CourseManagementPage() {
   const { participants } = useParticipantStore();
   const { addToast } = useToastStore();
   const [isSaving, setIsSaving] = useState(false);
+  const [showCertModal, setShowCertModal] = useState(false);
 
   const {
     managerSelectedGroupId,
@@ -140,6 +142,13 @@ export function CourseManagementPage() {
         className="sticky top-0 z-20 bg-background/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 pt-4 sm:pt-6"
         actions={
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCertModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-secondary border border-border rounded-xl hover:bg-surface-subtle hover:text-primary transition-colors"
+            >
+              <FileText size={14} />
+              수료증 양식
+            </button>
             {activeTab === "settings" && isManagerGroupModified && (
               <button
                 type="button"
@@ -622,6 +631,22 @@ export function CourseManagementPage() {
                 네, 삭제합니다
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {showCertModal && (
+        <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-sm z-[300] flex flex-col animate-in fade-in duration-200">
+          <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border/30 shrink-0">
+            <h2 className="text-base font-black text-primary">수료증 양식 관리</h2>
+            <button
+              onClick={() => setShowCertModal(false)}
+              className="p-2 text-tertiary hover:text-primary rounded-xl hover:bg-surface-subtle transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6">
+            <CertificateTemplatePage />
           </div>
         </div>
       )}

@@ -52,6 +52,7 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
       const formatted = (data || []).map((p: any) => ({
         id: p.id,
         name: p.name,
+        birthDate: p.birth_date || undefined,
         companyId: p.company_id,
         companyName: p.company?.company_name || p.companyName || '',
         companyLocation: p.company?.location,
@@ -108,7 +109,9 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
       
       return (data || []).map((e: any) => ({
         id: e.participant?.id,
+        participantId: e.participant?.id,
         name: e.participant?.name,
+        birthDate: e.participant?.birth_date || undefined,
         email: e.participant?.email,
         phone: e.participant?.phone,
         position: e.participant?.position,
@@ -116,7 +119,8 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
         companyName: e.participant?.company?.company_name || '',
         enrollmentId: e.id,
         status: e.status,
-        completionDate: e.completion_date
+        completionDate: e.completion_date,
+        certificateNo: e.certificate_no
       }));
     } catch (err: any) {
       console.error('Error fetching session participants:', err);
@@ -209,6 +213,7 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
 
       const pData: any = {
         name: participant.name,
+        birth_date: participant.birthDate || null,
         company_id: companyId,
         position: participant.position,
         phone: participant.phone,

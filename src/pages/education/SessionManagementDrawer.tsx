@@ -7,11 +7,13 @@ import {
 import { useParticipantStore, useToastStore, useInstructorStore } from "@/stores";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SideDrawer } from "@/components/shared";
+import { IssueCertificateModal } from "@/pages/education/IssueCertificateModal";
 
 interface SessionParticipant {
   enrollmentId: string;
   participantId: string;
   name: string;
+  birthDate?: string;
   companyName: string;
   status: string;
   completionDate?: string;
@@ -57,7 +59,7 @@ export function SessionManagementDrawer({ isOpen, onClose, sessionInfo }: Sessio
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAddMode, setIsAddMode] = useState(false);
   const [addingSelectedIds, setAddingSelectedIds] = useState<Set<string>>(new Set());
-  const [isSystemPreparing, setIsSystemPreparing] = useState(false);
+  const [isIssueOpen, setIsIssueOpen] = useState(false);
 
   const loadData = async () => {
     if (!sessionInfo) return;
@@ -260,7 +262,7 @@ export function SessionManagementDrawer({ isOpen, onClose, sessionInfo }: Sessio
                 </button>
               </>
             ) : (
-              <button onClick={() => setIsSystemPreparing(true)} className="flex items-center gap-2 px-5 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-brand-primary/25 hover:brightness-105 transition-all">
+              <button onClick={() => setIsIssueOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-brand-primary/25 hover:brightness-105 transition-all">
                 <Download size={18} /> 선택 수료증 발급
               </button>
             )}
@@ -291,7 +293,7 @@ export function SessionManagementDrawer({ isOpen, onClose, sessionInfo }: Sessio
             </span>
           </div>
         }
-        width="680px"
+        width="580px"
         footer={drawerFooter}
         headerActions={
           <div className="flex gap-1 p-1 bg-surface-subtle rounded-xl w-fit">
@@ -430,16 +432,28 @@ export function SessionManagementDrawer({ isOpen, onClose, sessionInfo }: Sessio
         </div>
       </SideDrawer>
 
-      {isSystemPreparing && (
-        <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-sm z-[var(--z-popover)] flex items-center justify-center p-4">
-          <div className="bg-surface rounded-[40px] p-10 max-w-sm w-full shadow-2xl animate-in zoom-in-95 fade-in duration-300 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-6"><RefreshCw size={32} className="animate-spin" /></div>
-            <h3 className="text-xl font-black text-primary mb-3">시스템 준비 중</h3>
-            <p className="text-sm text-tertiary mb-8 leading-relaxed font-medium">자동 수료증 발급 시스템을 업데이트하고 있습니다.<br />잠시 후 다시 시도해 주세요.</p>
-            <button onClick={() => setIsSystemPreparing(false)} className="w-full h-14 bg-brand-primary text-white rounded-2xl font-black shadow-lg shadow-brand-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">확인했습니다</button>
-          </div>
-        </div>
-      )}
+      <IssueCertificateModal
+        isOpen={isIssueOpen}
+        onClose={() => setIsIssueOpen(false)}
+        courseName={sessionInfo?.name || ""}
+        recipients={sessionParticipants
+          .filter((p) => selectedIds.has(p.enrollmentId) && p.status === "수료")
+          .map((p) => ({
+            enrollmentId: p.enrollmentId,
+            participantId: p.participantId,
+            name: p.name,
+            birthDate: p.birthDate,
+            companyName: p.companyName,
+            completionDate: p.completionDate,
+            certificateNo: p.certificateNo,
+          }))}
+        onIssued={() => {
+          if (sessionInfo) {
+            fetchSessionParticipants(sessionInfo.id).then(setSessionParticipants);
+          }
+          setSelectedIds(new Set());
+        }}
+      />
     </>
   );
 }

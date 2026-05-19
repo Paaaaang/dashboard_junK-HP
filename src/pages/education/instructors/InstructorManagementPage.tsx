@@ -111,8 +111,6 @@ export function InstructorManagementPage() {
           isLoading={isLoading}
           searchQuery={searchQuery}
           onOpenDrawer={handleOpenDrawer}
-          onEdit={(id) => handleOpenDrawer(id)}
-          onDelete={handleDeleteInstructor}
         />
 
         {isDrawerOpen && (
@@ -122,6 +120,7 @@ export function InstructorManagementPage() {
             onClose={handleCloseDrawer}
             isClosing={isClosing}
             onUpdate={handleUpdateInstructor}
+            onDelete={handleDeleteInstructor}
           />
         )}
       </div>

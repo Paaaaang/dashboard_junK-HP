@@ -6,6 +6,7 @@ export interface AssignedSession {
   startDate: string;
   endDate: string;
   subCourseName: string;
+  subCourseId: string;
   groupName: string;
 }
 
@@ -29,6 +30,7 @@ interface InstructorStore {
   upsertInstructor: (instructor: Partial<InstructorRecord>) => Promise<void>;
   deleteInstructor: (id: string) => Promise<void>;
   assignInstructorToSession: (instructorId: string, sessionId: string) => Promise<void>;
+  assignInstructorToMultipleSessions: (instructorId: string, sessionIds: string[]) => Promise<void>;
   removeInstructorFromSession: (instructorId: string, sessionId: string) => Promise<void>;
   subscribeToInstructors: () => () => void;
   clearError: () => void;
@@ -78,6 +80,7 @@ export const useInstructorStore = create<InstructorStore>((set, get) => ({
             startDate: session?.start_date || "",
             endDate: session?.end_date || "",
             subCourseName: subCourse?.name || "",
+            subCourseId: subCourse?.id || "",
             groupName: group?.name || ""
           };
         }).filter((s: AssignedSession) => s.id);
@@ -183,6 +186,25 @@ export const useInstructorStore = create<InstructorStore>((set, get) => ({
         instructor_id: instructorId,
         session_id: sessionId,
       });
+      if (error) throw error;
+      await get().fetchInstructors();
+    } catch (err: any) {
+      set({ error: err.message });
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  assignInstructorToMultipleSessions: async (instructorId: string, sessionIds: string[]) => {
+    set({ isLoading: true, error: null });
+    try {
+      const payloads = sessionIds.map(sessionId => ({
+        instructor_id: instructorId,
+        session_id: sessionId,
+      }));
+      
+      const { error } = await supabase.from("session_instructors").upsert(payloads);
       if (error) throw error;
       await get().fetchInstructors();
     } catch (err: any) {

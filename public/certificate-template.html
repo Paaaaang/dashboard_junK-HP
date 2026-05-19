@@ -1,0 +1,161 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>수료증</title>
+  <style>
+    @font-face {
+      font-family: 'HYGodic';
+      src: url('fonts/H2GTRE.TTF') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @page {
+      size: 210mm 297mm;
+      margin: 0;
+    }
+
+    html, body {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+    }
+
+    .certificate {
+      width: 210mm;
+      height: 297mm;
+      padding: 35.5mm 30mm 30mm 30mm;
+      font-family: 'HYGodic', 'HY견고딕', 'Malgun Gothic', '맑은 고딕', sans-serif;
+      font-size: 14pt;
+      position: relative;
+      background: white;
+    }
+
+    .cert-no-line {
+      text-align: right;
+      font-size: 13pt;
+      line-height: 180%;
+      padding-right: 10pt;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 35pt;
+      letter-spacing: 0.2em;
+      margin-top: 30pt;
+      margin-bottom: 60pt;
+      line-height: 180%;
+    }
+
+    .fields {
+      font-size: 14pt;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: baseline;
+    }
+
+    .field-row.name-row     { line-height: 215%;}
+    .field-row.birth-row    { line-height: 215%;}
+    .field-row.company-row  { line-height: 215%;}
+    .field-row.course-row   { line-height: 215%;}
+    .field-row.date-row     { line-height: 215%; letter-spacing: 0.05em;}
+
+    .lbl {
+      display: inline-flex;
+      justify-content: space-between;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .lbl em { font-style: normal; }
+
+    .colon { margin: 0 10pt; }
+
+    .lbl-name    { width: 24mm; }
+    .lbl-birth   { width: 24mm; }
+    .val-birth   { min-width: 38mm; }
+    .lbl-company { width: 24mm;}
+    .lbl-course  { width: 24mm; }
+    .lbl-date    { width: 24mm; }
+
+    .main-text {
+      text-align: center;
+      font-size: 18pt;
+      line-height: 215%;
+      margin: 50pt 0;
+      word-spacing: 0.25em;
+    } 
+
+    .issue-date {
+      text-align: center;
+      font-size: 16pt;
+      margin-bottom: 10pt;
+    }
+
+    .issuer {
+      text-align: center;
+      font-size: 23pt;
+      word-spacing: 0.25em;
+      margin-top: 50pt;
+      line-height: 180%;
+    }
+  </style>
+</head>
+<body>
+<div class="certificate">
+
+  <div class="cert-no-line">제{{CERT_NO}}호</div>
+
+  <div class="title">수 료 증</div>
+
+  <div class="fields">
+
+    <div class="field-row name-row">
+      <span class="lbl lbl-name"><em>성</em><em>명</em></span>
+      <span class="colon">:</span>
+      <span>{{NAME}}</span>
+    </div>
+
+    <div class="field-row birth-row">
+      <span class="lbl lbl-birth"><em>생</em><em>년</em><em>월</em><em>일</em></span>
+      <span class="colon">:</span>
+      <span class="val-birth">{{BIRTH_DATE}}</span>
+    </div>
+
+    <div class="field-row company-row">
+      <span class="lbl lbl-company"><em>소</em><em>속</em><em>기</em><em>업</em></span>
+      <span class="colon">:</span>
+      <span>{{COMPANY}}</span>
+    </div>
+
+    <div class="field-row course-row">
+      <span class="lbl lbl-course"><em>훈</em><em>련</em><em>과</em><em>정</em></span>
+      <span class="colon">:</span>
+      <span>{{COURSE_NAME}}</span>
+    </div>
+
+    <div class="field-row date-row">
+      <span class="lbl lbl-date"><em>훈</em><em>련</em><em>일</em><em>자</em></span>
+      <span class="colon">:</span>
+      <span>{{TRAINING_DATE}}({{TOTAL_HOURS}}H)</span>
+    </div>
+
+  </div>
+
+  <div class="main-text">
+    위 사람은 상기 과정을 수료하였으므로
+    <br>
+    이 증서를 수여합니다.
+  </div>
+
+  <div class="issue-date">{{ISSUE_DATE}}</div>
+
+  <div class="issuer">전남대학교 생체재료개발센터장</div>
+
+</div>
+</body>
+</html>

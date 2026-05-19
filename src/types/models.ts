@@ -78,6 +78,7 @@ export interface ParticipantEnrollment {
 export interface ParticipantRecord {
   id: string;
   name: string;
+  birthDate?: string;
   companyId: string;
   companyName: string;
   companyLocation?: string;
