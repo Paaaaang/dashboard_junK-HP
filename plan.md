@@ -1,132 +1,60 @@
-# Bug Tracking Plan & Refactoring Checklist
+# 포스터 자동화 시스템 구축 계획 (Poster Automation System)
 
-## 0. 🚨 [CRITICAL] DB-FE 데이터 동기화 이슈
-- [x] **0-1. 데이터 표시 누락**: 실제 DB에는 데이터가 성공적으로 저장되나 FE에 반영되지 않음. (`useParticipantStore` upsert 로직 및 조인 매핑 수정 완료)
+## 1. 프로젝트 개요 및 목표
+- **목표:** 수작업(미리캔버스 등)으로 제작하던 규격화된 포스터를 HTML/CSS 템플릿과 AI API(`timely-gpt-sdk`)를 연동하여 완전 자동화.
+- **출력 규격:** 891 × 1260px (고화질 이미지).
+- **에셋 관리:** 로컬 폴더(아이콘, 배경 이미지 등)에 포함시켜 시스템이 매핑하여 사용.
 
-## 1. 기업 관리 페이지 (/companies)
-- [x] **1-1. 기업명 편집 모드 통합**: 모달에서 '편집' 버튼 클릭 시 상단 '기업명'도 함께 편집 모드로 전환되도록 수정 완료.
-- [x] **1-2. 저장 시 모달 유지**: 편집 완료 후 '저장' 시 사이드 모달이 닫히지 않고 변경 사항 즉시 확인 가능하도록 UX 개선 완료.
+## 2. 기술 스택
+- **프론트엔드 (UI & 템플릿):** React (대시보드 UI) + HTML/CSS (포스터 레이아웃 렌더링).
+- **AI API 연동:** `timely-gpt-sdk` (JSON 스키마 기반 데이터 추출 및 에셋 매핑).
+- **백엔드/자동화:** Node.js (Puppeteer를 이용한 고해상도 이미지 렌더링 및 다운로드).
 
-## 2. 데이터 매칭 및 참여자 연동 (/participants)
-- [x] **1-3. 기업-참여자-교육과정 연결 오류**: 참여자가 교육 과정과 올바르게 연결되지 않는 현상 수정 완료.
-- [x] **2-1. 신규 참여자 기업 연동 오류**: `/participants` 페이지에서 새로운 기업을 등록 시 참여자가 기업 페이지와 연동되지 않는 문제 수정 완료.
-- [x] **2-2. 과정 연결 허위 모션**: 참여자에게 교육 과정 연결 시 '완료' 모션만 뜨고 리스트에 반영되지 않는 문제 수정 완료.
+## 3. 핵심 아키텍처: 영역별 제어 전략 (3-Tier)
+포스터 구성 요소를 성격에 따라 3가지로 분리 제어:
+1. **정적 요소 (Static, 하드코딩):**
+   - [헤더 영역] 서브타이틀(소속 기관), 문의처(전화번호 등).
+   - [도입부 영역] 고정 안내 텍스트: *"전남대학교 생체재료개발센터는 글로벌 비임상 CRO 전문기관 및 의료기기 규제과학(RA) 전문교육 기관으로서, 기업/기관 재직자 역량 강화 및 첨단기술분야 인력양성을 위한 무료교육 및 전문가 연계 기술자문을 실시하고 있습니다. 많은 관심과 참여 부탁드립니다."*
+   - [본문 1] 정보 리스트의 라벨(Label).
+   - [본문 3] 커리큘럼의 구조화된 표/리스트 형식 및 QR코드 이미지 영역.
+   - [푸터 영역] 주최/주관 로고 (`public/assets/posters/logos/` 하위 에셋 사용).
+2. **사용자 입력 (User Input):**
+   - **대상:** 교육 일시, 장소, 신청 기한, 신청 QR코드 URL 등 데이터.
+   - **방식:** 파일 업로드나 기획안 텍스트 복사 없이, 화면에 제공되는 폼(또는 기본 형태)에 맞춰 직접 입력/수정.
+3. **AI 동적 생성 (AI Dynamic):**
+   - **대상:** 메인 타이틀, 본문 2(교육 혜택 - 배열 개수 및 항목 유동적), 커리큘럼 데이터 추출, 디자인 에셋 매핑.
+   - **AI 데이터 플로우:**
+     1. 사용자 입력 받기 (핵심 키워드, 일정, 디자인 지침 등).
+     2. 포스터 디자인 지침(가이드라인) 확인.
+     3. 포스터 디자인 시스템 구축 (테마, 폰트, 색상 등 정적 정보성 디자인).
+     4. 디자인 시스템 기반 텍스트 생성 및 에셋 매핑 (애니메이션 효과 없음).
 
----
+## 4. 레이아웃 구조 (UI/UX)
+- **A안 분할 레이아웃 적용**
+  - **좌측 (Left):** 포스터 템플릿 미리보기 (기본 형태 노출, 실시간 또는 생성 후 결과 반영).
+  - **우측 (Right):** 세부 항목 및 폼 (데이터 입력, 포스터 디자인 지침 입력란 포함).
+- **[섹션 1] 메인 헤더:** AI 선택 테마/컬러, 소속 기관(부제), 교육 과정명.
+- **[섹션 2] 과정 안내 (Intro):** 도입부 안내 문구.
+- **[섹션 3] 핵심 정보 리스트:** 로컬 아이콘 + 사용자 입력 데이터(일정, 장소 등) 매핑.
+- **[섹션 4] 교육 혜택 (Benefits):** 가로 4단 그리드 또는 리스트 (혜택 텍스트 + 아이콘).
+- **[섹션 5] 교육 내용 및 QR:** AI 요약 커리큘럼(표/리스트) + 사용자 입력 URL 기반 QR코드.
 
-## 3. 🚨 [CRITICAL] 수료/미수료 상태 변경 및 중복 에러 전면 개편
+## 5. 단계별 개발 플랜
+### Phase 1: 기반 설정 및 UI 기획
+- [ ] `/posters` 라우트 및 기본 사용자 입력 폼(User Input) UI 구성.
+- [ ] 로컬 에셋 폴더(`public/assets/posters`) 구성 및 매핑용 메타데이터(JSON) 정의.
 
-**현상 요약**: 
-- `400 Bad Request`: `status`를 '수료'로 변경 시 DB의 CHECK 제약 조건 (`status = '수료'` 일 때 `completion_date IS NOT NULL`) 위반으로 튕겨냄.
-- `409 Conflict`: 이미 추가된 인원을 중복해서 DB에 밀어 넣으려다 에러 발생.
-- **검색 로직 붕괴**: `SessionManagementDrawer` 내부에서 "기존 명단 필터링"과 "추가할 인원 검색" 상태가 꼬여서 작동하지 않음.
+### Phase 2: HTML/CSS 포스터 템플릿 마크업
+- [ ] 891 × 1260px 규격의 렌더링 템플릿 컴포넌트(비가시 영역 또는 미리보기 영역) 제작.
+- [ ] 5개 섹션 레이아웃 CSS 스타일링 (테마 컬러 CSS 변수 적용).
 
-### ✅ 실행 완료 내역 (Checklist)
+### Phase 3: AI 연동 및 프롬프트 엔지니어링 (`timely-gpt-sdk`)
+- [ ] 프롬프트 엔지니어링 및 JSON 응답 스키마 설계.
+- [ ] 기획안 텍스트 입력 시 AI가 적절한 에셋(배경, 컬러, 아이콘)과 텍스트를 매핑하여 반환하는 로직 구현.
 
-### 3-1. DB 제약 조건에 맞춘 Store 로직 수정 (`src/stores/useParticipantStore.ts`)
-- [x] `bulkUpdateEnrollments` 함수: `status`를 "수료"로 업데이트할 때 `completionDate` 파라미터가 없으면 오늘 날짜를 강제로 주입하도록 로직 추가 완료.
-- [x] `bulkUpdateEnrollments` 함수: `in('id', enrollmentIds)` 구문 검증 완료.
+### Phase 4: 퍼페티어(Puppeteer) 렌더링 서버 구축
+- [ ] 백엔드(또는 기존 `cert-server`)에 Puppeteer를 활용한 고화질 이미지 추출 API 개발.
+- [ ] 프론트엔드(React) 템플릿 렌더링 결과물을 PDF 또는 고화질 PNG로 변환.
 
-### 3-2. SessionManagementDrawer 검색/필터 분리 (`src/pages/education/SessionManagementDrawer.tsx`)
-- [x] 상태 분리: 현재 명단을 필터링하는 `searchQuery`와 새로운 인원을 찾는 `addSearchQuery` 상태가 충돌하지 않도록 분리 완료.
-- [x] "인원 추가 토글 활성화" 시:
-  - 기존 명단을 보여주는 테이블은 숨기고, 추가 화면만 표시하도록 UX 개선 완료.
-  - 이미 명단에 있는 인원은 `searchableParticipants` 검색 결과에서 필터링 및 시각적 비활성화 처리 완료.
-
-### 3-3. 이메일 모달 500 에러 (`src/pages/participants/modals/BulkEmailModal.tsx`)
-- [x] HMR (Hot Module Replacement) 로딩 실패/500 에러 방어: 이메일 모달 내 변수 매핑 로직에서 null point 에러가 발생하지 않도록 optional chaining (`?.`) 철저히 적용 완료.
-
-### 3-4. ParticipantDrawer 개별 수료 로직 (`src/pages/participants/ParticipantDrawer.tsx`)
-- [x] `ParticipantDrawer`의 개별 과정 아코디언에서 '상태 변경' 드롭다운을 통해 '수료'로 변경 시에도 `completionDate`가 정상 처리되도록 방어 로직 추가 완료.
-
----
-# [요청] KHP Dashboard FE 폴더 정합성 점검 및 레거시 정리
-
-## 0. 배경 (Context)
-
-- 프로젝트: KHP Dashboard (전남대학교 K-하이테크 플랫폼 관리 시스템)
-- 최근 발생한 주요 변경 사항:
-  1. **DB 스키마 재설계 (Supabase)**: 테이블 구조 변경 및 정규화
-  2. **FE 폴더 구조 및 컴포넌트 개편**: `src/components` (ui, layout, shared), `src/pages` (도메인별 분리: companies, education, participants), `src/stores` (Zustand) 등으로 구조화됨
-- 결과적으로 다음 점검이 필요함:
-  - 컴포넌트 및 상태 관리(Zustand)에서 사용하는 타입 및 스키마 정합성 확인
-  - 사용되지 않는 **레거시 파일·유틸·타입 정의** 잔존 여부 파악
-  - import 경로 점검, dead code 정리, 중복 컴포넌트 통합
-
-## 1. 점검 목표 (Goals)
-
-1. 최신 DB 스키마와 FE 코드(`src/types`, `src/api`)의 **타입/엔티티 정합성 100% 확보**
-2. 사용되지 않는 컴포넌트(`src/components`), 페이지(`src/pages`), 스토어(`src/stores`)의 **안전한 제거**
-3. 폴더 구조 컨벤션에 맞지 않는 파일의 **올바른 위치 재배치**
-4. 점검 결과를 **추적 가능한 리포트**(Markdown 표)로 산출
-
-## 2. 점검 기준 (Checklist Criteria)
-
-각 파일/모듈에 대해 다음 7개 기준으로 분류·판정한다.
-
-| No | 기준 | 판정 기호 | 처리 방침 |
-|---|---|---|---|
-| C1 | Supabase 현재 스키마와 일치하는 컬럼/타입을 사용하는가 | OK / MISMATCH | MISMATCH는 즉시 수정 대상 |
-| C2 | `src/api/supabase.ts` 및 Zustand Store에서 참조하는 테이블/컬럼이 현존하는가 | OK / DEAD_API | DEAD_API는 신규 스키마로 매핑 또는 제거 |
-| C3 | 해당 파일이 어딘가에서 import되고 있는가 | USED / ORPHAN | ORPHAN은 삭제 후보 |
-| C4 | 동일 책임의 중복 컴포넌트/유틸이 존재하는가 (`src/components/ui` vs `shared`) | UNIQUE / DUPLICATE | DUPLICATE는 통합 |
-| C5 | 폴더 컨벤션에 맞는 위치인가 (예: 페이지 전용 컴포넌트는 `pages/도메인/` 내에 위치) | OK / MISPLACED | MISPLACED는 이동 |
-| C6 | 타입 정의(`src/types/*`)가 최신 상태인가 | OK / STALE | STALE은 재생성 및 갱신 |
-| C7 | 주석·TODO·console.log 등 정리 흔적이 남았는가 | CLEAN / DIRTY | DIRTY는 정리 |
-
-## 3. 점검 순서 (Workflow)
-
-**원칙: 위에서 아래로, 가장자리(types/api) → 상태 관리(stores) → 안쪽(UI/pages)으로**
-
-### Phase 1. 스키마 단일 진실 공급원(SoT) 동기화
-1. `src/types/*` 폴더 내 타입 정의(`models.ts`, `index.ts`)를 Supabase 스키마와 1:1 매칭 확인
-2. 필요시 `supabase gen types typescript --local > src/types/database.ts` 실행하여 타입 갱신
-
-### Phase 2. 데이터 액세스 레이어 및 커스텀 훅
-3. `src/api/supabase.ts` 내 데이터 호출 로직 점검
-4. 각 도메인 폴더(`src/pages/*/hooks/`) 내 쿼리 로직 점검
-5. 쿼리 빌더에서 폐기되거나 변경된 컬럼명을 현 DB 기준으로 grep 확인
-
-### Phase 3. 상태 관리 (Zustand)
-6. `src/stores/` 내 파일들 (`useAuthStore.ts`, `useCompanyStore.ts`, `useCourseStore.ts`, `useParticipantStore.ts` 등) 점검
-7. 스토어 내 상태 업데이트 및 쿼리 로직이 최신 스키마를 반영하는지 확인
-
-### Phase 4. 컴포넌트·페이지
-8. 도메인별 페이지(`Dashboard`, `companies`, `education`, `participants`, `EmailLogsPage`, `TemplateEditor`) UI 점검
-9. 공통 컴포넌트(`src/components/ui`, `src/components/shared`, `src/components/layout`)의 props 타입이 스키마와 일치하는지 확인
-10. 도메인별 모달/드로워(`AddCompanyModal`, `CompanyDrawer`, `SessionManagementDrawer` 등) 내부 폼 필드 점검
-
-### Phase 5. 레거시·고아 파일 제거
-11. 정적 분석 도구를 활용하여 ORPHAN 파일 검출 (예: `npx knip`, TypeScript 분석 등)
-12. `src/utils/` (`participantUtils.ts`, `templateVariables.ts` 등) 및 `src/constants/` 내 미사용 변수/함수 정리
-13. 검출 결과를 바탕으로 사용되지 않는 컴포넌트 및 로직 삭제
-
-### Phase 6. 정리·검증
-14. `tsc --noEmit` 타입 체크 통과
-15. `eslint .` (설정된 경우) 린트 통과
-16. `npm run build` 성공 확인
-
-## 4. 산출물 (Deliverables)
-
-다음 파일들을 생성·갱신해줘.
-
-1. **`docs/audit/FE_AUDIT_REPORT.md`** — 점검 결과 표
-   - 컬럼: 경로 / 종류(component/store/type/hook...) / 판정(C1~C7) / 조치(KEEP/FIX/MOVE/MERGE/DELETE) / 비고
-2. **`docs/audit/CLEANUP_PLAN.md`** — 단계별 정리 계획 및 진행 상황 추적
-3. 실제 코드 변경 내역 (순차적으로 적용)
-
-## 5. 작업 제약 (Constraints)
-
-- 한 번에 모두 바꾸지 말고 **Phase 단위로 작업 분리**
-- 삭제 후보 파일은 확실한 미사용 확인 후 제거
-- UI/UX 가이드라인(`GEMINI.md` 및 `design-system/khp-dashboard/MASTER.md`)을 준수하며 컴포넌트 정리 (예: "Box-in-Box" 지양, Tailwind v4 기준 등)
-
-## 6. 시작 지시
-
-먼저 다음을 출력하고 승인받은 뒤 실제 수정을 진행해줘.
-
-**Step 0 산출물**
-- Phase 1~6 각 단계에서 **검색·점검할 대상 파일 후보 목록** (경로만)
-- 가장 영향이 크거나 의심되는 Top 10 파일 (타입 정의, 주요 스토어, 공통 레이아웃 등)
-
-이후 승인을 기다린 다음 Phase 1부터 순차 진행.
+### Phase 5: 최종 연동 및 테스트
+- [ ] 폼 입력 -> AI 데이터 추출 -> 템플릿 병합 -> 이미지 다운로드 전체 플로우 테스트 및 최적화.

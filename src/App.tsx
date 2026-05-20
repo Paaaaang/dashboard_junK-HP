@@ -15,6 +15,7 @@ const ParticipantsPage = lazy(() => import('@/pages/participants/ParticipantsPag
 const CourseManagementPage = lazy(() => import('@/pages/education/CourseManagementPage').then(m => ({ default: m.CourseManagementPage })));
 const InstructorManagementPage = lazy(() => import('@/pages/education/instructors').then(m => ({ default: m.InstructorManagementPage })));
 const TemplateEditorPage = lazy(() => import('@/pages/templates').then(m => ({ default: m.TemplateEditorPage })));
+const PosterAutomationPage = lazy(() => import('@/pages/posters/PosterAutomationPage').then(m => ({ default: m.PosterAutomationPage })));
 
 function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -101,7 +102,7 @@ function AppContent() {
               />
               <Route
                 path="/posters"
-                element={<ProtectedRoute><PlaceholderPage title="포스터 자동화" /></ProtectedRoute>}
+                element={<ProtectedRoute><PosterAutomationPage /></ProtectedRoute>}
               />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

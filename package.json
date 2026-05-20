@@ -13,6 +13,7 @@
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
     "@supabase/supabase-js": "^2.105.4",
+    "@timely/gpt-sdk": "github:timely-hub/timely-gpt-sdk",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
@@ -45,5 +46,20 @@
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite": "^5.0.8"
-  }
+  },
+  "main": "postcss.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Paaaaang/dashboard_junK-HP.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Paaaaang/dashboard_junK-HP/issues"
+  },
+  "homepage": "https://github.com/Paaaaang/dashboard_junK-HP#readme"
 }

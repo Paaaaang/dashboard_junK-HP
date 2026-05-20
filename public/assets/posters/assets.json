@@ -1,0 +1,41 @@
+{
+  "themes": [
+    {
+      "id": "tech",
+      "name": "기술/개발 (Technology/Development)",
+      "primaryColor": "#1E3A8A",
+      "secondaryColor": "#3B82F6",
+      "backgroundImages": [
+        "tech_bg_01.png",
+        "tech_bg_02.png"
+      ]
+    },
+    {
+      "id": "business",
+      "name": "비즈니스/기획 (Business/Strategy)",
+      "primaryColor": "#064E3B",
+      "secondaryColor": "#10B981",
+      "backgroundImages": [
+        "biz_bg_01.png",
+        "biz_bg_02.png"
+      ]
+    },
+    {
+      "id": "design",
+      "name": "디자인/크리에이티브 (Design/Creative)",
+      "primaryColor": "#701A75",
+      "secondaryColor": "#D946EF",
+      "backgroundImages": [
+        "design_bg_01.png"
+      ]
+    }
+  ],
+  "icons": {
+    "calendar": "icon_calendar.png",
+    "location": "icon_location.png",
+    "target_audience": "icon_target.png",
+    "benefit": "icon_benefit.png",
+    "curriculum": "icon_book.png",
+    "contact": "icon_phone.png"
+  }
+}
