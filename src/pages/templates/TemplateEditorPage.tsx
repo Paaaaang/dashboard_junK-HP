@@ -505,7 +505,7 @@ export function TemplateEditorPage() {
 
   const renderBodyWithHighlights = (text: string) => {
     // Use the shared renderer
-    let html = renderEmailTemplate(text);
+    const html = renderEmailTemplate(text);
 
     // Apply variable highlighting for the preview
     const parts = html.split(/({{\s*[a-zA-Z0-9_]+\s*}})/g);
