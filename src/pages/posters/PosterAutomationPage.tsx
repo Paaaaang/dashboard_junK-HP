@@ -1,31 +1,103 @@
-import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import QRCode from 'qrcode';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { 
-  Sparkles, 
-  Image as ImageIcon, 
-  Download, 
-  Code as CodeIcon, 
-  Eye, 
-  Plus, 
-  X,
-  Info,
-  Calendar,
-  MessageSquare,
-  Phone,
-  ZoomIn,
-  ZoomOut,
-  Maximize,
-  ChevronDown,
-  ChevronUp,
-  Send,
-  Bot,
-  User,
-  RotateCcw
+import {
+  Sparkles, Download, Code as CodeIcon, Eye,
+  Plus, X, Info, Calendar, MessageSquare, Phone,
+  ZoomIn, ZoomOut, Maximize, Send, Bot, User,
+  RotateCcw, Printer, Wand2, ChevronRight,
+  Loader2,
 } from 'lucide-react';
 
+// ── Types ──────────────────────────────────────────────────────────
 interface ChatMessage {
   role: 'user' | 'ai';
   content: string;
+  thinking?: string;
+  isStreaming?: boolean;
+  streamType?: 'generate' | 'modify';
+}
+
+// ── Loading Messages ───────────────────────────────────────────────
+const GENERATE_MSGS = [
+  '교육 내용을 분석하고 있어요',
+  '포스터 구조를 설계하고 있어요',
+  '헤더 레이아웃을 구성하고 있어요',
+  '색상과 타이포그래피를 조율하고 있어요',
+  '교육 안내 섹션을 작성하고 있어요',
+  '혜택 카드 디자인을 만들고 있어요',
+  '교육 내용 영역을 배치하고 있어요',
+  'QR 코드와 로고를 삽입하고 있어요',
+  '프린트 CSS를 적용하고 있어요',
+  '전체 코드를 검토하고 있어요',
+];
+
+const MODIFY_MSGS = [
+  '수정 내용을 파악하고 있어요',
+  '변경할 부분을 찾고 있어요',
+  '기존 디자인을 유지하며 수정하고 있어요',
+  '코드를 정밀하게 조정하고 있어요',
+  '최종 결과를 검토하고 있어요',
+];
+
+function RotatingMessage({ msgs }: { msgs: string[] }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % msgs.length), 2800);
+    return () => clearInterval(t);
+  }, [msgs]);
+  return (
+    <span
+      key={idx}
+      className="text-xs"
+      style={{ animation: 'fadeInUp 0.4s ease', color: 'var(--color-text-secondary)' }}
+    >
+      {msgs[idx]}
+    </span>
+  );
+}
+
+function ThinkingPanel({ thinking, isStreaming }: { thinking: string; isStreaming?: boolean }) {
+  const [open, setOpen] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isStreaming && ref.current) {
+      ref.current.scrollTop = ref.current.scrollHeight;
+    }
+  }, [thinking, isStreaming]);
+  useEffect(() => {
+    if (!isStreaming) setOpen(false);
+  }, [isStreaming]);
+  return (
+    <div className="rounded-xl border text-[11px] w-full overflow-hidden" style={{ borderColor: '#e9d5ff' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-2.5 py-1.5 transition-colors"
+        style={{ background: '#faf5ff' }}
+      >
+        <span className="flex items-center gap-1.5 font-semibold" style={{ color: '#7c3aed' }}>
+          {isStreaming
+            ? <><Loader2 size={10} className="animate-spin" /> 추론하고 있어요...</>
+            : <><Sparkles size={10} /> 추론 완료</>}
+        </span>
+        <ChevronRight
+          size={11}
+          className="transition-transform duration-200"
+          style={{ color: '#a78bfa', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+      {open && (
+        <div
+          ref={ref}
+          className="px-2.5 py-2 max-h-36 overflow-y-auto font-mono text-[9.5px] whitespace-pre-wrap leading-relaxed"
+          style={{ background: '#fdf4ff', color: '#6b21a8' }}
+        >
+          {thinking || <span style={{ color: '#a78bfa' }}>...</span>}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface PosterFormData {
@@ -43,10 +115,10 @@ interface PosterFormData {
   contactPhone: string;
   contactEmail: string;
   contactWeb: string;
-  designGuidelines: string;
 }
 
-const INITIAL_FORM_DATA: PosterFormData = {
+// ── Constants ──────────────────────────────────────────────────────
+const INITIAL_FORM: PosterFormData = {
   courseName: '',
   introText: '전남대학교 생체재료개발센터는 글로벌 비임상 CRO 전문기관 및 의료기기 규제과학(RA) 전문교육 기관으로서, 기업/기관 재직자 역량 강화 및 첨단기술분야 인력양성을 위한 무료교육 및 전문가 연계 기술자문을 실시하고 있습니다. 많은 관심과 참여 부탁드립니다.',
   width: 891,
@@ -61,486 +133,952 @@ const INITIAL_FORM_DATA: PosterFormData = {
   contactPhone: '062-710-2896',
   contactEmail: 'bmclog@naver.com',
   contactWeb: 'https://bmckhp.kr/',
-  designGuidelines: '',
 };
 
+const CHECKERBOARD: React.CSSProperties = {
+  backgroundImage: `linear-gradient(45deg, #c0c0c0 25%, transparent 25%),
+    linear-gradient(-45deg, #c0c0c0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #c0c0c0 75%),
+    linear-gradient(-45deg, transparent 75%, #c0c0c0 75%)`,
+  backgroundSize: '20px 20px',
+  backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+  backgroundColor: '#d8d8d8',
+};
+
+const IC = 'w-full p-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all';
+const LC = 'block text-[10px] font-bold text-text-secondary mb-1 uppercase tracking-wide';
+
+// ── Component ──────────────────────────────────────────────────────
 export function PosterAutomationPage() {
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-  const [aiModel, setAiModel] = useState<string>('anthropic/claude-opus-4.7');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationStep, setGenerationStep] = useState<number>(0);
-  const [reasoningText, setReasoningText] = useState<string>('');
-  const [isGenerated, setIsGenerated] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(true);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [formData, setFormData] = useState<PosterFormData>(INITIAL_FORM);
   const [benefitInput, setBenefitInput] = useState('');
+
+  // AI Settings
+  const [aiModel, setAiModel] = useState('anthropic/claude-opus-4.7');
+  const [designGuidelines, setDesignGuidelines] = useState('');
+  const [aiReco, setAiReco] = useState('');
+  const [isRecommending, setIsRecommending] = useState(false);
+
+  // QR
+  const [qrDataUrl, setQrDataUrl] = useState('');
+
+  useEffect(() => {
+    if (!formData.qrLink.trim()) { setQrDataUrl(''); return; }
+    QRCode.toDataURL(formData.qrLink, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(''));
+  }, [formData.qrLink]);
+
+  // Generation
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerated, setIsGenerated] = useState(false);
+  const [generatedMarkup, setGeneratedMarkup] = useState('');
+
+  // Preview
+  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [zoom, setZoom] = useState(0.4);
+
+  // Chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatListRef = useRef<HTMLDivElement>(null);
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isGenerating) {
-      setElapsedTime(0);
-      timer = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [isGenerating]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
-
-  const [formData, setFormData] = useState<PosterFormData>(INITIAL_FORM_DATA);
-  const [generatedMarkup, setGeneratedMarkup] = useState<string>('');
-
-  const extractHtmlFromResponse = (response: unknown) => {
-    const text = typeof response === 'string' ? response : JSON.stringify(response);
-    const match = text.match(/```html\n([\s\S]*?)\n```/i);
-    return (match ? match[1] : text).trim();
-  };
-
-  const callTimelyAPIStream = async (sessionId: string, instructions: string, messages: Array<{ role: string; content: string }>, onChunk: (chunk: string, type: 'content' | 'thinking') => void) => {
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase 설정이 누락되었습니다');
-      }
-
-      const baseUrl = supabaseUrl.replace(/\/$/, '');
-
-      const response = await fetch(`${baseUrl}/functions/v1/generate-with-timely`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'apikey': supabaseAnonKey,
-        },
-        body: JSON.stringify({
-          sessionId,
-          model: aiModel,
-          instructions,
-          messages,
-          stream: true,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 404) {
-          throw new Error('Edge Function을 찾을 수 없습니다. 배포 여부와 VITE_SUPABASE_URL을 확인해주세요.');
-        }
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      
-      let done = false;
-      let buffer = '';
-      
-      while (!done) {
-        const result = await reader.read();
-        done = result.done;
-        if (done) break;
-        
-        buffer += decoder.decode(result.value, { stream: true });
-        const lines = buffer.split('\n');
-        
-        // Keep the last line in the buffer because it might be incomplete
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6).trim();
-            if (dataStr === '[DONE]') continue;
-            if (!dataStr) continue;
-            
-            try {
-              const parsed = JSON.parse(dataStr);
-              if (parsed.choices && parsed.choices[0]) {
-                const delta = parsed.choices[0].delta;
-                if (delta.content) {
-                  onChunk(delta.content, 'content');
-                }
-                if (delta.reasoning_content) {
-                   onChunk(delta.reasoning_content, 'thinking');
-                }
-              } else if (parsed.message) {
-                // native format
-                if (typeof parsed.message === 'string') {
-                  onChunk(parsed.message, 'content');
-                }
-              }
-            } catch (e) {
-              console.warn("Failed to parse SSE line", dataStr);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Timely API Stream Error:', error);
-      throw error;
-    }
-  };
-
-  const handleReset = () => {
-    if (window.confirm("현재 작업 중인 내용이 모두 초기화됩니다. 새 포스터를 만드시겠습니까?")) {
-      setFormData(INITIAL_FORM_DATA);
-      setGeneratedMarkup('');
-      setIsGenerating(false);
-      setGenerationStep(0);
-      setIsGenerated(false);
-      setIsFormOpen(true);
-      setBenefitInput('');
-      setZoom(0.4);
-      setMessages([]);
-      setChatInput('');
-      setActiveTab('preview');
-      setReasoningText('');
-    }
-  };
-
-  useEffect(() => {
-    if (chatListRef.current) {
-      chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
-    }
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // ── Helpers ──────────────────────────────────────────────────────
+  const extractHtml = (text: string) => {
+    const m = text.match(/```html\n([\s\S]*?)\n```/i);
+    return (m ? m[1] : text).trim();
   };
 
-  const handleAddBenefit = (e?: KeyboardEvent<HTMLInputElement>) => {
-    if (e && e.key !== 'Enter') return;
-    if (e) e.preventDefault();
-    if (benefitInput.trim() && !formData.benefits.includes(benefitInput.trim())) {
-      setFormData(prev => ({ ...prev, benefits: [...prev.benefits, benefitInput.trim()] }));
-      setBenefitInput('');
+  const getIframeSrc = (markup: string) => {
+    if (!markup) return '';
+    const base = `<base href="${window.location.origin}/">`;
+    let html = /<head[^>]*>/i.test(markup)
+      ? markup.replace(/<head[^>]*>/i, m => m + base)
+      : markup;
+    // Replace QR placeholder with actual data URI at render time
+    if (qrDataUrl) html = html.split('__QR__').join(qrDataUrl);
+    return html;
+  };
+
+
+
+  const callAPI = async (
+    sessionId: string,
+    system: string,
+    msgs: Array<{ role: string; content: string }>,
+    model: string,
+    onChunk: (chunk: string, type: 'content' | 'thinking') => void,
+  ) => {
+    const url = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!url || !key) throw new Error('Supabase 설정 누락');
+
+    const res = await fetch(`${url}/functions/v1/generate-with-timely`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, apikey: key },
+      body: JSON.stringify({ sessionId, model, instructions: system, messages: msgs, stream: true, thinking: true }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${res.status}`);
+    }
+    if (!res.body) throw new Error('No response body');
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder('utf-8');
+    let done = false;
+    let buf = '';
+    while (!done) {
+      const { value, done: d } = await reader.read();
+      done = d;
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const s = line.slice(6).trim();
+        if (!s || s === '[DONE]') continue;
+        try {
+          const p = JSON.parse(s);
+          // Native Timely format: { type: 'token'|'thinking', content: '...' }
+          if (p.type === 'token') {
+            onChunk(p.content, 'content');
+          } else if (p.type === 'thinking') {
+            onChunk(p.content, 'thinking');
+          // Bridge OpenAI-compatible format: { choices: [{ delta: { content, reasoning_content } }] }
+          } else if (p.choices?.[0]?.delta) {
+            const d = p.choices[0].delta;
+            if (d.content) onChunk(d.content, 'content');
+            if (d.reasoning_content) onChunk(d.reasoning_content, 'thinking');
+          // Fallback: plain message field
+          } else if (typeof p.message === 'string') {
+            onChunk(p.message, 'content');
+          }
+        } catch { /* ignore */ }
+      }
     }
   };
 
-  const removeBenefit = (index: number) => {
-    setFormData(prev => ({ ...prev, benefits: prev.benefits.filter((_, i) => i !== index) }));
+  // ── Handlers ─────────────────────────────────────────────────────
+  const handleReset = () => {
+    if (!window.confirm('모든 작업이 초기화됩니다. 새 포스터를 만드시겠습니까?')) return;
+    setFormData(INITIAL_FORM);
+    setDesignGuidelines('');
+    setAiReco('');
+    setGeneratedMarkup('');
+    setIsGenerating(false);
+    setIsGenerated(false);
+    setBenefitInput('');
+    setZoom(0.4);
+    setMessages([]);
+    setChatInput('');
+    setActiveTab('preview');
+    setStep(1);
   };
 
-  const handleZoom = (type: 'in' | 'out' | 'reset') => {
-    if (type === 'in') setZoom(prev => Math.min(prev + 0.1, 1.5));
-    else if (type === 'out') setZoom(prev => Math.max(prev - 0.1, 0.1));
-    else setZoom(0.4);
-  };
-
-  const handleDownload = async () => {
-    if (!iframeRef.current || !generatedMarkup) return;
+  const handleGetRecommendation = async () => {
+    if (isRecommending) return;
+    setIsRecommending(true);
+    setAiReco('');
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
-      if (iframeDoc && iframeDoc.documentElement) {
-        const canvas = await html2canvas(iframeDoc.documentElement, { 
-          useCORS: true,
-          scale: 2 // Higher resolution
-        });
-        const link = document.createElement('a');
-        link.download = 'poster.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }
-    } catch (e) {
-      console.error("Failed to download image", e);
-      alert("이미지 다운로드에 실패했습니다.");
+      await callAPI(
+        `reco-${Date.now()}`,
+        `당신은 시각 디자인 전문가입니다. 제공된 교육 프로그램 정보를 분석하여 포스터 디자인 지침을 제안하세요.
+포함 항목: 추천 색상 팔레트(HEX 코드, 주색/보조색/배경색), 타이포그래피 분위기, 레이아웃 방향, 전체 무드.
+300자 이내, 한국어로 간결하게.`,
+        [{ role: 'user', content: `교육 정보:\n${JSON.stringify(formData, null, 2)}` }],
+        'anthropic/claude-haiku-4.5',
+        (chunk, type) => { if (type === 'content') setAiReco(prev => prev + chunk); },
+      );
+    } catch {
+      setAiReco('추천을 가져오는데 실패했습니다.');
+    } finally {
+      setIsRecommending(false);
     }
   };
 
   const handleGenerate = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
-    setGenerationStep(1);
-    setReasoningText('');
-    
-    try {
-      setGeneratedMarkup('');
-      let accumulatedHtml = '';
-      
-      await callTimelyAPIStream(
-        `poster-gen-${Date.now()}`,
-        `You are a Senior Design Systems Engineer and Creative Director.
-Create a complete poster as a single HTML document with embedded CSS.
+    setGeneratedMarkup('');
 
-Requirements:
-- Use a <style> tag or inline CSS.
-- Use the provided data faithfully.
-- Do not include any scripts.
-- Code Review: Before writing the HTML, thoroughly inspect your planned code for syntax errors, unclosed tags, readability, and responsive layout issues. Auto-correct any flaws.
-- Output ONLY one \`\`\`html block containing the final verified code and nothing else.`,
-        [{ role: "user", content: `Create Design System & Poster. Raw data: ${JSON.stringify(formData, null, 2)}. Guidelines: ${formData.designGuidelines}` }],
+    setMessages([{
+      role: 'ai',
+      content: '',
+      isStreaming: true,
+      streamType: 'generate',
+    }]);
+
+    try {
+      let acc = '';
+      let thinkingAcc = '';
+
+      await callAPI(
+        `poster-${Date.now()}`,
+        `You are a senior design engineer specializing in Korean educational event posters.
+Generate a complete poster as a single self-contained HTML file. Apply the user's design guidelines fully and creatively — all colors, fonts, weights, backgrounds, and visual style are entirely up to you based on those guidelines.
+
+SECTION ORDER (must follow this exact sequence, 7 sections):
+1. Header — full-bleed: spans the entire width with zero margin/padding on the wrapper; internal padding only for text. Contains course title + organization name.
+2. Intro — organization description paragraph
+3. 교육 안내 — 4 rows: 교육대상 / 교육일정 / 교육장소 / 신청방법; each row has an inline SVG icon + label + value separated by spacing or a thin divider line — NO background boxes on rows or icons.
+4. 교육 혜택 — 4 columns; each column: large inline SVG icon + label text below; NO card backgrounds or border boxes — use whitespace only.
+5. 교육 내용 — two columns: left = curriculum list, right = QR area
+   QR image: ${formData.qrLink ? '<img src="__QR__" alt="교육신청 QR" style="width:140px;height:140px;display:block;">' : 'empty 140×140 placeholder box labeled "교육신청 QR"'}
+6. 문의사항 — single row: 홈페이지 / 전화 / 이메일; use thin dividers or spacing — NO icon boxes.
+7. Footer — logos in one row, evenly spaced:
+   /assets/posters/logos/로고1.png /assets/posters/logos/로고2.png /assets/posters/logos/로고3.png /assets/posters/logos/로고4.png (each height: 44px)
+
+DESIGN PRINCIPLES — strictly follow these:
+- ANTI BOX-IN-BOX: Never nest a colored/bordered box inside another box. Use whitespace, padding, and thin horizontal divider lines (1px border-bottom or border-top) to separate content. Section backgrounds are fine, but never add inner card/box backgrounds on top of them.
+- ICONS: Render icons inline (SVG) next to text. Never wrap icons in a separate background circle, square, or rounded box.
+- FULL-BLEED HEADER: The header element must have width: 100%; margin: 0; padding: 0 on its outer wrapper. Apply background and inner content padding inside.
+- TYPOGRAPHY: Base body font-size minimum 15px. Headings proportionally larger. Line-height 1.25–1.35 (tight). Letter-spacing slightly tight (-0.01em to 0em) for Korean text.
+
+LAYOUT & SIZING — critical for fitting within the poster dimensions:
+- Outer wrapper: display:flex; flex-direction:column; width:${formData.width}px; height:${formData.height}px; overflow:hidden; box-sizing:border-box;
+- Each section gets a flex value so all 7 sections together always fill exactly the poster height — no section uses a fixed pixel height.
+  Suggested flex weights (adjust based on content): header:1.2 intro:0.9 교육안내:2 교육혜택:1.8 교육내용:2.5 문의사항:0.8 footer:0.8
+- Every element: box-sizing:border-box; overflow:hidden;
+- Use only padding (no fixed heights) for inner spacing within sections.
+- @media print { @page { size: 210mm 297mm; margin: 0; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+
+TECHNICAL RULES:
+- All styles in one <style> block. No external CSS or JS.
+- html, body { width: ${formData.width}px; height: ${formData.height}px; margin: 0; padding: 0; overflow: hidden; }
+- Use inline SVG for all icons.
+- Output exactly one \`\`\`html\`\`\` code block. No explanations.`,
+        [{
+          role: 'user',
+          content: `포스터 데이터:\n${JSON.stringify(formData, null, 2)}\n\n디자인 지침:\n${designGuidelines || '전문적이고 신뢰감 있는 공공기관 스타일로 자유롭게 디자인하세요.'}`,
+        }],
+        aiModel,
         (chunk, type) => {
-          if (type === 'content') {
-            accumulatedHtml += chunk;
-            setGeneratedMarkup(extractHtmlFromResponse(accumulatedHtml));
-            if (generationStep < 3) setGenerationStep(3);
-          } else if (type === 'thinking') {
-             setReasoningText(prev => prev + chunk);
+          if (type === 'thinking') {
+            thinkingAcc += chunk;
+            setMessages(prev => {
+              const msgs = [...prev];
+              if (msgs[0]) msgs[0] = { ...msgs[0], thinking: thinkingAcc };
+              return msgs;
+            });
+          } else if (type === 'content') {
+            acc += chunk;
           }
-        }
+        },
       );
 
+      const finalHtml = extractHtml(acc);
+      if (finalHtml) setGeneratedMarkup(finalHtml);
       setIsGenerated(true);
-      setIsFormOpen(false);
-      setMessages([{ role: 'ai', content: "HTML/CSS 코드가 생성되었습니다." }]);
-    } catch (error: any) {
-      console.error("AI Generation Error:", error);
-      const errMsg = '포스터 생성 중 오류가 발생했습니다.';
-      alert(errMsg);
+
+      // Stream a summary of the generated poster from a lightweight model
+      let summaryAcc = '';
+      setMessages(prev => {
+        const msgs = [...prev];
+        if (msgs[0]) msgs[0] = { ...msgs[0], isStreaming: true, thinking: thinkingAcc || undefined };
+        return msgs;
+      });
+
+      await callAPI(
+        `poster-summary-${Date.now()}`,
+        `당신은 디자인 리뷰어입니다. 생성된 포스터 HTML을 분석하고 한국어로 간결하게 설명하세요.
+다음 항목을 2~3문장으로 요약하세요:
+- 사용된 색상 팔레트 (주색, 보조색, 배경색 HEX 포함)
+- 헤더 스타일
+- 레이아웃 특징
+마지막에 "디자인이 마음에 드시나요? 수정이 필요한 부분이 있으면 말씀해 주세요." 문장으로 마무리하세요.
+설명 외의 불필요한 서두나 마크다운 헤더는 쓰지 마세요.`,
+        [{ role: 'user', content: `생성된 포스터 HTML:\n\`\`\`html\n${finalHtml}\n\`\`\`` }],
+        'anthropic/claude-haiku-4.5',
+        (chunk, type) => {
+          if (type === 'content') {
+            summaryAcc += chunk;
+            setMessages(prev => {
+              const msgs = [...prev];
+              if (msgs[0]) msgs[0] = { ...msgs[0], content: summaryAcc };
+              return msgs;
+            });
+          }
+        },
+      );
+
+      setMessages(prev => {
+        const msgs = [...prev];
+        if (msgs[0]) msgs[0] = {
+          ...msgs[0],
+          isStreaming: false,
+          thinking: thinkingAcc || undefined,
+        };
+        return msgs;
+      });
+    } catch (e: any) {
+      setMessages([{
+        role: 'ai',
+        content: `오류가 발생했습니다: ${e.message}`,
+        isStreaming: false,
+      }]);
     } finally {
       setIsGenerating(false);
-      setGenerationStep(0);
+    }
+  };
+
+  const goToStep3AndGenerate = () => {
+    setStep(3);
+    handleGenerate();
+  };
+
+  const executeModification = async (request: string) => {
+    const context = `[수정 요청]: ${request}`;
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'ai', content: '', isStreaming: true, streamType: 'modify' },
+    ]);
+
+    try {
+      let acc = '';
+      let thinkingAcc = '';
+
+      await callAPI(
+        'poster-modify',
+        `You are an expert Frontend Developer in canvas patch mode. You receive a complete poster HTML and a change request.
+
+STRICT PATCH RULES — violating these is a critical failure:
+1. Identify the MINIMAL set of CSS properties or HTML attributes that satisfy the request.
+2. Change ONLY those properties. Every other character of the original HTML must remain identical.
+3. NEVER change: section order, flex/grid structure, footer logos, @media print block, font stacks, overall color scheme (unless explicitly requested).`,
+        [{ role: 'user', content: `[Current HTML]\n\`\`\`html\n${generatedMarkup}\n\`\`\`\n\n${context}` }],
+        aiModel,
+        (chunk, type) => {
+          if (type === 'thinking') {
+            thinkingAcc += chunk;
+            setMessages(prev => {
+              const msgs = [...prev];
+              const last = msgs.length - 1;
+              if (msgs[last]) msgs[last] = { ...msgs[last], thinking: thinkingAcc };
+              return msgs;
+            });
+          } else if (type === 'content') {
+            acc += chunk;
+          }
+        },
+      );
+
+      const updated = extractHtml(acc);
+      if (updated) setGeneratedMarkup(updated);
+
+      setMessages(prev => {
+        const msgs = [...prev];
+        const last = msgs.length - 1;
+        if (msgs[last]) msgs[last] = {
+          ...msgs[last],
+          content: '수정이 완료되었습니다.',
+          isStreaming: false,
+          thinking: thinkingAcc || undefined,
+        };
+        return msgs;
+      });
+    } catch {
+      setMessages(prev => {
+        const msgs = [...prev];
+        const last = msgs.length - 1;
+        if (msgs[last]) msgs[last] = {
+          ...msgs[last],
+          content: '오류가 발생했습니다. 다시 시도해주세요.',
+          isStreaming: false,
+        };
+        return msgs;
+      });
     }
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading) return;
-    const userMessage = chatInput;
+    if (!chatInput.trim() || isChatLoading || !isGenerated) return;
+    const userMsg = chatInput;
     setChatInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsChatLoading(true);
-    
+
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+
     try {
-      let accumulatedHtml = '';
-      
-      const promptContent = `[Current HTML Code]
-\`\`\`html
-${generatedMarkup}
-\`\`\`
-
-[User Modification Request]
-${userMessage}`;
-
-      await callTimelyAPIStream(
-        'poster-session-active',
-        "You are an expert Frontend Developer and UI/UX Designer. Your task is to modify the provided existing HTML/CSS code based on the user's request. Requirements:\n1. Keep the existing design system, layout, and content intact unless explicitly asked to change them.\n2. Before outputting, self-review the code for any CSS/HTML errors or broken layouts and fix them.\n3. Return the FINAL complete HTML document as a single ```html``` code block. Do not output any conversational text.",
-        [{ role: "user", content: promptContent }],
-        (chunk, type) => {
-          if (type === 'content') {
-            accumulatedHtml += chunk;
-            setGeneratedMarkup(extractHtmlFromResponse(accumulatedHtml));
-          } else if (type === 'thinking') {
-             // Optional: handle thinking text for chat
-          }
-        }
-      );
-
-      setMessages(prev => [...prev, { role: 'ai', content: '코드가 업데이트되었습니다.' }]);
-    } catch (error: any) {
-      console.error('Chat Error:', error);
-      setMessages(prev => [...prev, { role: 'ai', content: '통신 중 오류가 발생했습니다. 다시 시도해주세요.' }]);
+      await executeModification(userMsg);
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: '오류가 발생했습니다. 다시 시도해주세요.',
+      }]);
     } finally {
       setIsChatLoading(false);
     }
   };
 
-  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      handleSendMessage();
+  const handlePrint = () => {
+    if (!generatedMarkup) return;
+    const blob = new Blob([getIframeSrc(generatedMarkup)], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) { URL.revokeObjectURL(url); alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.'); return; }
+    win.onload = () => { win.focus(); win.print(); URL.revokeObjectURL(url); };
+  };
+
+  const handleDownload = async () => {
+    if (!generatedMarkup) return;
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const doc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+      if (!doc?.documentElement) return;
+
+      const canvas = await html2canvas(doc.documentElement, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        width: formData.width,
+        height: formData.height,
+        windowWidth: formData.width,
+        windowHeight: formData.height,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+      });
+
+      const a = document.createElement('a');
+      a.download = `poster_${formData.courseName || 'poster'}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    } catch (e) {
+      console.error('Download failed:', e);
+      alert('이미지 다운로드에 실패했습니다.');
     }
   };
 
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const addBenefit = (e?: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e && e.key !== 'Enter') return;
+    e?.preventDefault();
+    const v = benefitInput.trim();
+    if (v && !formData.benefits.includes(v)) {
+      setFormData(prev => ({ ...prev, benefits: [...prev.benefits, v] }));
+      setBenefitInput('');
+    }
+  };
+
+  // ── Step Navigator ────────────────────────────────────────────────
+  const StepNav = () => (
+    <div className="flex items-center gap-1">
+      {([1, 2, 3] as const).map((s, i) => {
+        const labels = ['정보 입력', 'AI 설정', '생성 & 수정'];
+        const active = step === s;
+        const done = step > s;
+        const clickable = s < step || (s === 3 && isGenerated);
+        return (
+          <React.Fragment key={s}>
+            <button
+              onClick={() => clickable && setStep(s)}
+              disabled={!clickable && s > step}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                active
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : done
+                  ? 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 cursor-pointer'
+                  : s > step
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              <span className="font-black">{s}</span>
+              {labels[i]}
+            </button>
+            {i < 2 && <ChevronRight size={12} className="text-gray-300 shrink-0" />}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  // ── Step 1: 정보 입력 (전체 표시, 스크롤 없음) ──────────────────
+  const renderStep1 = () => (
+    <div className="flex flex-col gap-3 h-full">
+      {/* Row 1: 과정명 + 규격 */}
+      <div className="grid grid-cols-4 gap-2 shrink-0">
+        <div className="col-span-2">
+          <label className={LC}>과정명 *</label>
+          <input name="courseName" value={formData.courseName} onChange={handleInput} className={IC} placeholder="교육 과정명" />
+        </div>
+        <div>
+          <label className={LC}>가로 (px)</label>
+          <input type="number" name="width" value={formData.width} onChange={handleInput} className={IC} />
+        </div>
+        <div>
+          <label className={LC}>세로 (px)</label>
+          <input type="number" name="height" value={formData.height} onChange={handleInput} className={IC} />
+        </div>
+      </div>
+
+      {/* Row 2: 좌우 2컬럼 */}
+      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+        {/* 좌: 교육 안내 + 교육 혜택 */}
+        <div className="flex flex-col gap-3">
+          <div className="space-y-1.5">
+            <p className={`${LC} flex items-center gap-1`}><Calendar size={10} className="text-brand-primary" />교육 안내</p>
+            <div>
+              <label className={LC}>교육 대상</label>
+              <input name="targetAudience" value={formData.targetAudience} onChange={handleInput} className={`${IC} text-xs`} placeholder="교육 대상" />
+            </div>
+            <div>
+              <label className={LC}>일정</label>
+              <input name="schedule" value={formData.schedule} onChange={handleInput} className={`${IC} text-xs`} placeholder="교육 일정" />
+            </div>
+            <div>
+              <label className={LC}>장소</label>
+              <input name="location" value={formData.location} onChange={handleInput} className={`${IC} text-xs`} placeholder="교육 장소" />
+            </div>
+            <div>
+              <label className={LC}>신청 방법</label>
+              <input name="applyMethod" value={formData.applyMethod} onChange={handleInput} className={`${IC} text-xs`} placeholder="신청 방법" />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className={`${LC} flex items-center gap-1`}><Sparkles size={10} className="text-brand-primary" />교육 혜택</p>
+            <div className="relative">
+              <input
+                value={benefitInput}
+                onChange={e => setBenefitInput(e.target.value)}
+                onKeyDown={addBenefit}
+                className={`${IC} pr-9 text-xs`}
+                placeholder="항목 입력 후 Enter"
+              />
+              <button onClick={() => addBenefit()} className="absolute right-1.5 top-1.5 p-1 bg-brand-primary text-white rounded hover:brightness-110">
+                <Plus size={11} />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {formData.benefits.map((b, i) => (
+                <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded-full text-[10px] font-medium">
+                  {b}
+                  <button onClick={() => setFormData(p => ({ ...p, benefits: p.benefits.filter((_, j) => j !== i) }))} className="hover:text-red-500">
+                    <X size={9} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 우: 소개 + 교육 내용 + 문의 */}
+        <div className="flex flex-col gap-3">
+          <div className="space-y-1.5">
+            <p className={`${LC} flex items-center gap-1`}><Info size={10} className="text-brand-primary" />소개 문구</p>
+            <textarea name="introText" value={formData.introText} onChange={handleInput} className={`${IC} text-xs resize-none`} style={{ height: '72px' }} />
+          </div>
+
+          <div className="space-y-1.5">
+            <p className={`${LC} flex items-center gap-1`}><MessageSquare size={10} className="text-brand-primary" />교육 내용</p>
+            <textarea name="curriculum" value={formData.curriculum} onChange={handleInput} className={`${IC} text-xs resize-none`} style={{ height: '56px' }} placeholder="커리큘럼" />
+            <div>
+              <label className={LC}>QR 링크</label>
+              <div className="flex gap-2 items-start">
+                <input name="qrLink" value={formData.qrLink} onChange={handleInput} className={`${IC} text-xs flex-1`} placeholder="신청 링크 입력 시 자동 생성" />
+                {qrDataUrl && (
+                  <div className="shrink-0 w-14 h-14 border rounded-lg overflow-hidden bg-white" style={{ borderColor: 'var(--color-border)' }}>
+                    <img src={qrDataUrl} alt="QR" className="w-full h-full object-contain" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className={`${LC} flex items-center gap-1`}><Phone size={10} className="text-brand-primary" />문의 정보</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <label className={LC}>전화</label>
+                <input name="contactPhone" value={formData.contactPhone} onChange={handleInput} className={`${IC} text-xs`} />
+              </div>
+              <div>
+                <label className={LC}>이메일</label>
+                <input name="contactEmail" value={formData.contactEmail} onChange={handleInput} className={`${IC} text-xs`} />
+              </div>
+            </div>
+            <div>
+              <label className={LC}>웹사이트</label>
+              <input name="contactWeb" value={formData.contactWeb} onChange={handleInput} className={`${IC} text-xs`} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 다음 버튼 */}
+      <div className="pt-2 border-t shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+        <button
+          onClick={() => setStep(2)}
+          disabled={!formData.courseName.trim()}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white transition-all hover:brightness-110 disabled:opacity-40 shadow-md text-sm"
+          style={{ background: 'var(--brand-primary)' }}
+        >
+          다음: AI 설정 <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 2: AI 설정 ────────────────────────────────────────────
+  const renderStep2 = () => (
+    <>
+      <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4 scrollbar-thin">
+        <section className="space-y-2">
+          <h2 className={LC}>AI 모델 선택</h2>
+          <select value={aiModel} onChange={e => setAiModel(e.target.value)} className={IC}>
+            <optgroup label="— Claude (Bridge · 추론 지원)">
+              <option value="anthropic/claude-opus-4.7">Claude Opus 4.7 — 최고 품질</option>
+              <option value="anthropic/claude-sonnet-4.6">Claude Sonnet 4.6 — 균형</option>
+              <option value="anthropic/claude-haiku-4.5">Claude Haiku 4.5 — 경량</option>
+            </optgroup>
+            <optgroup label="— GPT / o-series (Native)">
+              <option value="gpt-5.4">GPT-5.4</option>
+              <option value="gpt-5.4-mini">GPT-5.4 Mini</option>
+              <option value="gpt-5.1">GPT-5.1</option>
+              <option value="gpt-5-mini">GPT-5 Mini</option>
+              <option value="gpt-4.1">GPT-4.1</option>
+              <option value="gpt-4.1-mini">GPT-4.1 Mini — 경량</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+              <option value="gpt-o4-mini">o4-mini — 추론</option>
+              <option value="gpt-o3">o3 — 추론</option>
+              <option value="o3-deep-research">o3 Deep Research</option>
+            </optgroup>
+            <optgroup label="— Gemini (Native)">
+              <option value="gemini-3.1-pro">Gemini 3.1 Pro — 최고 품질</option>
+              <option value="gemini-3-flash">Gemini 3 Flash</option>
+              <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </optgroup>
+            <optgroup label="— Grok (Native)">
+              <option value="grok-4">Grok 4 — 최고 품질</option>
+              <option value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning</option>
+              <option value="grok-4-1-fast-non-reasoning">Grok 4.1 Fast</option>
+              <option value="grok-3">Grok 3</option>
+              <option value="grok-3-mini">Grok 3 Mini</option>
+            </optgroup>
+            <optgroup label="— Mistral (Native)">
+              <option value="mistral-large">Mistral Large</option>
+              <option value="mistral-medium">Mistral Medium</option>
+              <option value="magistral-medium">Magistral Medium — 추론</option>
+              <option value="magistral-small">Magistral Small</option>
+              <option value="codestral">Codestral — 코드 특화</option>
+            </optgroup>
+            <optgroup label="— 기타 (Native)">
+              <option value="llama-4-scout-17b">Llama 4 Scout 17B</option>
+              <option value="qwen-qwq-32b">Qwen QwQ 32B — 추론</option>
+              <option value="solar-pro3">Solar Pro 3</option>
+            </optgroup>
+          </select>
+        </section>
+
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className={LC}>디자인 지침</h2>
+            <button
+              onClick={handleGetRecommendation}
+              disabled={isRecommending}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-bold hover:bg-purple-100 transition-all disabled:opacity-50"
+            >
+              <Wand2 size={11} className={isRecommending ? 'animate-spin' : ''} />
+              {isRecommending ? 'AI 분석 중...' : 'AI 추천 받기'}
+            </button>
+          </div>
+          <textarea
+            value={designGuidelines}
+            onChange={e => setDesignGuidelines(e.target.value)}
+            className={`${IC} h-28 resize-none`}
+            placeholder="예: 전남대 그린/블루 계열, 신뢰감 있는 공공기관 스타일, 깔끔한 세로형 레이아웃"
+          />
+        </section>
+
+        {(aiReco || isRecommending) && (
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[11px] font-bold text-purple-700 flex items-center gap-1.5">
+                <Bot size={12} /> AI 디자인 추천
+              </h3>
+              {aiReco && !isRecommending && (
+                <button
+                  onClick={() => setDesignGuidelines(p => p ? `${p}\n\n${aiReco}` : aiReco)}
+                  className="text-[11px] font-bold text-brand-primary hover:underline"
+                >
+                  지침에 적용
+                </button>
+              )}
+            </div>
+            <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl text-[12px] text-purple-900 leading-relaxed min-h-[60px]">
+              {isRecommending && !aiReco
+                ? <span className="text-purple-400 animate-pulse">분석 중...</span>
+                : (
+                  <ReactMarkdown
+                    components={{
+                      h1: ({ children }) => <p className="font-bold text-[13px] text-purple-800 mb-1 mt-2 first:mt-0">{children}</p>,
+                      h2: ({ children }) => <p className="font-bold text-[13px] text-purple-800 mb-1 mt-2 first:mt-0">{children}</p>,
+                      h3: ({ children }) => <p className="font-semibold text-[12px] text-purple-700 mb-0.5 mt-1.5">{children}</p>,
+                      p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                      strong: ({ children }) => <strong className="font-bold text-purple-800">{children}</strong>,
+                      em: ({ children }) => <em className="italic text-purple-700">{children}</em>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 my-1 space-y-0.5">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 my-1 space-y-0.5">{children}</ol>,
+                      li: ({ children }) => <li className="text-purple-900">{children}</li>,
+                      code: ({ children }) => <code className="bg-purple-100 text-purple-700 px-1 rounded text-[11px] font-mono">{children}</code>,
+                      hr: () => <hr className="border-purple-200 my-2" />,
+                    }}
+                  >
+                    {aiReco}
+                  </ReactMarkdown>
+                )}
+            </div>
+          </section>
+        )}
+      </div>
+
+      <div className="pt-4 border-t shrink-0 flex gap-2" style={{ borderColor: 'var(--color-border)' }}>
+        <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm">
+          이전
+        </button>
+        <button
+          onClick={goToStep3AndGenerate}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white transition-all hover:brightness-110 shadow-md text-sm"
+          style={{ background: 'var(--brand-primary)' }}
+        >
+          <Sparkles size={15} /> AI 포스터 생성 시작
+        </button>
+      </div>
+    </>
+  );
+
+  // ── Step 3: 생성 & 수정 ────────────────────────────────────────
+  const renderStep3 = () => (
+    <>
+      {/* Preview Panel */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex items-center justify-between mb-2 shrink-0">
+          <div className="flex bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setActiveTab('preview')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${activeTab === 'preview' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500'}`}
+            >
+              <Eye size={13} /> 미리보기
+            </button>
+            <button
+              onClick={() => setActiveTab('code')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${activeTab === 'code' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500'}`}
+            >
+              <CodeIcon size={13} /> 코드
+            </button>
+          </div>
+          {activeTab === 'preview' && (
+            <div className="flex items-center gap-0.5 px-2 py-1 bg-white border rounded-lg shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+              <button onClick={() => setZoom(p => Math.max(p - 0.1, 0.1))} className="p-1 hover:bg-gray-100 rounded text-gray-500"><ZoomOut size={13} /></button>
+              <span className="text-[10px] font-bold text-gray-500 min-w-[34px] text-center">{Math.round(zoom * 100)}%</span>
+              <button onClick={() => setZoom(p => Math.min(p + 0.1, 2))} className="p-1 hover:bg-gray-100 rounded text-gray-500"><ZoomIn size={13} /></button>
+              <div className="w-px h-3 bg-gray-200 mx-0.5" />
+              <button onClick={() => setZoom(0.4)} className="p-1 hover:bg-gray-100 rounded text-gray-500"><Maximize size={13} /></button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-h-0 rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-border)' }}>
+          {activeTab === 'preview' ? (
+            <div className="w-full h-full overflow-auto flex items-start justify-center p-8" style={CHECKERBOARD}>
+              {generatedMarkup ? (
+                <div style={{
+                  width: formData.width * zoom,
+                  height: formData.height * zoom,
+                  flexShrink: 0,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+                  position: 'relative',
+                }}>
+                  <iframe
+                    ref={iframeRef}
+                    title="Poster Preview"
+                    sandbox="allow-same-origin"
+                    style={{
+                      width: `${formData.width}px`,
+                      height: `${formData.height}px`,
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'top left',
+                      border: 'none',
+                      display: 'block',
+                    }}
+                    srcDoc={getIframeSrc(generatedMarkup)}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 text-gray-400 h-full w-full">
+                  {isGenerating
+                    ? <Loader2 size={28} className="animate-spin text-brand-primary/40" />
+                    : <><Sparkles size={28} className="opacity-20" /><p className="text-sm">포스터를 생성해주세요</p></>}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full h-full bg-[#1e1e1e] p-4 overflow-auto">
+              <pre className="font-mono text-[11px] text-gray-300 whitespace-pre-wrap">{generatedMarkup || '아직 생성된 코드가 없습니다.'}</pre>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 mt-2 shrink-0">
+          <button onClick={handlePrint} disabled={!generatedMarkup} className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-white rounded-lg text-xs font-bold hover:bg-gray-700 transition-all disabled:opacity-40">
+            <Printer size={13} /> 인쇄
+          </button>
+          <button onClick={handleDownload} disabled={!generatedMarkup} className="flex items-center gap-1.5 px-3 py-2 bg-white border text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all disabled:opacity-40" style={{ borderColor: 'var(--color-border)' }}>
+            <Download size={13} /> PNG
+          </button>
+          <div className="flex-1" />
+          <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-2 bg-white border text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all" style={{ borderColor: 'var(--color-border)' }}>
+            <RotateCcw size={13} /> 새로 만들기
+          </button>
+        </div>
+      </div>
+
+      {/* Chat Panel */}
+      <div className="w-80 flex flex-col min-h-0 border rounded-xl overflow-hidden bg-white" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="px-4 py-3 border-b bg-gray-50 shrink-0 flex items-center gap-2" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shrink-0">
+            <Bot size={14} className="text-white" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-gray-800">AI 어시스턴트</p>
+            <p className="text-[10px] text-gray-400">{aiModel.split('/').pop()}</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
+          {messages.length === 0 && (
+            <div className="text-center text-xs text-gray-400 py-10">
+              <Bot size={28} className="mx-auto mb-2 opacity-20" />
+              <p>생성이 완료되면<br />여기서 수정 요청을 할 수 있어요</p>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'items-start'}`}>
+              {/* Avatar */}
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                msg.role === 'user' ? 'bg-gray-200 text-gray-600' : 'bg-brand-primary text-white'
+              }`}>
+                {msg.role === 'user'
+                  ? <User size={11} />
+                  : msg.isStreaming ? <Sparkles size={11} className="animate-pulse" /> : <Bot size={11} />}
+              </div>
+
+              {/* Bubble area */}
+              <div className={`space-y-1.5 ${msg.role === 'user' ? 'items-end flex flex-col' : ''}`} style={{ maxWidth: '85%' }}>
+                {/* Rotating loading message — only while thinking hasn't arrived yet */}
+                {msg.role === 'ai' && msg.isStreaming && !msg.thinking && !msg.content && (
+                  <div className="flex items-center gap-1.5 px-1 py-0.5">
+                    <Loader2 size={10} className="animate-spin flex-shrink-0" style={{ color: 'var(--brand-primary)' }} />
+                    <RotatingMessage msgs={msg.streamType === 'generate' ? GENERATE_MSGS : MODIFY_MSGS} />
+                  </div>
+                )}
+
+                {/* Thinking panel — visible while reasoning streams and collapsible after */}
+                {msg.role === 'ai' && msg.thinking !== undefined && (
+                  <ThinkingPanel thinking={msg.thinking} isStreaming={msg.isStreaming} />
+                )}
+
+                {/* Content bubble */}
+                {msg.content && (
+                  <div className={`px-3 py-2 text-xs leading-relaxed rounded-2xl ${
+                    msg.role === 'user'
+                      ? 'bg-gray-100 text-gray-800 rounded-tr-sm'
+                      : 'bg-brand-primary/5 border border-brand-primary/10 text-gray-800 rounded-tl-sm'
+                  }`}>
+                    {msg.content || (
+                      <span className="flex gap-0.5 items-center h-4">
+                        {[0, 0.15, 0.3].map((delay, k) => (
+                          <span
+                            key={k}
+                            className="w-1.5 h-1.5 bg-brand-primary/50 rounded-full animate-bounce"
+                            style={{ animationDelay: `${delay}s` }}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+
+        <div className="p-2 border-t shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+          <div className={`flex items-center gap-1 border rounded-lg px-2 transition-all bg-white ${
+            !isGenerated || isGenerating
+              ? 'opacity-50'
+              : 'focus-within:ring-2 focus-within:ring-brand-primary/20'
+          }`} style={{ borderColor: 'var(--color-border)' }}>
+            <input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); handleSendMessage(); } }}
+              disabled={!isGenerated || isChatLoading || isGenerating}
+              placeholder={!isGenerated || isGenerating ? '생성 후 활성화' : '수정 요청 입력...'}
+              className="flex-1 bg-transparent border-none outline-none text-xs px-1 py-2"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!chatInput.trim() || isChatLoading || !isGenerated || isGenerating}
+              className="p-1.5 bg-brand-primary text-white rounded-md disabled:opacity-40 hover:brightness-110 transition-colors shrink-0"
+            >
+              <Send size={12} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  // ── Main Layout ────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full space-y-4">
       <PageHeader
         title="포스터 자동화"
-        description="레퍼런스 디자인을 기반으로 4대 핵심 섹션을 구성하여 포스터를 생성합니다."
-        actions={
-          <div className="flex items-center gap-3">
-            <select
-              value={aiModel}
-              onChange={(e) => setAiModel(e.target.value)}
-              className="px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium focus:outline-none shadow-sm"
-            >
-              <option value="gpt-5.1">GPT-5.1</option>
-              <option value="openai/gpt-5.5">GPT-5.5 (Bridge)</option>
-              <option value="openai/gpt-4.1-mini">GPT-4.1 Mini (Bridge)</option>
-              <option value="openai/gpt-4o-mini">GPT-4o Mini (Bridge)</option>
-              <option value="anthropic/claude-opus-4.7">Claude Opus 4.7 (Bridge)</option>
-              <option value="anthropic/claude-haiku-4.5">Claude Haiku 4.5 (Bridge)</option>
-              <option value="google/gemini-3-flash-preview">Gemini 3 Flash (Bridge)</option>
-              <option value="x-ai/grok-4.1-fast">Grok 4.1 Fast (Bridge)</option>
-            </select>
-            <button onClick={handleReset} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors shadow-sm">
-              <RotateCcw size={16} /> 새로 만들기
-            </button>
-          </div>
-        }
+        description="AI가 교육 프로그램 포스터를 자동 생성합니다."
+        actions={<StepNav />}
       />
 
-      <div className="flex flex-1 gap-4 min-h-0">
-        <div className="w-[55%] flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between shrink-0">
-            <div className="flex bg-surface-variant rounded-t-lg p-0.5 w-fit mb-[-1px] z-10 border border-b-0" style={{ borderColor: "var(--color-border)" }}>
-              <button onClick={() => setActiveTab('preview')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${activeTab === 'preview' ? 'bg-white shadow-sm text-brand-primary' : 'text-text-secondary'}`}><Eye size={14} /> 미리보기</button>
-              <button onClick={() => setActiveTab('code')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${activeTab === 'code' ? 'bg-white shadow-sm text-brand-primary' : 'text-text-secondary'}`}><CodeIcon size={14} /> 코드</button>
+      <div className="flex-1 min-h-0 flex flex-col">
+        {step === 1 && (
+          <div className="flex-1 min-h-0 flex justify-center">
+            <div className="w-full max-w-3xl flex flex-col min-h-0">
+              {renderStep1()}
             </div>
-            {activeTab === 'preview' && (
-              <div className="flex items-center gap-1 mb-1 px-2 py-0.5 bg-surface border rounded-md shadow-xs" style={{ borderColor: "var(--color-border)" }}>
-                <button onClick={() => handleZoom('out')} className="p-1 hover:bg-gray-100 rounded text-text-secondary"><ZoomOut size={14} /></button>
-                <span className="text-[10px] font-bold text-text-secondary min-w-[35px] text-center">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => handleZoom('in')} className="p-1 hover:bg-gray-100 rounded text-text-secondary"><ZoomIn size={14} /></button>
-                <div className="w-[1px] h-3 bg-gray-200 mx-1"></div>
-                <button onClick={() => handleZoom('reset')} className="p-1 hover:bg-gray-100 rounded text-text-secondary"><Maximize size={14} /></button>
-              </div>
-            )}
           </div>
-
-          <div className="flex-1 flex flex-col overflow-hidden bg-white border-t border-r rounded-tr-lg" style={{ borderColor: "var(--color-border)" }}>
-            {activeTab === 'preview' ? (
-              <div className="flex-1 overflow-auto scrollbar-thin flex justify-center items-center bg-gray-50/50">
-                <div style={{ width: formData.width * zoom, height: formData.height * zoom }} className="shrink-0 relative shadow-sm border border-gray-200 transition-all duration-200 bg-white">
-                  {generatedMarkup ? (
-                    <iframe
-                      ref={iframeRef}
-                      title="Poster Preview"
-                      sandbox="allow-same-origin"
-                      style={{
-                        width: `${formData.width}px`,
-                        height: `${formData.height}px`,
-                        transform: `scale(${zoom})`,
-                        transformOrigin: 'top left',
-                        border: 'none',
-                        background: '#fff',
-                      }}
-                      srcDoc={generatedMarkup}
-                    />
-                  ) : (
-                    <div className="w-full h-full border border-dashed border-gray-300 text-sm text-gray-400 bg-white flex items-center justify-center">
-                      AI 포스터를 생성하면 미리보기가 표시됩니다.
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 bg-[#1e1e1e] p-4 font-mono text-[11px] text-gray-300 overflow-auto scrollbar-thin">
-                <pre className="whitespace-pre-wrap">{generatedMarkup || '아직 생성된 코드가 없습니다.'}</pre>
-              </div>
-            )}
+        )}
+        {step === 2 && (
+          <div className="flex-1 min-h-0 flex justify-center">
+            <div className="w-full max-w-lg flex flex-col min-h-0">
+              {renderStep2()}
+            </div>
           </div>
-        </div>
-
-        <div className="w-[45%] flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between py-3 cursor-pointer hover:opacity-80 transition-opacity shrink-0 mb-4 border-b" onClick={() => setIsFormOpen(!isFormOpen)} style={{ borderColor: "var(--color-border)" }}>
-            <div className="flex items-center gap-2"><Info size={16} className="text-brand-primary" /><span className="font-bold text-sm">상세 입력 폼</span>{!isFormOpen && <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full ml-2">접힘</span>}</div>
-            {isFormOpen ? <ChevronUp size={18} className="text-gray-500" /> : <ChevronDown size={18} className="text-gray-500" />}
+        )}
+        {step === 3 && (
+          <div className="flex-1 min-h-0 flex gap-4">
+            {renderStep3()}
           </div>
-
-          {isFormOpen && (
-            <div className="flex-1 flex flex-col overflow-y-auto pr-2 pb-4 space-y-8 scrollbar-thin">
-              <div className="space-y-3 pt-2">
-                <h2 className="text-sm font-bold flex items-center gap-2 text-text-primary"><Maximize size={14} className="text-brand-primary"/> 생성 규격 설정</h2>
-                <div className="grid grid-cols-2 gap-3 pl-5">
-                  <div><label className="text-[10px] font-bold text-text-secondary mb-1">가로(px)</label><input type="number" name="width" value={formData.width} onChange={handleInputChange} className="w-full p-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all"/></div>
-                  <div><label className="text-[10px] font-bold text-text-secondary mb-1">세로(px)</label><input type="number" name="height" value={formData.height} onChange={handleInputChange} className="w-full p-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all"/></div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-sm font-bold flex items-center gap-2 text-text-primary"><Info size={14} className="text-brand-primary"/> 상단 과정 정보</h2>
-                <div className="space-y-3 pl-5">
-                  <input name="courseName" value={formData.courseName} onChange={handleInputChange} className="w-full p-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="교육 과정명"/>
-                  <textarea name="introText" value={formData.introText} onChange={handleInputChange} className="w-full p-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all h-16 resize-none"/>
-                </div>
-              </div>
-              <div className="space-y-3"><h2 className="text-sm font-bold flex items-center gap-2 text-text-primary"><Calendar size={14} className="text-brand-primary"/> 1. 교육 안내 섹션</h2><div className="grid grid-cols-1 gap-3 pl-5"><input name="targetAudience" value={formData.targetAudience} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="교육 대상"/><input name="schedule" value={formData.schedule} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="교육 일정"/><input name="location" value={formData.location} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="교육 장소"/><input name="applyMethod" value={formData.applyMethod} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="신청 방법"/></div></div>
-              <div className="space-y-3"><h2 className="text-sm font-bold flex items-center gap-2 text-text-primary"><Sparkles size={14} className="text-brand-primary"/> 2. 교육 혜택 섹션</h2><div className="space-y-3 pl-5"><div className="relative"><input value={benefitInput} onChange={(e) => setBenefitInput(e.target.value)} onKeyDown={handleAddBenefit} className="w-full p-2 pr-10 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="혜택 추가 후 Enter"/><button onClick={() => handleAddBenefit()} className="absolute right-1.5 top-1.5 p-1 bg-brand-primary text-white rounded hover:brightness-110 transition-all"><Plus size={12}/></button></div><div className="flex flex-wrap gap-1.5 p-3 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">{formData.benefits.length > 0 ? formData.benefits.map((b, i) => (<div key={i} className="flex items-center gap-1 px-2.5 py-1 bg-white text-gray-700 rounded-full text-[11px] font-medium border border-gray-200 shadow-sm">{b}<button onClick={() => removeBenefit(i)} className="text-gray-400 hover:text-red-500 transition-colors"><X size={12}/></button></div>)) : <span className="text-xs text-gray-400">등록된 혜택이 없습니다.</span>}</div></div></div>
-              <div className="space-y-3"><h2 className="text-sm font-bold flex items-center gap-2 text-text-primary"><MessageSquare size={14} className="text-brand-primary"/> 3. 교육 내용 섹션</h2><div className="space-y-3 pl-5"><textarea name="curriculum" value={formData.curriculum} onChange={handleInputChange} className="w-full p-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all h-24 resize-none" placeholder="커리큘럼 상세"/><input name="qrLink" value={formData.qrLink} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="QR코드 링크"/></div></div>
-              <div className="space-y-3"><h2 className="text-sm font-bold flex items-center gap-2 text-text-primary"><Phone size={14} className="text-brand-primary"/> 4. 문의 사항 섹션</h2><div className="grid grid-cols-2 gap-3 pl-5"><input name="contactPhone" value={formData.contactPhone} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="전화번호"/><input name="contactEmail" value={formData.contactEmail} onChange={handleInputChange} className="w-full p-2 text-xs bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="이메일"/></div></div>
-              <div className="pt-4 border-t" style={{ borderColor: "var(--color-border)" }}><label className="block text-[10px] font-bold text-brand-primary uppercase mb-2 flex items-center gap-1"><Sparkles size={10}/> AI 디자인 지침</label><textarea name="designGuidelines" value={formData.designGuidelines} onChange={handleInputChange} className="w-full p-3 text-xs bg-brand-primary/5 border border-transparent rounded-lg focus:outline-none focus:bg-white focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all h-16 resize-none placeholder-brand-primary/40 text-brand-primary" placeholder="추가 디자인 요청 사항"/></div>
-
-              {!isGenerated && (
-                <div className="pt-4 mt-auto sticky bottom-0 bg-background/90 backdrop-blur-md flex flex-col gap-2 z-10 pb-2">
-                  <button onClick={handleGenerate} disabled={isGenerating || !formData.courseName} className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-white transition-all hover:brightness-110 disabled:opacity-50 shadow-md relative overflow-hidden" style={{ background: "var(--brand-primary)" }}>
-                    {isGenerating ? "생성 중..." : <><Sparkles size={18}/> AI 포스터 자동 완성</>}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isGenerating && (
-            <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[9999] flex items-center justify-center">
-              <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4 border border-gray-100">
-                <div className="relative">
-                  {generationStep === 1 && <div className="w-16 h-16 bg-brand-primary/10 rounded-full flex items-center justify-center animate-bounce"><MessageSquare className="text-brand-primary" size={32} /></div>}
-                  {generationStep === 2 && <div className="w-16 h-16 flex items-center justify-center"><div className="absolute inset-0 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div><Sparkles className="text-brand-primary animate-pulse" size={32} /></div>}
-                  {generationStep === 3 && <div className="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center animate-pulse border-2 border-green-200"><ImageIcon className="text-green-500 animate-bounce" size={32} /></div>}
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                    {generationStep === 1 && "내용 파악 중"}
-                    {generationStep === 2 && "디자인 시스템 구축 중"}
-                    {generationStep === 3 && "미리보기에 디자인 생성 중"}
-                    <span className="text-sm font-mono text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-md">
-                      {formatTime(elapsedTime)}
-                    </span>
-                  </h3>
-                  <div className="flex gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${generationStep >= 1 ? 'bg-brand-primary' : 'bg-gray-200'} transition-colors duration-500`}></div>
-                    <div className={`w-2 h-2 rounded-full ${generationStep >= 2 ? 'bg-brand-primary' : 'bg-gray-200'} transition-colors duration-500`}></div>
-                    <div className={`w-2 h-2 rounded-full ${generationStep >= 3 ? 'bg-brand-primary' : 'bg-gray-200'} transition-colors duration-500`}></div>
-                  </div>
-                  {reasoningText && (
-                    <div className="w-full mt-4 p-3 bg-gray-50 border border-gray-100 rounded-lg max-h-32 overflow-y-auto text-[11px] text-gray-500 font-mono scrollbar-thin whitespace-pre-wrap flex flex-col-reverse">
-                      {reasoningText}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isGenerated && (
-            <div className="flex-1 flex flex-col overflow-hidden min-h-0 mt-2">
-              <div className="py-2 border-b flex items-center justify-between shrink-0" style={{ borderColor: "var(--color-border)" }}>
-                <div className="flex items-center gap-2">
-                  <Bot size={18} className="text-brand-primary" />
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-bold text-sm text-gray-800">AI 어시스턴트</span>
-                    <span className="text-[10px] font-medium text-gray-400">| {aiModel}</span>
-                  </div>
-                </div>
-                <button onClick={handleDownload} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-xs font-bold hover:bg-gray-200 transition-all flex items-center gap-1.5"><Download size={14}/> PNG 다운로드</button>
-              </div>
-              <div className="flex-1 overflow-y-auto py-4 space-y-6 scrollbar-thin pr-2">
-                <div ref={chatListRef} />
-                {messages.map((msg, idx) => (
-                  <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${msg.role === 'user' ? 'bg-gray-100 text-gray-500' : 'bg-brand-primary text-white shadow-sm'}`}>
-                      {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
-                    </div>
-                    <div className={`max-w-[85%] p-3.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-gray-100 text-gray-800 rounded-2xl rounded-tr-sm' : 'bg-white border text-gray-800 rounded-2xl rounded-tl-sm shadow-sm'}`} style={msg.role !== 'user' ? { borderColor: "var(--color-border)" } : {}}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="pt-3 pb-1 bg-background shrink-0">
-                <div className="flex items-center gap-2 bg-white border shadow-sm rounded-xl px-2 py-1.5 focus-within:ring-2 focus-within:ring-brand-primary/20 transition-all" style={{ borderColor: "var(--color-border)" }}>
-                  <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={handleChatKeyDown} placeholder="수정할 내용을 입력하세요" className="flex-1 bg-transparent border-none outline-none text-sm px-3 py-2"/>
-                  <button onClick={handleSendMessage} disabled={!chatInput.trim() || isChatLoading} className="p-2 bg-brand-primary text-white rounded-lg disabled:opacity-50 hover:brightness-110 transition-colors shadow-sm"><Send size={16} className="-ml-0.5 mt-0.5" /></button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

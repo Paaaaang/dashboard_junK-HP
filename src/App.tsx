@@ -2,7 +2,7 @@ import { useState, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import './styles/index.css';
 
-import { Sidebar, TopRail, PlaceholderPage, DebugMode, GlobalToast } from '@/components';
+import { Sidebar, TopRail, PlaceholderPage, GlobalToast } from '@/components';
 import { useCompanyStore, useCourseStore, useParticipantStore, useTemplateStore, useStatsStore, useInstructorStore } from '@/stores';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
@@ -109,7 +109,6 @@ function AppContent() {
           </Suspense>
         </main>
       </div>
-      <DebugMode />
       <GlobalToast />
     </div>
   );
