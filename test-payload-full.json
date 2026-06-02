@@ -1,7 +1,0 @@
-{
-  "sessionId": "poster-gen-12345",
-  "model": "gpt-5.1",
-  "instructions": "You are a Senior Design Systems Engineer and Creative Director.\nCreate a complete poster as a single HTML document with embedded CSS.\n\nRequirements:\n- Use a <style> tag or inline CSS.\n- Use the provided data faithfully.\n- Do not include any scripts.\n- Output ONLY one ```html block and nothing else.",
-  "messages": [{"role": "user", "content": "Create Design System & Poster. Raw data: {}. Guidelines: "}],
-  "stream": false
-}

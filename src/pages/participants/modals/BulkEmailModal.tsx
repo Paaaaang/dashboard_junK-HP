@@ -94,14 +94,19 @@ export function BulkEmailModal({ onClose, selectedParticipants }: BulkEmailModal
     if (!selectedTemplateId) return;
     setIsSending(true);
     try {
-      const recipients = selectedParticipants.map(p => ({
-        email: p?.email || "",
-        variables: {
-          companyName: p?.companyName || "",
-          subCourseName: selectedProgram?.name || "",
-          courseDate: selectedSession ? `${selectedSession?.startDate || ""} ~ ${selectedSession?.endDate || ""}` : ""
-        }
-      })).filter(r => r.email);
+      const recipients = selectedParticipants.map(p => {
+        const participantName = p?.name || "";
+        return {
+          email: p?.email || "",
+          name: participantName,
+          variables: {
+            name: participantName,
+            companyName: p?.companyName || "",
+            subCourseName: selectedProgram?.name || "",
+            courseDate: selectedSession ? `${selectedSession?.startDate || ""} ~ ${selectedSession?.endDate || ""}` : ""
+          }
+        };
+      }).filter(r => r.email);
 
       if (recipients.length === 0) {
         throw new Error("이메일 주소가 등록된 참여자가 없습니다.");

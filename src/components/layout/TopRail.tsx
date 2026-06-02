@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { BellRing, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Settings, LogOut, ChevronDown } from "lucide-react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { SettingsModal } from "@/components/layout/SettingsModal";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -19,21 +19,6 @@ export function TopRail() {
     >
       <div className="flex-1 flex items-center" />
       <div className="flex items-center gap-4">
-        {/* 알림 버튼 */}
-        <button
-          className="p-2 rounded-full relative cursor-pointer transition-colors"
-          style={{ color: "var(--color-text-tertiary)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--brand-primary)"; (e.currentTarget as HTMLElement).style.background = "rgba(16, 185, 129, 0.05)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--color-text-tertiary)"; (e.currentTarget as HTMLElement).style.background = ""; }}
-          aria-label="알림"
-        >
-          <BellRing size={20} />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2"
-            style={{ background: "var(--color-error)", borderColor: "var(--color-surface)" }}
-          />
-        </button>
-
         {/* 프로필 드롭다운 */}
         <div className="relative" ref={profileRef}>
           <button

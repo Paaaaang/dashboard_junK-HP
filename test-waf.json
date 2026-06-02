@@ -1,1 +1,0 @@
-{"sessionId": "poster-gen-123456", "model": "gpt-5.1", "instructions": "Output ONLY one ```html block", "messages": [{"role": "user", "content": "test"}], "stream": false}

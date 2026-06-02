@@ -79,14 +79,19 @@ export function EmailModal({
     setIsSending(true);
     try {
       const selectedCompanies = companies.filter(c => emailRecipientIds.includes(c.id));
-      const recipients = selectedCompanies.map(c => ({
-        email: c.email,
-        variables: {
-          companyName: c.companyName,
-          subCourseName: selectedProgram?.name || "",
-          courseDate: selectedSession ? `${selectedSession.startDate} ~ ${selectedSession.endDate}` : ""
-        }
-      })).filter(r => r.email); // Only companies with email
+      const recipients = selectedCompanies.map(c => {
+        const recipientName = c.manager || c.representative || c.companyName;
+        return {
+          email: c.email,
+          name: recipientName,
+          variables: {
+            name: recipientName,
+            companyName: c.companyName,
+            subCourseName: selectedProgram?.name || "",
+            courseDate: selectedSession ? `${selectedSession.startDate} ~ ${selectedSession.endDate}` : ""
+          }
+        };
+      }).filter(r => r.email);
 
       if (recipients.length === 0) {
         throw new Error("이메일 주소가 등록된 기업이 없습니다.");
