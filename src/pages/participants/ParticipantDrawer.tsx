@@ -4,7 +4,8 @@ import {
   PencilLine, 
   Plus, 
   ChevronDown, 
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Trash2
 } from "lucide-react";
 import { CompletionBadge } from "@/components/ui";
 import { ParticipantRecord, ParticipantEnrollment, CompletionStatus } from "@/types/models";
@@ -20,6 +21,7 @@ interface ParticipantDrawerProps {
   onClose: () => void;
   isClosing: boolean;
   onUpdate: (updated: ParticipantRecord) => void;
+  onDelete: (id: string) => void;
 }
 
 export function ParticipantDrawer({
@@ -27,6 +29,7 @@ export function ParticipantDrawer({
   onClose,
   isClosing,
   onUpdate,
+  onDelete,
 }: ParticipantDrawerProps) {
   const navigate = useNavigate();
   const { companies: allCompanies } = useCompanyStore();
@@ -96,12 +99,22 @@ export function ParticipantDrawer({
   );
 
   const headerActions = !isEditMode && (
-    <button
-      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-secondary hover:bg-surface-subtle rounded-xl transition-all"
-      onClick={() => setIsEditMode(true)}
-    >
-      <PencilLine size={16} strokeWidth={2.5} /> 편집
-    </button>
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-secondary hover:text-error hover:bg-error/5 rounded-xl transition-all duration-200 cursor-pointer"
+        onClick={() => onDelete(participant.id)}
+      >
+        <Trash2 size={16} strokeWidth={2.5} /> 삭제
+      </button>
+      <button
+        type="button"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-secondary hover:bg-surface-subtle rounded-xl transition-all duration-200 cursor-pointer"
+        onClick={() => setIsEditMode(true)}
+      >
+        <PencilLine size={16} strokeWidth={2.5} /> 편집
+      </button>
+    </div>
   );
 
   return (

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Mail, Download, Search, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Mail, Download, Search, ChevronDown, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 import { FloatingActionBar, DataPageLayout } from "@/components";
 import { useCompanyStore, useParticipantStore, useToastStore, useCourseStore } from "@/stores";
@@ -36,7 +36,7 @@ export function ParticipantsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { participants, upsertParticipant, fetchParticipants, error: storeError } = useParticipantStore();
+  const { participants, upsertParticipant, fetchParticipants, deleteParticipants, error: storeError } = useParticipantStore();
   const { companies: allCompanies } = useCompanyStore();
   const { courseGroups, fetchCourseGroups } = useCourseStore();
   const { addToast } = useToastStore();
@@ -110,8 +110,15 @@ export function ParticipantsPage() {
     goPrevStep,
     confirmUpload,
     resetUpload,
+    selectedGroupId,
+    setSelectedGroupId,
+    selectedCourseId,
+    setSelectedCourseId,
+    selectedSessionId,
+    setSelectedSessionId,
   } = useParticipantExcel(allCompanies, addToast);
 
+  const [pendingDeleteParticipantIds, setPendingDeleteParticipantIds] = useState<string[] | null>(null);
   const [openParticipantId, setOpenParticipantId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showChoiceModal, setShowChoiceModal] = useState(false);
@@ -335,6 +342,12 @@ export function ParticipantsPage() {
                 XLSX.writeFile(wb, `participants_export_${Date.now()}.xlsx`);
                 addToast(`${selectedIds.size}명의 데이터를 내보냈습니다.`, "success");
               }
+            },
+            {
+              label: "삭제",
+              icon: Trash2,
+              variant: "danger",
+              onClick: () => setPendingDeleteParticipantIds(Array.from(selectedIds)),
             }
           ]}
         />
@@ -346,11 +359,56 @@ export function ParticipantsPage() {
             onClose={handleDrawerClose}
             isClosing={isClosing}
             onUpdate={handleUpdateParticipant}
+            onDelete={(id) => setPendingDeleteParticipantIds([id])}
           />
         )
       }
       modals={
         <>
+          {pendingDeleteParticipantIds && (
+            <div className="modal-backdrop confirm-modal !z-[300]">
+              <div className="modal-panel modal-panel-sm">
+                <div className="modal-header">
+                  <h3>참여자 삭제 확인</h3>
+                  <button type="button" className="icon-btn" onClick={() => setPendingDeleteParticipantIds(null)}>
+                    <X className="icon-sm" />
+                  </button>
+                </div>
+                <div className="modal-content">
+                  <p>선택한 <strong>{pendingDeleteParticipantIds.length}</strong>명의 참여자를 삭제하시겠습니까?</p>
+                  <p className="text-xs text-error font-medium mt-2 leading-relaxed">
+                    * 주의: 참여자를 삭제할 경우 해당 참여자의 수강 이력(Enrollment)도 함께 영구 유실됩니다.
+                  </p>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setPendingDeleteParticipantIds(null)}>취소</button>
+                  <button
+                    className="btn btn-primary bg-error hover:opacity-90 cursor-pointer font-bold"
+                    onClick={async () => {
+                      try {
+                        await deleteParticipants(pendingDeleteParticipantIds);
+                        addToast("참여자 정보가 삭제되었습니다.", "success");
+                        clearSelection();
+                        if (openParticipant && pendingDeleteParticipantIds.includes(openParticipant.id)) {
+                          setIsClosing(true);
+                          setTimeout(() => {
+                            closeDrawer();
+                            setIsClosing(false);
+                          }, 200);
+                        }
+                      } catch (err: any) {
+                        addToast(`삭제 실패: ${err.message}`, "error");
+                      } finally {
+                        setPendingDeleteParticipantIds(null);
+                      }
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {showEmailModal && (
             <BulkEmailModal
               selectedParticipants={participants.filter(p => selectedIds.has(p.id))}
@@ -404,6 +462,13 @@ export function ParticipantsPage() {
                 fetchParticipants();
               }}
               onReset={resetUpload}
+              courseGroups={courseGroups}
+              selectedGroupId={selectedGroupId}
+              setSelectedGroupId={setSelectedGroupId}
+              selectedCourseId={selectedCourseId}
+              setSelectedCourseId={setSelectedCourseId}
+              selectedSessionId={selectedSessionId}
+              setSelectedSessionId={setSelectedSessionId}
             />
           )}
           {showChoiceModal && (

@@ -1,4 +1,4 @@
-import { Mail, Info, PencilLine } from "lucide-react";
+import { Mail, Info, PencilLine, Trash2 } from "lucide-react";
 import type { CompanyRecord, SubCourseWithParticipants, SubCourseParticipant, CourseGroup } from "@/types/models";
 import { useState, useMemo } from "react";
 import { SideDrawer } from "@/components/shared";
@@ -38,6 +38,7 @@ interface CompanyDrawerProps {
   onShowParticipantPopover: (pt: SubCourseParticipant, e: React.MouseEvent) => void;
   onHideParticipantPopover: () => void;
   onOpenEmailModal: (ids: string[]) => void;
+  onDeleteCompany: (id: string) => void;
   onNavigateToCourses: () => void;
   getSubCourseByName: (companyId: string, groupId: string, name: string) => SubCourseWithParticipants | undefined;
   toDotDate: (val: string | undefined) => string;
@@ -74,6 +75,7 @@ export function CompanyDrawer({
   onShowParticipantPopover,
   onHideParticipantPopover,
   onOpenEmailModal,
+  onDeleteCompany,
   onNavigateToCourses,
   getSubCourseByName,
   toDotDate,
@@ -129,12 +131,22 @@ export function CompanyDrawer({
   );
 
   const headerActions = !drawerEditMode && (
-    <button
-      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-secondary hover:bg-surface-subtle rounded-xl transition-all"
-      onClick={onEnterEditMode}
-    >
-      <PencilLine size={16} strokeWidth={2.5} /> 편집
-    </button>
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-secondary hover:text-error hover:bg-error/5 rounded-xl transition-all duration-200 cursor-pointer"
+        onClick={() => onDeleteCompany(draftCompany.id)}
+      >
+        <Trash2 size={16} strokeWidth={2.5} /> 삭제
+      </button>
+      <button
+        type="button"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-secondary hover:bg-surface-subtle rounded-xl transition-all duration-200 cursor-pointer"
+        onClick={onEnterEditMode}
+      >
+        <PencilLine size={16} strokeWidth={2.5} /> 편집
+      </button>
+    </div>
   );
 
   return (

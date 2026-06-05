@@ -8,7 +8,7 @@ interface ParticipantStore {
   error: string | null;
   fetchParticipants: () => Promise<void>;
   upsertParticipant: (participant: ParticipantRecord) => Promise<void>;
-  batchUpsertParticipants: (participants: ParticipantRecord[]) => Promise<void>;
+  batchUpsertParticipants: (participants: ParticipantRecord[], sessionId?: string) => Promise<void>;
   deleteParticipants: (ids: string[]) => Promise<void>;
   subscribeToParticipants: () => () => void;
   clearError: () => void;
@@ -274,11 +274,9 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
     }
   },
 
-  batchUpsertParticipants: async (participants) => {
+  batchUpsertParticipants: async (participants, sessionId) => {
     set({ isLoading: true, error: null });
     try {
-      // In a real scenario, this would use a stored procedure to handle company upserts and enrollments.
-      // For simplicity, we just upsert participants.
       const pToInsert = participants.map(p => {
          const data: any = {
             name: p.name,
@@ -296,8 +294,37 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
          return data;
       });
       
-      const { error } = await supabase.from('participants').upsert(pToInsert);
+      const { data: upsertedRows, error } = await supabase
+        .from('participants')
+        .upsert(pToInsert)
+        .select('id, name');
+        
       if (error) throw error;
+      
+      if (sessionId && upsertedRows && upsertedRows.length > 0) {
+        const { data: existingEnrollments } = await supabase
+          .from('enrollments')
+          .select('participant_id')
+          .eq('session_id', sessionId);
+          
+        const existingParticipantIds = new Set((existingEnrollments || []).map(e => e.participant_id));
+        
+        const enrollmentsToInsert = upsertedRows
+          .filter(p => !existingParticipantIds.has(p.id))
+          .map(p => ({
+            participant_id: p.id,
+            session_id: sessionId,
+            status: '미수료'
+          }));
+          
+        if (enrollmentsToInsert.length > 0) {
+          const { error: enrollError } = await supabase
+            .from('enrollments')
+            .insert(enrollmentsToInsert);
+            
+          if (enrollError) throw enrollError;
+        }
+      }
       
       await get().fetchParticipants();
     } catch (err: any) {

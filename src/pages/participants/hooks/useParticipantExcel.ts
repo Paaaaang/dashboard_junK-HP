@@ -11,6 +11,9 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
   const [uploadPreview, setUploadPreview] = useState<ParticipantRecord[] | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState("");
 
   const openUploadModal = () => {
     setUploadFile(null);
@@ -20,6 +23,9 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setUploadPreview(null);
     setUploadError(null);
     setIsParsing(false);
+    setSelectedGroupId("");
+    setSelectedCourseId("");
+    setSelectedSessionId("");
     setShowUploadModal(true);
   };
 
@@ -123,7 +129,7 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
   const confirmUpload = async () => {
     if (!uploadPreview) return;
     try {
-      await useParticipantStore.getState().batchUpsertParticipants(uploadPreview);
+      await useParticipantStore.getState().batchUpsertParticipants(uploadPreview, selectedSessionId || undefined);
       closeUploadModal();
       addToast(`${uploadPreview.length}명의 참여자가 등록되었습니다.`);
     } catch (err: any) {
@@ -139,6 +145,9 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     setUploadPreview(null);
     setUploadError(null);
     setIsParsing(false);
+    setSelectedGroupId("");
+    setSelectedCourseId("");
+    setSelectedSessionId("");
   };
 
   return {
@@ -159,5 +168,11 @@ export function useParticipantExcel(allCompanies: CompanyRecord[], addToast: (ms
     goPrevStep,
     confirmUpload,
     resetUpload,
+    selectedGroupId,
+    setSelectedGroupId,
+    selectedCourseId,
+    setSelectedCourseId,
+    selectedSessionId,
+    setSelectedSessionId,
   };
 }

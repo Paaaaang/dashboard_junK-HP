@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useCompanyStore, useParticipantStore, useCourseStore, useTemplateStore, useToastStore } from "@/stores";
 import { transformParticipantsToMap } from "@/utils/participantUtils";
-import { Mail, Download, X, ChevronRight, Search, ChevronLeft } from "lucide-react";
+import { Mail, Download, X, ChevronRight, Search, ChevronLeft, Trash2 } from "lucide-react";
 import { FloatingActionBar, DataPageLayout } from "@/components";
 import type {
   CompanyRecord,
@@ -57,7 +57,7 @@ export function CompanyManagementPage() {
 
   // Stores
   const { courseGroups } = useCourseStore();
-  const { companies: rawCompanies, upsertCompany, error: storeError } = useCompanyStore();
+  const { companies: rawCompanies, upsertCompany, deleteCompanies, error: storeError } = useCompanyStore();
   const { participants, upsertParticipant } = useParticipantStore();
   const { templates } = useTemplateStore();
   const { addToast } = useToastStore();
@@ -209,6 +209,7 @@ export function CompanyManagementPage() {
   } = useParticipantPopover();
 
   // Confirmation States
+  const [pendingDeleteCompanyIds, setPendingDeleteCompanyIds] = useState<string[] | null>(null);
   const [pendingRemoveProgram, setPendingRemoveProgram] = useState<{ courseType: string; programName: string } | null>(null);
   const [pendingRemoveParticipant, setPendingRemoveParticipant] = useState<{ groupId: string; subCourseId: string; ptId: string } | null>(null);
 
@@ -428,6 +429,12 @@ export function CompanyManagementPage() {
                 XLSX.writeFile(wb, `companies_export_${Date.now()}.xlsx`);
                 addToast(`${selectedCompanyIds.size}개 기업의 데이터를 내보냈습니다.`, "success");
               }
+            },
+            {
+              label: "삭제",
+              icon: Trash2,
+              variant: "danger",
+              onClick: () => setPendingDeleteCompanyIds(Array.from(selectedCompanyIds)),
             }
           ]}
         />
@@ -503,6 +510,7 @@ export function CompanyManagementPage() {
             onShowParticipantPopover={showParticipantPopover}
             onHideParticipantPopover={hideParticipantPopover}
             onOpenEmailModal={openEmailModal}
+            onDeleteCompany={(id) => setPendingDeleteCompanyIds([id])}
             onNavigateToCourses={() => navigate("/courses")}
             getSubCourseByName={(cId, gId, name) => Object.values(companyParticipants[cId]?.[gId] ?? {}).find(sc => sc.name === name)}
             toDotDate={toDotDate}
@@ -551,6 +559,50 @@ export function CompanyManagementPage() {
                 <div className="modal-header"><h3>변경 사항 취소</h3><button type="button" className="icon-btn" onClick={() => setCancelConfirmPending(false)}><X className="icon-sm" /></button></div>
                 <div className="modal-content"><p>내용이 저장되지 않았습니다. 취소하시겠습니까?</p></div>
                 <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setCancelConfirmPending(false)}>계속 편집</button><button className="btn btn-primary" onClick={() => { setDraftCompany(editModeSnapshot); setCancelConfirmPending(false); setDrawerEditMode(false); }}>취소</button></div>
+              </div>
+            </div>
+          )}
+          {pendingDeleteCompanyIds && (
+            <div className="modal-backdrop confirm-modal !z-[300]">
+              <div className="modal-panel modal-panel-sm">
+                <div className="modal-header">
+                  <h3>기업 삭제 확인</h3>
+                  <button type="button" className="icon-btn" onClick={() => setPendingDeleteCompanyIds(null)}>
+                    <X className="icon-sm" />
+                  </button>
+                </div>
+                <div className="modal-content">
+                  <p>선택한 <strong>{pendingDeleteCompanyIds.length}</strong>개 기업을 삭제하시겠습니까?</p>
+                  <p className="text-xs text-error font-medium mt-2 leading-relaxed">
+                    * 주의: 기업을 삭제할 경우 해당 기업에 소속된 참여자 및 관련 수강 이력도 함께 영구 유실될 수 있습니다.
+                  </p>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setPendingDeleteCompanyIds(null)}>취소</button>
+                  <button
+                    className="btn btn-primary bg-error hover:opacity-90 cursor-pointer font-bold"
+                    onClick={async () => {
+                      try {
+                        await deleteCompanies(pendingDeleteCompanyIds);
+                        addToast("기업 정보가 삭제되었습니다.", "success");
+                        clearSelectedCompanies();
+                        if (draftCompany && pendingDeleteCompanyIds.includes(draftCompany.id)) {
+                          setIsClosing(true);
+                          setTimeout(() => {
+                            closeDrawer();
+                            setIsClosing(false);
+                          }, 200);
+                        }
+                      } catch (err: any) {
+                        addToast(`삭제 실패: ${err.message}`, "error");
+                      } finally {
+                        setPendingDeleteCompanyIds(null);
+                      }
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
               </div>
             </div>
           )}

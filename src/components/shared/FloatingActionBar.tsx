@@ -36,14 +36,25 @@ export function FloatingActionBar({
         <div className="flex items-center gap-3">
           {actions.map((action, idx) => {
             const Icon = action.icon;
+            const isDanger = action.variant === "danger";
             return (
               <button
                 key={idx}
                 type="button"
-                className="flex items-center gap-2 px-4 py-2 text-inverse/90 hover:text-inverse hover:bg-surface/10 rounded-xl transition-all text-sm font-semibold group active:scale-95"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm font-semibold group active:scale-95 ${
+                  isDanger 
+                    ? "text-error hover:text-error/80 hover:bg-error/10" 
+                    : "text-inverse/90 hover:text-inverse hover:bg-surface/10"
+                }`}
                 onClick={action.onClick}
               >
-                <Icon size={16} strokeWidth={2.5} className="text-brand-primary group-hover:scale-110 transition-transform" />
+                <Icon 
+                  size={16} 
+                  strokeWidth={2.5} 
+                  className={`group-hover:scale-110 transition-transform ${
+                    isDanger ? "text-error" : "text-brand-primary"
+                  }`} 
+                />
                 <span>{action.label}</span>
               </button>
             );

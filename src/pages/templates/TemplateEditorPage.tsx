@@ -3,7 +3,7 @@ import {
   Mail, Paperclip, Send, X, AlertCircle, Clock, Plus as PlusIcon, ChevronDown,
   Settings, Save, HelpCircle, RotateCcw, RotateCw, 
   Bold, Italic, Underline, Palette,
-  Strikethrough, Link, Highlighter, Type, Baseline, ExternalLink
+  Strikethrough, Link, Highlighter, Type, Baseline, ExternalLink, Trash2
 } from "lucide-react";
 import { templateVariableMetadata } from "@/constants";
 import { PageHeader } from "@/components";
@@ -22,6 +22,7 @@ export function TemplateEditorPage() {
     error,
     fetchTemplates, 
     upsertTemplate, 
+    deleteTemplate,
     testEmail,
     fetchLogs,
     clearError,
@@ -358,6 +359,19 @@ export function TemplateEditorPage() {
     }
   }
 
+  async function handleDeleteTemplate(id: string) {
+    if (!window.confirm("정말로 이 이메일 템플릿을 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다.")) {
+      return;
+    }
+    try {
+      await deleteTemplate(id);
+      addToast("템플릿이 성공적으로 삭제되었습니다.", "success");
+      setActiveTemplateId(null);
+    } catch (err: any) {
+      addToast(`삭제 실패: ${err.message}`, "error");
+    }
+  }
+
   async function handleTestSend() {
     if (!draftTemplate || !testEmailAddr) return;
     setIsTestSending(true);
@@ -612,7 +626,22 @@ export function TemplateEditorPage() {
                         <option value="UNINSURED">고용보험 미가입자</option>
                       </select>
                     </div>
-                    <button type="button" className="ml-auto px-4 py-1.5 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl font-black text-[11px] shadow-md shadow-brand-primary/10 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2" onClick={saveTemplate} disabled={isSaving}>{isSaving ? <Clock size={12} className="animate-spin" /> : <Save size={12} />}변경사항 저장</button>
+                    <button 
+                      type="button" 
+                      className="ml-auto px-4 py-1.5 border border-error/20 hover:bg-error/5 text-error rounded-xl font-black text-[11px] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer animate-in fade-in duration-200" 
+                      onClick={() => handleDeleteTemplate(draftTemplate.id)} 
+                      disabled={isSaving}
+                    >
+                      <Trash2 size={12} />
+                      템플릿 삭제
+                    </button>
+                    <button 
+                      type="button" 
+                      className="px-4 py-1.5 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl font-black text-[11px] shadow-md shadow-brand-primary/10 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer" 
+                      onClick={saveTemplate} 
+                      disabled={isSaving}
+                    >
+                      {isSaving ? <Clock size={12} className="animate-spin" /> : <Save size={12} />}변경사항 저장</button>
                   </div>
                   <div className="px-6 py-5 bg-white space-y-4">
                     <div className="flex items-center gap-4">

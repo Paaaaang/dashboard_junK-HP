@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { X, FileSpreadsheet, Check, RotateCcw, ChevronRight, Info, AlertCircle, ChevronLeft } from "lucide-react";
 import type { ParticipantRecord } from "@/types/models";
 
@@ -19,6 +19,14 @@ interface UploadModalProps {
   onDropzoneDrop: (e: React.DragEvent<HTMLDivElement>) => void;
   onConfirm: () => void;
   onReset: () => void;
+  // Course/Session selection integration
+  courseGroups?: any[];
+  selectedGroupId?: string;
+  setSelectedGroupId?: (id: string) => void;
+  selectedCourseId?: string;
+  setSelectedCourseId?: (id: string) => void;
+  selectedSessionId?: string;
+  setSelectedSessionId?: (id: string) => void;
 }
 
 export function UploadModal({
@@ -38,6 +46,13 @@ export function UploadModal({
   onDropzoneDrop,
   onConfirm,
   onReset,
+  courseGroups = [],
+  selectedGroupId = "",
+  setSelectedGroupId = () => {},
+  selectedCourseId = "",
+  setSelectedCourseId = () => {},
+  selectedSessionId = "",
+  setSelectedSessionId = () => {},
 }: UploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +60,14 @@ export function UploadModal({
   const requiredFields = systemFields.filter(f => f.required).map(f => f.key);
   const mappedFields = Object.values(columnMapping);
   const isMappingValid = requiredFields.every(field => mappedFields.includes(field));
+
+  const activeGroup = useMemo(() => {
+    return courseGroups.find((g: any) => g.id === selectedGroupId) || null;
+  }, [selectedGroupId, courseGroups]);
+
+  const activeCourse = useMemo(() => {
+    return activeGroup?.details.find((d: any) => d.id === selectedCourseId) || null;
+  }, [selectedCourseId, activeGroup]);
 
   return (
     <div
@@ -251,6 +274,70 @@ export function UploadModal({
                   <div>
                     <p className="font-bold text-primary text-lg tracking-tight font-heading">데이터 준비 완료</p>
                     <p className="text-sm text-secondary font-medium">총 {uploadPreview.length}명의 참여자 데이터를 성공적으로 로드했습니다. 아래 내용을 최종 확인해 주세요.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 수강 과정 및 기수 배정 (선택 사항) */}
+              <div className="p-6 bg-surface border border-border rounded-xl space-y-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-brand-primary" />
+                  <p className="text-sm font-bold text-primary font-heading">수강 과정 및 기수 배정 (선택 사항)</p>
+                </div>
+                <p className="text-xs text-tertiary font-medium">임포트하는 인원을 특정 교육 과정 및 회차에 즉시 일괄 수강 신청("미수료" 상태)하도록 설정할 수 있습니다.</p>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-secondary">교육 구분</label>
+                    <select
+                      className="w-full px-3 py-2.5 bg-surface border border-border/40 rounded-lg text-xs font-semibold text-primary focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all cursor-pointer"
+                      value={selectedGroupId}
+                      onChange={(e) => {
+                        setSelectedGroupId(e.target.value);
+                        setSelectedCourseId("");
+                        setSelectedSessionId("");
+                      }}
+                    >
+                      <option value="">교육 구분 선택 안 함</option>
+                      {courseGroups.map((g: any) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-secondary">세부 프로그램</label>
+                    <select
+                      className="w-full px-3 py-2.5 bg-surface border border-border/40 rounded-lg text-xs font-semibold text-primary focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all cursor-pointer"
+                      value={selectedCourseId}
+                      onChange={(e) => {
+                        setSelectedCourseId(e.target.value);
+                        setSelectedSessionId("");
+                      }}
+                      disabled={!selectedGroupId}
+                    >
+                      <option value="">세부 과정 선택 안 함</option>
+                      {activeGroup?.details.map((d: any) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-secondary">회차(기수)</label>
+                    <select
+                      className="w-full px-3 py-2.5 bg-surface border border-border/40 rounded-lg text-xs font-semibold text-primary focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all cursor-pointer"
+                      value={selectedSessionId}
+                      onChange={(e) => setSelectedSessionId(e.target.value)}
+                      disabled={!selectedCourseId}
+                    >
+                      <option value="">회차 선택 안 함 (수강 신청 없이 참여자만 등록)</option>
+                      {activeCourse?.sessions?.map((s: any) => (
+                        <option key={s.id} value={s.id}>
+                          {s.sessionNo}회차 ({s.startDate} ~ {s.endDate})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

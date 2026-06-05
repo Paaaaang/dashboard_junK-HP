@@ -125,7 +125,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 min-h-full">
+    <div className="p-6 max-w-[1600px] mx-auto space-y-6 min-h-full">
 
       {/* Header */}
       <header className="flex items-start justify-between gap-4 px-1">
@@ -191,7 +191,7 @@ export function Dashboard() {
 
       {/* Summary Cards */}
       <section
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         aria-label="핵심 지표 요약 카드"
       >
         {summary.map((card, idx) => {

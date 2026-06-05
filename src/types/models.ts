@@ -252,3 +252,23 @@ export interface CourseDetailDraft {
   isActive?: boolean;
   sessions: CourseSession[];
 }
+
+export interface ApplicationRecord {
+  id: string;
+  name: string;
+  companyName: string;
+  position?: string;
+  phone?: string;
+  email?: string;
+  employmentInsurance: EmploymentInsuranceStatus;
+  workExperience?: string;
+  documentSkill?: string;
+  mainProduct?: string;
+  courseGroupName: string;
+  subCourseName: string;
+  sessionId?: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  processedAt?: string;
+}
+

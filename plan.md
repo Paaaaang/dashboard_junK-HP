@@ -58,3 +58,34 @@
 
 ### Phase 5: 최종 연동 및 테스트
 - [ ] 폼 입력 -> AI 데이터 추출 -> 템플릿 병합 -> 이미지 다운로드 전체 플로우 테스트 및 최적화.
+
+---
+
+## 6. 신청 폼 자동화 및 승인 대시보드 구축 (완료)
+- **목표:** 구글 폼으로 접수된 신청서를 마스터 DB에 즉시 적재하지 않고, 임시 대기 구역(Staging)에 저장한 뒤 관리자가 오타를 검토/수정 후 승인하도록 흐름 제어.
+- **파이프라인 흐름:** 구글 폼 제출 → 구글 스프레드시트 적재 → Google Apps Script Webhook 전송 → Supabase Edge Function 수신 → `applications` 임시 적재 → 대시보드 [신청 폼 자동화] 페이지 승인/반려 조치 → 기업/참여자/수강신청 최종 DB 이관.
+- **구현 요소:**
+  - [x] 임시 신청 대기 테이블 `applications` 설계 및 DDL 마이그레이션 파일 작성.
+  - [x] Edge Function `google-form-webhook` 수정 (Staging DB 적재 및 임시 회차 매칭 자동화).
+  - [x] 구글 스프레드시트 열 매핑 설계 및 Apps Script setup 가이드 작성 (`google_form_setup_guide.md`).
+  - [x] 신청자 승인 대기 상태 관리용 Zustand 스토어 `useApplicationStore` 추가.
+  - [x] 신청서 직접/수동 등록 입력 폼 모달 `AddApplicationModal` 구현.
+  - [x] 신청 데이터 오타 수정용 상세 사이드 드로우 `ApplicationDrawer` 구현.
+  - [x] 일괄 승인/일괄 반려 조치용 FloatingActionBar 결합 및 `ApplicationsPage` 라우트(/forms) 구성.
+
+## 7. 기업 및 참여자 삭제 기능 구현 (완료)
+- **목표:** 관리자 데이터 정리를 위해 테이블 선택 삭제 기능 및 개별 상세 드로우(Drawer) 내 삭제 기능 추가.
+- **구현 요소:**
+  - [x] `FloatingActionBar` 공통 컴포넌트에 위험한 작업을 표시하는 `danger` variant 스타일(붉은색 및 호버 효과) 추가.
+  - [x] 기업 관리 페이지(`CompanyManagementPage.tsx`)에 다중 선택 삭제(Floating Actions) 및 삭제 재확인 모달 연동.
+  - [x] 기업 상세 드로우(`CompanyDrawer.tsx`) 우측 상단 헤더 액션에 "삭제" 버튼 배치 및 연동.
+  - [x] 참여자 관리 페이지(`ParticipantsPage.tsx`)에 다중 선택 삭제(Floating Actions) 및 삭제 재확인 모달 연동.
+  - [x] 참여자 상세 드로우(`ParticipantDrawer.tsx`) 우측 상단 헤더 액션에 "삭제" 버튼 배치 및 연동.
+  - [x] 삭제 전 정보 완전 유실(Cascade delete 부작용)을 안내하는 경고 메시지 모달 반영.
+  - [x] 컴포넌트 이력 추적을 위한 `COMPONENT_GRAPH.md` 작성 및 업데이트.
+
+## 8. Supabase MCP & Agent Skills 설정 (완료)
+- **목표:** 개발 에이전트와 Supabase DB 및 가이드 도구 간의 인텔리전스 연계.
+- **구현 요소:**
+  - [x] 전역 MCP 설정 파일(`~/.gemini/antigravity/mcp_config.json`)에 Supabase project_ref 연동 파라미터 구성 완료.
+  - [x] 프로젝트 내에 Supabase Agent Skills (`npx skills add supabase/agent-skills`) 패키지 설치 완료 (Postgres 및 Supabase 가이드라인 지식 인덱스 이관).
